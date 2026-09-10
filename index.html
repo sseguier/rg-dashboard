@@ -574,7 +574,12 @@ const parcSearchList = document.getElementById("parcSearchList");
 
 parcSearchList.addEventListener("click", (e) => {
   const agentRow = e.target.closest("[data-agent]");
-  if (agentRow) location.hash = "#/parc/agent/" + encodeURIComponent(agentRow.dataset.agent);
+  if (!agentRow) return;
+  // On quitte le mode recherche : sinon le routeur re-affiche les résultats
+  // au lieu de la fiche agent, puisque le champ contiendrait encore du texte.
+  searchQuery = "";
+  searchInputEl.value = "";
+  location.hash = "#/parc/agent/" + encodeURIComponent(agentRow.dataset.agent);
 });
 
 function agentIcon(n) {
