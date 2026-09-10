@@ -19,7 +19,6 @@
     --text: #e7ecf5;
     --text-dim: #8ea0bd;
     --crit-critical: #ef4444;
-    --crit-high: #f97316;
     --crit-medium: #eab308;
     --crit-low: #64748b;
     --accent: #3b82f6;
@@ -83,7 +82,7 @@
   }
   .summary {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(3, 1fr);
     gap: 8px;
     padding: 12px 16px;
   }
@@ -93,13 +92,15 @@
     border-radius: 12px;
     padding: 10px 6px;
     text-align: center;
+    font-family: inherit;
+    cursor: pointer;
   }
   .summary .tile .n { font-size: 1.4rem; font-weight: 700; display: block; }
   .summary .tile .l { font-size: 0.68rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.03em; }
   .summary .tile.critical .n { color: var(--crit-critical); }
-  .summary .tile.high .n { color: var(--crit-high); }
   .summary .tile.medium .n { color: var(--crit-medium); }
   .summary .tile.low .n { color: var(--crit-low); }
+  .summary .tile.active { border-color: var(--accent); background: rgba(59,130,246,0.15); }
 
   .filters {
     display: flex;
@@ -127,14 +128,15 @@
     border-radius: 12px;
     padding: 12px 14px;
   }
+  .incident { cursor: pointer; }
   .incident.critical { border-left-color: var(--crit-critical); }
-  .incident.high { border-left-color: var(--crit-high); }
   .incident.medium { border-left-color: var(--crit-medium); }
   .incident.low { border-left-color: var(--crit-low); }
   .incident.acquitted { opacity: 0.45; }
 
   .incident .title { font-size: 0.92rem; font-weight: 600; margin-bottom: 4px; }
   .incident .meta { font-size: 0.75rem; color: var(--text-dim); display: flex; flex-wrap: wrap; gap: 6px 10px; }
+  .incident .path { font-size: 0.75rem; color: var(--text-dim); margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--card-border); }
   .badge {
     display: inline-block;
     padding: 1px 8px;
@@ -144,7 +146,6 @@
     text-transform: uppercase;
   }
   .badge.critical { background: rgba(239,68,68,0.15); color: var(--crit-critical); }
-  .badge.high { background: rgba(249,115,22,0.15); color: var(--crit-high); }
   .badge.medium { background: rgba(234,179,8,0.15); color: var(--crit-medium); }
   .badge.low { background: rgba(100,116,139,0.15); color: var(--crit-low); }
   .badge.offline { background: rgba(148,163,184,0.15); color: var(--text-dim); }
@@ -269,10 +270,9 @@
   </div>
 
   <div class="summary" id="summary">
-    <div class="tile critical"><span class="n" id="countCritical">–</span><span class="l">Critique</span></div>
-    <div class="tile high"><span class="n" id="countHigh">–</span><span class="l">Haute</span></div>
-    <div class="tile medium"><span class="n" id="countMedium">–</span><span class="l">Moyenne</span></div>
-    <div class="tile low"><span class="n" id="countLow">–</span><span class="l">Basse</span></div>
+    <button type="button" class="tile critical" data-crit="critical"><span class="n" id="countCritical">–</span><span class="l">Critique</span></button>
+    <button type="button" class="tile medium" data-crit="medium"><span class="n" id="countMedium">–</span><span class="l">Moyenne</span></button>
+    <button type="button" class="tile low" data-crit="low"><span class="n" id="countLow">–</span><span class="l">Basse</span></button>
   </div>
 
   <div class="filters">
@@ -336,13 +336,15 @@ async function fetchJson(path) {
    Page Alertes
    ========================================================= */
 
-const CRITICALITY_ORDER = { critical: 0, high: 1, medium: 2, low: 3 };
-const CRITICALITY_LABEL = { critical: "Critique", high: "Haute", medium: "Moyenne", low: "Basse" };
+const CRITICALITY_ORDER = { critical: 0, medium: 1, low: 2 };
+const CRITICALITY_LABEL = { critical: "Critique", medium: "Moyenne", low: "Basse" };
 
 const listEl = document.getElementById("list");
 const statusText = document.getElementById("statusText");
 const hideAcquittedEl = document.getElementById("hideAcquitted");
+const summaryEl = document.getElementById("summary");
 let lastIncidents = [];
+let activeCriticality = null;
 
 function extractIncidents(data) {
   const incidents = [];
@@ -383,20 +385,27 @@ function extractIncidents(data) {
 }
 
 function renderSummary(incidents) {
-  const counts = { critical: 0, high: 0, medium: 0, low: 0 };
+  const counts = { critical: 0, medium: 0, low: 0 };
   for (const inc of incidents) {
     if (inc.acquitted) continue;
     if (counts[inc.criticality] !== undefined) counts[inc.criticality]++;
   }
   document.getElementById("countCritical").textContent = counts.critical;
-  document.getElementById("countHigh").textContent = counts.high;
   document.getElementById("countMedium").textContent = counts.medium;
   document.getElementById("countLow").textContent = counts.low;
 }
 
 function renderAlertList() {
   const hideAcquitted = hideAcquittedEl.checked;
-  const items = lastIncidents.filter((inc) => !hideAcquitted || !inc.acquitted);
+  const items = lastIncidents.filter((inc) => {
+    if (hideAcquitted && inc.acquitted) return false;
+    if (activeCriticality && inc.criticality !== activeCriticality) return false;
+    return true;
+  });
+
+  summaryEl.querySelectorAll(".tile").forEach((tile) => {
+    tile.classList.toggle("active", tile.dataset.crit === activeCriticality);
+  });
 
   if (items.length === 0) {
     listEl.innerHTML = '<div class="empty">✅ Aucune alerte à afficher</div>';
@@ -415,10 +424,25 @@ function renderAlertList() {
           <span>${escapeHtml(inc.agentName)}</span>
           ${inc.acquitted ? "<span>· acquittée</span>" : ""}
         </div>
+        <div class="path" hidden>📍 ${escapeHtml(inc.nodePath || "Emplacement inconnu")}</div>
       </div>
     `;
   }).join("");
 }
+
+summaryEl.addEventListener("click", (e) => {
+  const tile = e.target.closest(".tile");
+  if (!tile) return;
+  activeCriticality = activeCriticality === tile.dataset.crit ? null : tile.dataset.crit;
+  renderAlertList();
+});
+
+listEl.addEventListener("click", (e) => {
+  const incident = e.target.closest(".incident");
+  if (!incident) return;
+  const path = incident.querySelector(".path");
+  if (path) path.hidden = !path.hidden;
+});
 
 async function loadAlerts() {
   statusText.textContent = "Actualisation…";
