@@ -110,7 +110,10 @@
     color: var(--text);
     border-radius: 10px;
     padding: 8px 12px;
-    font-size: 0.85rem;
+    /* iOS Safari zoome automatiquement la page au focus si le champ fait
+       moins de 16px : on reste a 16px pour l'empecher, sans desactiver
+       le zoom utilisateur (mauvais pour l'accessibilite). */
+    font-size: 16px;
   }
   .search-bar input[type="search"]::placeholder { color: var(--text-dim); }
 
