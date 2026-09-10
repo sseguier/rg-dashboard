@@ -102,15 +102,9 @@
   .summary .tile.low .n { color: var(--crit-low); }
   .summary .tile.active { border-color: var(--accent); background: rgba(59,130,246,0.15); }
 
-  .search-bar {
-    display: flex;
-    gap: 8px;
-    padding: 0 16px 12px;
-    align-items: center;
-  }
+  .search-bar { margin-bottom: 10px; }
   .search-bar input[type="search"] {
-    flex: 1;
-    min-width: 0;
+    width: 100%;
     background: var(--card);
     border: 1px solid var(--card-border);
     color: var(--text);
@@ -119,41 +113,6 @@
     font-size: 0.85rem;
   }
   .search-bar input[type="search"]::placeholder { color: var(--text-dim); }
-  .search-mode {
-    display: flex;
-    background: var(--card);
-    border: 1px solid var(--card-border);
-    border-radius: 10px;
-    overflow: hidden;
-    flex-shrink: 0;
-  }
-  .search-mode button {
-    background: none;
-    border: none;
-    color: var(--text-dim);
-    padding: 8px 10px;
-    font-size: 0.78rem;
-    font-family: inherit;
-  }
-  .search-mode button.active { color: var(--text); background: rgba(59,130,246,0.15); }
-
-  .filters {
-    display: flex;
-    gap: 8px;
-    padding: 0 16px 12px;
-    overflow-x: auto;
-  }
-  .filters label {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    background: var(--card);
-    border: 1px solid var(--card-border);
-    border-radius: 999px;
-    padding: 6px 12px;
-    font-size: 0.8rem;
-    white-space: nowrap;
-  }
 
   .list { padding: 0 16px; display: flex; flex-direction: column; gap: 10px; }
   .incident {
@@ -291,6 +250,9 @@
 
 <header>
   <h1>🛰️ Supervision RG System</h1>
+  <div class="search-bar">
+    <input type="search" id="searchInput" placeholder="Rechercher dans les alertes…" autocomplete="off">
+  </div>
   <nav class="tabbar">
     <button id="tabAlerts" class="active">🔔 Alertes</button>
     <button id="tabParc">🗂️ Parc</button>
@@ -310,18 +272,6 @@
     <button type="button" class="tile low" data-crit="low"><span class="n" id="countLow">–</span><span class="l">Basse</span></button>
   </div>
 
-  <div class="search-bar">
-    <input type="search" id="searchInput" placeholder="Rechercher…" autocomplete="off">
-    <div class="search-mode" id="searchMode">
-      <button type="button" data-mode="alerts" class="active">Alertes</button>
-      <button type="button" data-mode="agents">Agents</button>
-    </div>
-  </div>
-
-  <div class="filters" id="filtersRow">
-    <label><input type="checkbox" id="hideAcquitted" checked> Masquer les alertes acquittées</label>
-  </div>
-
   <div class="list" id="list">
     <div class="loading">Chargement des données…</div>
   </div>
@@ -329,6 +279,13 @@
 
 <!-- ===== Page Parc (navigation + fiche agent) ===== -->
 <div id="page-parc" hidden>
+
+  <div id="parcSearchView" hidden>
+    <div class="parc-header">
+      <span class="parc-title">Résultats de recherche</span>
+    </div>
+    <div class="list" id="parcSearchList"></div>
+  </div>
 
   <div id="parcTreeView">
     <div class="parc-header">
@@ -384,14 +341,11 @@ const CRITICALITY_LABEL = { critical: "Critique", medium: "Moyenne", low: "Basse
 
 const listEl = document.getElementById("list");
 const statusText = document.getElementById("statusText");
-const hideAcquittedEl = document.getElementById("hideAcquitted");
 const summaryEl = document.getElementById("summary");
-const filtersRowEl = document.getElementById("filtersRow");
 const searchInputEl = document.getElementById("searchInput");
-const searchModeEl = document.getElementById("searchMode");
 let lastIncidents = [];
 let activeCriticality = null;
-let searchMode = "alerts";
+let currentPage = "alerts";
 let searchQuery = "";
 
 function extractIncidents(data) {
@@ -444,10 +398,9 @@ function renderSummary(incidents) {
 }
 
 function renderAlertList() {
-  const hideAcquitted = hideAcquittedEl.checked;
   const q = searchQuery.toLowerCase();
   const items = lastIncidents.filter((inc) => {
-    if (hideAcquitted && inc.acquitted) return false;
+    if (inc.acquitted) return false;
     if (activeCriticality && inc.criticality !== activeCriticality) return false;
     if (q) {
       const haystack = [inc.title, inc.agentName, inc.nodePath].filter(Boolean).join(" ").toLowerCase();
@@ -490,17 +443,7 @@ summaryEl.addEventListener("click", (e) => {
   renderAlertList();
 });
 
-/* --- Recherche (alertes ou agents) --- */
-
-let agentSearchRequestId = 0;
-
-function runSearch() {
-  if (searchMode === "alerts") {
-    renderAlertList();
-  } else {
-    renderAgentSearch();
-  }
-}
+/* --- Recherche : suit l'onglet actif (Alertes ou Parc) --- */
 
 function agentSearchRowHtml(a) {
   const icon = AGENT_TYPE_ICON[a.agentType] || AGENT_TYPE_ICON[a.agentTrueType] || "🔹";
@@ -516,51 +459,55 @@ function agentSearchRowHtml(a) {
     </div>`;
 }
 
-async function renderAgentSearch() {
+let parcSearchRequestId = 0;
+
+async function renderParcSearch() {
   const q = searchQuery.trim();
   if (q.length < 2) {
-    listEl.innerHTML = '<div class="empty">Tapez au moins 2 caractères pour rechercher un agent</div>';
+    parcSearchList.innerHTML = '<div class="empty">Tapez au moins 2 caractères pour rechercher un agent</div>';
     return;
   }
 
-  const requestId = ++agentSearchRequestId;
-  listEl.innerHTML = '<div class="loading">Recherche…</div>';
+  const requestId = ++parcSearchRequestId;
+  parcSearchList.innerHTML = '<div class="loading">Recherche…</div>';
   try {
     const qs = new URLSearchParams({ agentName: q, maxResults: "30" }).toString();
     const data = await fetchJson(`/api/node/${ROOT_NODE_ID}/pedigree?${qs}`);
-    if (requestId !== agentSearchRequestId) return; // une frappe plus récente a pris le dessus
+    if (requestId !== parcSearchRequestId) return; // une frappe plus récente a pris le dessus
     const agents = data.agents || [];
-    listEl.innerHTML = agents.length
+    parcSearchList.innerHTML = agents.length
       ? agents.map(agentSearchRowHtml).join("")
       : '<div class="empty">Aucun agent trouvé</div>';
   } catch (err) {
-    if (requestId !== agentSearchRequestId) return;
-    listEl.innerHTML = '<div class="error">Erreur de recherche : ' + escapeHtml(err.message) + '</div>';
+    if (requestId !== parcSearchRequestId) return;
+    parcSearchList.innerHTML = '<div class="error">Erreur de recherche : ' + escapeHtml(err.message) + '</div>';
+  }
+}
+
+function updateParcVisibility() {
+  const searching = currentPage === "parc" && searchQuery.trim().length >= 2;
+  parcSearchView.hidden = !searching;
+  if (searching) {
+    parcTreeView.hidden = true;
+    parcAgentView.hidden = true;
+  } else {
+    const r = parseHash();
+    const onAgent = r.view === "agent";
+    parcTreeView.hidden = onAgent;
+    parcAgentView.hidden = !onAgent;
   }
 }
 
 let searchDebounce = null;
 searchInputEl.addEventListener("input", () => {
   searchQuery = searchInputEl.value;
+  if (currentPage === "alerts") {
+    renderAlertList();
+    return;
+  }
+  updateParcVisibility();
   clearTimeout(searchDebounce);
-  searchDebounce = setTimeout(runSearch, searchMode === "agents" ? 300 : 0);
-});
-
-searchModeEl.addEventListener("click", (e) => {
-  const btn = e.target.closest("button[data-mode]");
-  if (!btn) return;
-  searchMode = btn.dataset.mode;
-  searchModeEl.querySelectorAll("button").forEach((b) => b.classList.toggle("active", b === btn));
-  const onAlerts = searchMode === "alerts";
-  summaryEl.hidden = !onAlerts;
-  filtersRowEl.hidden = !onAlerts;
-  searchInputEl.placeholder = onAlerts ? "Rechercher dans les alertes…" : "Rechercher un agent par nom…";
-  runSearch();
-});
-
-listEl.addEventListener("click", (e) => {
-  const agentRow = e.target.closest("[data-agent]");
-  if (agentRow) location.hash = "#/parc/agent/" + encodeURIComponent(agentRow.dataset.agent);
+  searchDebounce = setTimeout(renderParcSearch, 300);
 });
 
 async function loadAlerts() {
@@ -579,7 +526,6 @@ async function loadAlerts() {
 }
 
 document.getElementById("refreshBtn").addEventListener("click", loadAlerts);
-hideAcquittedEl.addEventListener("change", renderAlertList);
 setInterval(loadAlerts, 60000);
 
 /* =========================================================
@@ -591,6 +537,13 @@ const AGENT_TYPE_ICON = { S: "🖥️", W: "💻", E: "📡", O: "☁️", A: "�
 const parcListEl = document.getElementById("parcList");
 const parcTitleEl = document.getElementById("parcTitle");
 const parcBackBtn = document.getElementById("parcBackBtn");
+const parcSearchView = document.getElementById("parcSearchView");
+const parcSearchList = document.getElementById("parcSearchList");
+
+parcSearchList.addEventListener("click", (e) => {
+  const agentRow = e.target.closest("[data-agent]");
+  if (agentRow) location.hash = "#/parc/agent/" + encodeURIComponent(agentRow.dataset.agent);
+});
 
 function agentIcon(n) {
   return AGENT_TYPE_ICON[n.type] || AGENT_TYPE_ICON[n.trueType] || "🔹";
@@ -925,18 +878,26 @@ function parseHash() {
 function router() {
   const r = parseHash();
   const onParc = r.page === "parc";
+  currentPage = onParc ? "parc" : "alerts";
 
   pageAlerts.hidden = onParc;
   pageParc.hidden = !onParc;
   tabAlerts.classList.toggle("active", !onParc);
   tabParc.classList.toggle("active", onParc);
+  searchInputEl.placeholder = onParc ? "Rechercher un agent par nom…" : "Rechercher dans les alertes…";
 
-  if (!onParc) return;
+  if (!onParc) {
+    renderAlertList();
+    return;
+  }
+
+  updateParcVisibility();
+  if (searchQuery.trim().length >= 2) {
+    renderParcSearch();
+    return;
+  }
 
   const onAgent = r.view === "agent";
-  parcTreeView.hidden = onAgent;
-  parcAgentView.hidden = !onAgent;
-
   if (onAgent) loadAgent(r.agentId);
   else loadNode(r.nodeId);
 }
