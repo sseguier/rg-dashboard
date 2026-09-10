@@ -805,10 +805,17 @@ window.addEventListener("hashchange", router);
 loadAlerts();
 router();
 
+// Pas de service worker : ce dashboard n'a pas d'utilité hors-ligne, et un
+// cache periodiquement perime a cause plus de soucis (pages figees apres une
+// mise a jour) qu'il n'apporte de benefice. On se contente de nettoyer une
+// eventuelle installation precedente (versions anterieures de cette app).
 if ("serviceWorker" in navigator) {
-  window.addEventListener("load", () => {
-    navigator.serviceWorker.register("sw.js").catch(console.error);
+  navigator.serviceWorker.getRegistrations().then((regs) => {
+    regs.forEach((r) => r.unregister());
   });
+}
+if (window.caches) {
+  caches.keys().then((keys) => keys.forEach((k) => caches.delete(k)));
 }
 </script>
 </body>
