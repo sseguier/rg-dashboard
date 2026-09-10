@@ -33,6 +33,7 @@
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     padding-bottom: 40px;
   }
+  [hidden] { display: none !important; }
   header {
     position: sticky;
     top: 0;
@@ -43,17 +44,34 @@
   }
   h1 {
     font-size: 1.1rem;
-    margin: 0 0 4px;
+    margin: 0 0 10px;
     display: flex;
     align-items: center;
     gap: 8px;
   }
+  .tabbar { display: flex; gap: 6px; }
+  .tabbar button {
+    flex: 1;
+    background: var(--card);
+    border: 1px solid var(--card-border);
+    color: var(--text-dim);
+    padding: 8px;
+    border-radius: 10px;
+    font-size: 0.82rem;
+  }
+  .tabbar button.active {
+    color: var(--text);
+    border-color: var(--accent);
+    background: rgba(59,130,246,0.15);
+  }
+
   .status-line {
     font-size: 0.78rem;
     color: var(--text-dim);
     display: flex;
     justify-content: space-between;
     align-items: center;
+    padding: 8px 16px 0;
   }
   .refresh-btn {
     background: none;
@@ -138,36 +156,185 @@
     font-size: 0.9rem;
   }
   .error { color: var(--crit-critical); }
+
+  /* --- Parc (navigation nodes/agents) --- */
+  .parc-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 16px;
+  }
+  .back-btn {
+    background: none;
+    border: 1px solid var(--card-border);
+    color: var(--text);
+    border-radius: 8px;
+    padding: 4px 10px;
+    font-size: 0.85rem;
+  }
+  .parc-title { font-weight: 600; font-size: 0.95rem; flex: 1; }
+
+  .row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--card);
+    border: 1px solid var(--card-border);
+    border-radius: 12px;
+    padding: 12px 14px;
+  }
+  .row.offline { opacity: 0.55; }
+  .row-icon { font-size: 1.15rem; }
+  .row-name { flex: 1; font-size: 0.88rem; }
+  .chev { color: var(--text-dim); }
+  .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; flex-shrink: 0; }
+  .dot.alert { background: var(--crit-critical); }
+  .dot.online { background: var(--ok); }
+  .dot.offline-dot { background: var(--text-dim); }
+
+  .agent-card {
+    background: var(--card);
+    border: 1px solid var(--card-border);
+    border-radius: 12px;
+    padding: 14px;
+    margin: 0 16px 14px;
+  }
+  .agent-card h2 { margin: 0 0 4px; font-size: 1.02rem; }
+  .agent-sub { font-size: 0.78rem; color: var(--text-dim); margin-bottom: 10px; }
+  .kv { display: grid; grid-template-columns: auto 1fr; gap: 5px 10px; font-size: 0.82rem; }
+  .kv dt { color: var(--text-dim); margin: 0; }
+  .kv dd { margin: 0; }
+
+  .chart-cat {
+    margin: 16px 16px 6px;
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--text-dim);
+  }
+  .chart-item { margin: 0 16px 8px; }
+  .chart-toggle {
+    width: 100%;
+    text-align: left;
+    background: var(--card);
+    border: 1px solid var(--card-border);
+    color: var(--text);
+    padding: 10px 12px;
+    border-radius: 10px;
+    font-size: 0.85rem;
+  }
+  .chart-panel {
+    background: var(--card);
+    border: 1px solid var(--card-border);
+    border-top: none;
+    border-radius: 0 0 10px 10px;
+    padding: 10px 12px;
+    margin-top: -1px;
+  }
+  .scale-selector { display: flex; gap: 6px; margin-bottom: 8px; }
+  .scale-selector button {
+    flex: 1;
+    padding: 5px;
+    font-size: 0.72rem;
+    border-radius: 8px;
+    border: 1px solid var(--card-border);
+    background: transparent;
+    color: var(--text-dim);
+  }
+  .scale-selector button.active {
+    color: var(--text);
+    border-color: var(--accent);
+    background: rgba(59,130,246,0.15);
+  }
+  .chart-meta { font-size: 0.75rem; color: var(--text-dim); margin-bottom: 4px; }
+  .chart-legend { display: flex; gap: 12px; font-size: 0.72rem; color: var(--text-dim); margin-top: 4px; }
+  .legend-item i { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 4px; }
 </style>
 </head>
 <body>
 
 <header>
   <h1>🛰️ Supervision RG System</h1>
+  <nav class="tabbar">
+    <button id="tabAlerts" class="active">🔔 Alertes</button>
+    <button id="tabParc">🗂️ Parc</button>
+  </nav>
+</header>
+
+<!-- ===== Page Alertes ===== -->
+<div id="page-alerts">
   <div class="status-line">
     <span id="statusText">Chargement…</span>
     <button class="refresh-btn" id="refreshBtn">↻ Actualiser</button>
   </div>
-</header>
 
-<div class="summary" id="summary">
-  <div class="tile critical"><span class="n" id="countCritical">–</span><span class="l">Critique</span></div>
-  <div class="tile high"><span class="n" id="countHigh">–</span><span class="l">Haute</span></div>
-  <div class="tile medium"><span class="n" id="countMedium">–</span><span class="l">Moyenne</span></div>
-  <div class="tile low"><span class="n" id="countLow">–</span><span class="l">Basse</span></div>
+  <div class="summary" id="summary">
+    <div class="tile critical"><span class="n" id="countCritical">–</span><span class="l">Critique</span></div>
+    <div class="tile high"><span class="n" id="countHigh">–</span><span class="l">Haute</span></div>
+    <div class="tile medium"><span class="n" id="countMedium">–</span><span class="l">Moyenne</span></div>
+    <div class="tile low"><span class="n" id="countLow">–</span><span class="l">Basse</span></div>
+  </div>
+
+  <div class="filters">
+    <label><input type="checkbox" id="hideAcquitted" checked> Masquer les alertes acquittées</label>
+  </div>
+
+  <div class="list" id="list">
+    <div class="loading">Chargement des données…</div>
+  </div>
 </div>
 
-<div class="filters">
-  <label><input type="checkbox" id="hideAcquitted" checked> Masquer les alertes acquittées</label>
-</div>
+<!-- ===== Page Parc (navigation + fiche agent) ===== -->
+<div id="page-parc" hidden>
 
-<div class="list" id="list">
-  <div class="loading">Chargement des données…</div>
+  <div id="parcTreeView">
+    <div class="parc-header">
+      <button class="back-btn" id="parcBackBtn" hidden>‹ Retour</button>
+      <span class="parc-title" id="parcTitle">Parc</span>
+    </div>
+    <div class="list" id="parcList">
+      <div class="loading">Chargement…</div>
+    </div>
+  </div>
+
+  <div id="parcAgentView" hidden>
+    <div class="parc-header">
+      <button class="back-btn" id="agentBackBtn">‹ Retour</button>
+      <span class="parc-title" id="agentTitle">Agent</span>
+    </div>
+    <div id="agentBody">
+      <div class="loading">Chargement…</div>
+    </div>
+  </div>
+
 </div>
 
 <script>
 // ⚠️ Remplacez cette URL par celle de VOTRE Cloudflare Worker une fois déployé.
 const WORKER_URL = "https://rg-dashboard-relay.s-seguier.workers.dev";
+// Identifiant du node racine de votre compte (vu dans /api/me -> nodeId).
+const ROOT_NODE_ID = "97531";
+
+function escapeHtml(str) {
+  return String(str)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+}
+
+async function fetchJson(path) {
+  const res = await fetch(WORKER_URL + path, { cache: "no-store" });
+  if (!res.ok) throw new Error("HTTP " + res.status);
+  const payload = await res.json();
+  if (payload?.result?.code && payload.result.code !== 200) {
+    throw new Error(payload.result.message || "Erreur API");
+  }
+  return payload.data || {};
+}
+
+/* =========================================================
+   Page Alertes
+   ========================================================= */
 
 const CRITICALITY_ORDER = { critical: 0, high: 1, medium: 2, low: 3 };
 const CRITICALITY_LABEL = { critical: "Critique", high: "Haute", medium: "Moyenne", low: "Basse" };
@@ -227,7 +394,7 @@ function renderSummary(incidents) {
   document.getElementById("countLow").textContent = counts.low;
 }
 
-function renderList() {
+function renderAlertList() {
   const hideAcquitted = hideAcquittedEl.checked;
   const items = lastIncidents.filter((inc) => !hideAcquitted || !inc.acquitted);
 
@@ -253,27 +420,14 @@ function renderList() {
   }).join("");
 }
 
-function escapeHtml(str) {
-  return String(str)
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;");
-}
-
-async function loadData() {
+async function loadAlerts() {
   statusText.textContent = "Actualisation…";
   try {
-    const res = await fetch(WORKER_URL, { cache: "no-store" });
-    if (!res.ok) throw new Error("HTTP " + res.status);
-    const payload = await res.json();
-    if (payload?.result?.code && payload.result.code !== 200) {
-      throw new Error(payload.result.message || "Erreur API");
-    }
-    lastIncidents = extractIncidents(payload.data || {});
+    const data = await fetchJson(`/api/sum/${ROOT_NODE_ID}/all`);
+    lastIncidents = extractIncidents(data);
     renderSummary(lastIncidents);
-    renderList();
-    const now = new Date();
-    statusText.textContent = "Mis à jour à " + now.toLocaleTimeString("fr-FR");
+    renderAlertList();
+    statusText.textContent = "Mis à jour à " + new Date().toLocaleTimeString("fr-FR");
   } catch (err) {
     listEl.innerHTML = '<div class="error">Erreur de chargement : ' + escapeHtml(err.message) + '</div>';
     statusText.textContent = "Échec de la dernière actualisation";
@@ -281,11 +435,372 @@ async function loadData() {
   }
 }
 
-document.getElementById("refreshBtn").addEventListener("click", loadData);
-hideAcquittedEl.addEventListener("change", renderList);
+document.getElementById("refreshBtn").addEventListener("click", loadAlerts);
+hideAcquittedEl.addEventListener("change", renderAlertList);
+setInterval(loadAlerts, 60000);
 
-loadData();
-setInterval(loadData, 60000); // rafraîchissement automatique toutes les 60s
+/* =========================================================
+   Page Parc : navigation nodes/agents
+   ========================================================= */
+
+const AGENT_TYPE_ICON = { S: "🖥️", W: "💻", E: "📡", O: "☁️", A: "🧩", G: "💾" };
+
+const parcListEl = document.getElementById("parcList");
+const parcTitleEl = document.getElementById("parcTitle");
+const parcBackBtn = document.getElementById("parcBackBtn");
+
+function agentIcon(n) {
+  return AGENT_TYPE_ICON[n.type] || AGENT_TYPE_ICON[n.trueType] || "🔹";
+}
+
+function nodeRowHtml(id, n) {
+  const icon = n.isCustomerNode ? "🏢" : "📁";
+  return `
+    <div class="row folder" data-node="${escapeHtml(id)}">
+      <span class="row-icon">${icon}</span>
+      <span class="row-name">${escapeHtml(n.name)}</span>
+      ${n.hasAlerts ? '<span class="dot alert"></span>' : ""}
+      <span class="chev">›</span>
+    </div>`;
+}
+
+function agentRowHtml(id, n) {
+  const offline = n.isOnline === false;
+  return `
+    <div class="row agent ${offline ? "offline" : ""}" data-agent="${escapeHtml(id)}">
+      <span class="row-icon">${agentIcon(n)}</span>
+      <span class="row-name">${escapeHtml(n.name)}</span>
+      ${n.hasAlerts ? '<span class="dot alert"></span>' : ""}
+      <span class="dot ${n.isOnline ? "online" : "offline-dot"}"></span>
+    </div>`;
+}
+
+async function loadNode(nodeId) {
+  parcTitleEl.textContent = "Parc";
+  parcBackBtn.hidden = String(nodeId) === String(ROOT_NODE_ID);
+  parcListEl.innerHTML = '<div class="loading">Chargement…</div>';
+  try {
+    const data = await fetchJson(`/api/node/${encodeURIComponent(nodeId)}/children`);
+    const node = data[nodeId] || Object.values(data)[0];
+    if (!node) throw new Error("Node introuvable");
+    parcTitleEl.textContent = node.name || "Parc";
+
+    const children = Object.entries(node.children || {});
+    const folders = children.filter(([, c]) => c.nodeType === "node").sort((a, b) => a[1].name.localeCompare(b[1].name));
+    const agents = children.filter(([, c]) => c.nodeType === "agent").sort((a, b) => a[1].name.localeCompare(b[1].name));
+
+    if (folders.length === 0 && agents.length === 0) {
+      parcListEl.innerHTML = '<div class="empty">Ce dossier est vide</div>';
+      return;
+    }
+
+    parcListEl.innerHTML =
+      folders.map(([id, c]) => nodeRowHtml(id, c)).join("") +
+      agents.map(([id, c]) => agentRowHtml(id, c)).join("");
+  } catch (err) {
+    parcListEl.innerHTML = '<div class="error">Erreur de chargement : ' + escapeHtml(err.message) + '</div>';
+    console.error(err);
+  }
+}
+
+parcListEl.addEventListener("click", (e) => {
+  const folderRow = e.target.closest("[data-node]");
+  if (folderRow) {
+    location.hash = "#/parc/node/" + encodeURIComponent(folderRow.dataset.node);
+    return;
+  }
+  const agentRow = e.target.closest("[data-agent]");
+  if (agentRow) {
+    location.hash = "#/parc/agent/" + encodeURIComponent(agentRow.dataset.agent);
+  }
+});
+
+parcBackBtn.addEventListener("click", () => history.back());
+
+/* =========================================================
+   Page Parc : fiche agent (pedigree + courbes)
+   ========================================================= */
+
+const agentTitleEl = document.getElementById("agentTitle");
+const agentBodyEl = document.getElementById("agentBody");
+document.getElementById("agentBackBtn").addEventListener("click", () => history.back());
+
+const SCALE_LABEL = { day: "24 h", week: "7 jours", month: "30 jours", year: "12 mois" };
+
+function formatDate(iso) {
+  if (!iso) return "–";
+  try { return new Date(iso).toLocaleString("fr-FR"); } catch { return iso; }
+}
+
+function backupSummary(backup) {
+  const status = backup?.status || {};
+  const issues = Object.entries(status)
+    .filter(([, s]) => s && s.isRequired && s.mainState !== "INSTALLED")
+    .map(([k]) => k);
+  if (issues.length === 0) return "OK";
+  return "À vérifier (" + issues.join(", ") + ")";
+}
+
+function renderAgentPedigree(agentId, ped) {
+  const p = ped.pedigree || {};
+  const uptime = ped.uptime || {};
+  agentTitleEl.textContent = ped.name || agentId;
+
+  return `
+    <div class="agent-card">
+      <h2>${escapeHtml(ped.name || agentId)}</h2>
+      <div class="agent-sub">
+        <span class="dot ${ped.isOnline ? "online" : "offline-dot"}"></span>
+        ${ped.isOnline ? "En ligne" : "Hors ligne"}
+        ${ped.isInMaintenance ? " · en maintenance" : ""}
+      </div>
+      <dl class="kv">
+        <dt>Système</dt><dd>${escapeHtml(p.OSName || "–")}</dd>
+        <dt>CPU</dt><dd>${escapeHtml(p.CpuInfos || "–")}</dd>
+        <dt>Mémoire</dt><dd>${escapeHtml(p.MemoryInfos || "–")}</dd>
+        <dt>Disque</dt><dd>${escapeHtml(p.DiskInfos || "–")}</dd>
+        <dt>IP privée</dt><dd>${escapeHtml(ped.privateIp || "–")}</dd>
+        <dt>IP publique</dt><dd>${escapeHtml(ped.publicIp || "–")}</dd>
+        <dt>Fabricant</dt><dd>${escapeHtml(p.Manufacturer || "–")} ${escapeHtml(p.Model || "")}</dd>
+        <dt>Dernier démarrage</dt><dd>${formatDate(p.LastBootTime)}</dd>
+        <dt>Disponibilité (7j)</dt><dd>${uptime.week ?? "–"} %</dd>
+        <dt>Windows Update</dt><dd>${escapeHtml(p.WindowsUpdateStatus || "–")}</dd>
+        <dt>Sécurité</dt><dd>${ped.security?.status === 0 ? "OK" : "À vérifier"}</dd>
+        <dt>Sauvegarde</dt><dd>${escapeHtml(backupSummary(ped.backup))}</dd>
+      </dl>
+    </div>
+  `;
+}
+
+function collectChartables(objects) {
+  const categories = [];
+  for (const cat of Object.values(objects || {})) {
+    const items = [];
+    for (const obj of Object.values(cat.objects || {})) {
+      if (!obj.charts) continue;
+      for (const [chartId, chart] of Object.entries(obj.charts)) {
+        items.push({
+          objId: Object.keys(cat.objects).find((k) => cat.objects[k] === obj),
+          chartId,
+          chartName: chart.name,
+          counters: chart.counters,
+          objName: obj.name,
+          isMono: cat.isMonoObject,
+        });
+      }
+    }
+    if (items.length) categories.push({ name: cat.name, items });
+  }
+  categories.sort((a, b) => a.name.localeCompare(b.name));
+  return categories;
+}
+
+function chartItemHtml(item) {
+  const label = item.isMono ? item.chartName : `${item.chartName} — ${item.objName}`;
+  const uid = item.objId + "_" + item.chartId;
+  return `
+    <div class="chart-item">
+      <button class="chart-toggle" data-uid="${uid}" data-obj="${item.objId}" data-chart="${item.chartId}" data-counters="${escapeHtml(item.counters)}">
+        📈 ${escapeHtml(label)}
+      </button>
+      <div class="chart-panel" id="panel-${uid}" hidden></div>
+    </div>`;
+}
+
+async function loadAgent(agentId) {
+  agentTitleEl.textContent = "Agent";
+  agentBodyEl.innerHTML = '<div class="loading">Chargement…</div>';
+  try {
+    const [ped, objects] = await Promise.all([
+      fetchJson(`/api/agent/${encodeURIComponent(agentId)}`),
+      fetchJson(`/api/agent/${encodeURIComponent(agentId)}/objects`).catch(() => ({})),
+    ]);
+
+    const categories = collectChartables(objects);
+    const chartsHtml = categories.length
+      ? categories.map((cat) => `
+          <div class="chart-cat">${escapeHtml(cat.name)}</div>
+          ${cat.items.map(chartItemHtml).join("")}
+        `).join("")
+      : '<div class="empty">Aucune courbe disponible pour cet agent</div>';
+
+    agentBodyEl.innerHTML = renderAgentPedigree(agentId, ped) + chartsHtml;
+  } catch (err) {
+    agentBodyEl.innerHTML = '<div class="error">Erreur de chargement : ' + escapeHtml(err.message) + '</div>';
+    console.error(err);
+  }
+}
+
+agentBodyEl.addEventListener("click", (e) => {
+  const btn = e.target.closest(".chart-toggle");
+  if (!btn) return;
+  const panel = document.getElementById("panel-" + btn.dataset.uid);
+  if (!panel.hidden) { panel.hidden = true; return; }
+  panel.hidden = false;
+  loadChart(panel, btn.dataset.obj, btn.dataset.chart, btn.dataset.counters, "week");
+});
+
+function scaleSelectorHtml(scale) {
+  return `
+    <div class="scale-selector">
+      ${Object.keys(SCALE_LABEL).map((s) => `<button data-scale="${s}" class="${s === scale ? "active" : ""}">${SCALE_LABEL[s]}</button>`).join("")}
+    </div>
+    <div class="chart-host"><div class="loading">Chargement…</div></div>
+  `;
+}
+
+async function loadChart(panel, objId, chartId, counters, scale) {
+  panel.innerHTML = scaleSelectorHtml(scale);
+  panel.querySelectorAll(".scale-selector button").forEach((b) => {
+    b.addEventListener("click", () => loadChart(panel, objId, chartId, counters, b.dataset.scale));
+  });
+
+  const host = panel.querySelector(".chart-host");
+  try {
+    const data = await fetchJson(`/api/chart/data/${objId}/${chartId}/${scale}`);
+    const interpreted = interpretChartData(counters, data);
+    host.innerHTML = buildLineChartSvg(interpreted, scale);
+  } catch (err) {
+    host.innerHTML = '<div class="error">Erreur : ' + escapeHtml(err.message) + '</div>';
+  }
+}
+
+function interpretChartData(counters, data) {
+  const keys = counters.split(" ").filter(Boolean);
+
+  if (keys.length === 2) {
+    const totalKey = keys.find((k) => /Size$/i.test(k));
+    const usedKey = keys.find((k) => k !== totalKey);
+    if (totalKey && usedKey && Array.isArray(data[totalKey]) && Array.isArray(data[usedKey])) {
+      const values = data[usedKey].map((v, i) => {
+        const total = data[totalKey][i];
+        return total ? (v / total) * 100 : 0;
+      });
+      return { unit: "%", series: [{ name: "Utilisation", values }] };
+    }
+  }
+
+  const series = keys.filter((k) => Array.isArray(data[k])).map((k) => ({ name: k, values: data[k] }));
+  if (series.length === 0) return { unit: "", series: [] };
+
+  const flat = series.flatMap((s) => s.values).filter(Number.isFinite);
+  const looksLikePercent = series.length === 1 && flat.length > 0 && Math.max(...flat) <= 100.0001;
+  return { unit: looksLikePercent ? "%" : "", series };
+}
+
+function clampNum(v, min, max) {
+  if (!Number.isFinite(v)) return min;
+  return Math.min(max, Math.max(min, v));
+}
+
+function formatBytes(n) {
+  if (!Number.isFinite(n)) return "–";
+  if (Math.abs(n) < 1024) return n.toFixed(0);
+  const units = ["Ko", "Mo", "Go", "To"];
+  let v = n, i = -1;
+  do { v /= 1024; i++; } while (Math.abs(v) >= 1024 && i < units.length - 1);
+  return v.toFixed(1) + " " + units[i];
+}
+
+function formatValue(v, unit) {
+  if (!Number.isFinite(v)) return "–";
+  return unit === "%" ? v.toFixed(1) + " %" : formatBytes(v);
+}
+
+function buildLineChartSvg(interpreted, scale) {
+  const { unit, series } = interpreted;
+  if (!series.length || series.every((s) => s.values.length === 0)) {
+    return '<div class="empty">Pas de données sur cette période</div>';
+  }
+
+  const W = 300, H = 140, padL = 38, padR = 10, padT = 10, padB = 10;
+  const flat = series.flatMap((s) => s.values).filter(Number.isFinite);
+  let min = Math.min(...flat);
+  let max = Math.max(...flat);
+
+  if (unit === "%") { min = 0; max = 100; }
+  else {
+    if (min > 0) min = 0;
+    max = max === min ? min + 1 : max + (max - min) * 0.1;
+  }
+
+  const colors = ["#3b82f6", "#22c55e", "#f97316"];
+
+  const paths = series.map((s, idx) => {
+    const n = s.values.length;
+    const points = s.values.map((v, i) => {
+      const x = padL + (n > 1 ? i / (n - 1) : 0) * (W - padL - padR);
+      const y = padT + (1 - (clampNum(v, min, max) - min) / ((max - min) || 1)) * (H - padT - padB);
+      return x.toFixed(1) + "," + y.toFixed(1);
+    }).join(" ");
+    return `<polyline points="${points}" fill="none" stroke="${colors[idx % colors.length]}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" />`;
+  }).join("");
+
+  const gridLines = [0, 0.5, 1].map((f) => {
+    const y = padT + f * (H - padT - padB);
+    const val = max - f * (max - min);
+    return `<line x1="${padL}" y1="${y.toFixed(1)}" x2="${W - padR}" y2="${y.toFixed(1)}" stroke="#232f45" stroke-width="1" />
+      <text x="${(padL - 4).toFixed(1)}" y="${(y + 3).toFixed(1)}" text-anchor="end" font-size="9" fill="#8ea0bd">${formatValue(val, unit)}</text>`;
+  }).join("");
+
+  const legend = series.length > 1
+    ? `<div class="chart-legend">${series.map((s, i) => `<span class="legend-item"><i style="background:${colors[i % colors.length]}"></i>${escapeHtml(s.name)}</span>`).join("")}</div>`
+    : "";
+
+  const latest = series[0].values[series[0].values.length - 1];
+
+  return `
+    <div class="chart-meta">Dernière valeur : <strong>${formatValue(latest, unit)}</strong> · période : ${SCALE_LABEL[scale] || scale}</div>
+    <svg viewBox="0 0 ${W} ${H}" width="100%" height="${H}">${gridLines}${paths}</svg>
+    ${legend}
+  `;
+}
+
+/* =========================================================
+   Routeur (hash-based)
+   ========================================================= */
+
+const pageAlerts = document.getElementById("page-alerts");
+const pageParc = document.getElementById("page-parc");
+const parcTreeView = document.getElementById("parcTreeView");
+const parcAgentView = document.getElementById("parcAgentView");
+const tabAlerts = document.getElementById("tabAlerts");
+const tabParc = document.getElementById("tabParc");
+
+function parseHash() {
+  const h = location.hash;
+  let m;
+  if ((m = h.match(/^#\/parc\/agent\/(.+)$/))) return { page: "parc", view: "agent", agentId: decodeURIComponent(m[1]) };
+  if ((m = h.match(/^#\/parc\/node\/(.+)$/))) return { page: "parc", view: "tree", nodeId: decodeURIComponent(m[1]) };
+  if (h === "#/parc") return { page: "parc", view: "tree", nodeId: ROOT_NODE_ID };
+  return { page: "alerts" };
+}
+
+function router() {
+  const r = parseHash();
+  const onParc = r.page === "parc";
+
+  pageAlerts.hidden = onParc;
+  pageParc.hidden = !onParc;
+  tabAlerts.classList.toggle("active", !onParc);
+  tabParc.classList.toggle("active", onParc);
+
+  if (!onParc) return;
+
+  const onAgent = r.view === "agent";
+  parcTreeView.hidden = onAgent;
+  parcAgentView.hidden = !onAgent;
+
+  if (onAgent) loadAgent(r.agentId);
+  else loadNode(r.nodeId);
+}
+
+tabAlerts.addEventListener("click", () => { location.hash = "#/alerts"; });
+tabParc.addEventListener("click", () => { location.hash = "#/parc"; });
+window.addEventListener("hashchange", router);
+
+loadAlerts();
+router();
 
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {
