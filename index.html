@@ -598,9 +598,12 @@ function collectChartables(objects) {
 function chartItemHtml(item) {
   const label = item.isMono ? item.chartName : `${item.chartName} — ${item.objName}`;
   const uid = item.objId + "_" + item.chartId;
+  // Selon les agents, l'API renvoie "counters" soit en chaîne ("A B"), soit en tableau (["A","B"]).
+  // On normalise ici en chaîne espacée pour que l'attribut data- et interpretChartData restent simples.
+  const countersStr = Array.isArray(item.counters) ? item.counters.join(" ") : item.counters;
   return `
     <div class="chart-item">
-      <button class="chart-toggle" data-uid="${uid}" data-obj="${item.objId}" data-chart="${item.chartId}" data-counters="${escapeHtml(item.counters)}">
+      <button class="chart-toggle" data-uid="${uid}" data-obj="${item.objId}" data-chart="${item.chartId}" data-counters="${escapeHtml(countersStr)}">
         📈 ${escapeHtml(label)}
       </button>
       <div class="chart-panel" id="panel-${uid}" hidden></div>
