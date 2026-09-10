@@ -1,4 +1,4 @@
-const CACHE_NAME = "rg-dashboard-v1";
+const CACHE_NAME = "rg-dashboard-v2";
 const APP_SHELL = [
   "./",
   "./index.html",
@@ -31,7 +31,16 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
+  // Réseau d'abord pour le shell de l'app : une mise à jour du site doit être
+  // visible dès la prochaine ouverture, sans dépendre d'un changement de nom
+  // de cache. Le cache ne sert que de secours hors-ligne.
   event.respondWith(
-    caches.match(event.request).then((cached) => cached || fetch(event.request))
+    fetch(event.request)
+      .then((response) => {
+        const copy = response.clone();
+        caches.open(CACHE_NAME).then((cache) => cache.put(event.request, copy));
+        return response;
+      })
+      .catch(() => caches.match(event.request))
   );
 });
