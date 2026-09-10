@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Supervision RG System</title>
+<meta name="theme-color" content="#1d4ed8">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="RG Dashboard">
+<style>
+  :root {
+    color-scheme: light dark;
+    --bg: #0b1220;
+    --card: #131c2e;
+    --card-border: #232f45;
+    --text: #e7ecf5;
+    --text-dim: #8ea0bd;
+    --crit-critical: #ef4444;
+    --crit-high: #f97316;
+    --crit-medium: #eab308;
+    --crit-low: #64748b;
+    --accent: #3b82f6;
+    --ok: #22c55e;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    padding-bottom: 40px;
+  }
+  header {
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    background: var(--bg);
+    padding: 16px 16px 8px;
+    border-bottom: 1px solid var(--card-border);
+  }
+  h1 {
+    font-size: 1.1rem;
+    margin: 0 0 4px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .status-line {
+    font-size: 0.78rem;
+    color: var(--text-dim);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .refresh-btn {
+    background: none;
+    border: 1px solid var(--card-border);
+    color: var(--text);
+    border-radius: 8px;
+    padding: 4px 10px;
+    font-size: 0.78rem;
+  }
+  .summary {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+    padding: 12px 16px;
+  }
+  .summary .tile {
+    background: var(--card);
+    border: 1px solid var(--card-border);
+    border-radius: 12px;
+    padding: 10px 6px;
+    text-align: center;
+  }
+  .summary .tile .n { font-size: 1.4rem; font-weight: 700; display: block; }
+  .summary .tile .l { font-size: 0.68rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.03em; }
+  .summary .tile.critical .n { color: var(--crit-critical); }
+  .summary .tile.high .n { color: var(--crit-high); }
+  .summary .tile.medium .n { color: var(--crit-medium); }
+  .summary .tile.low .n { color: var(--crit-low); }
+
+  .filters {
+    display: flex;
+    gap: 8px;
+    padding: 0 16px 12px;
+    overflow-x: auto;
+  }
+  .filters label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--card);
+    border: 1px solid var(--card-border);
+    border-radius: 999px;
+    padding: 6px 12px;
+    font-size: 0.8rem;
+    white-space: nowrap;
+  }
+
+  .list { padding: 0 16px; display: flex; flex-direction: column; gap: 10px; }
+  .incident {
+    background: var(--card);
+    border: 1px solid var(--card-border);
+    border-left: 4px solid var(--crit-medium);
+    border-radius: 12px;
+    padding: 12px 14px;
+  }
+  .incident.critical { border-left-color: var(--crit-critical); }
+  .incident.high { border-left-color: var(--crit-high); }
+  .incident.medium { border-left-color: var(--crit-medium); }
+  .incident.low { border-left-color: var(--crit-low); }
+  .incident.acquitted { opacity: 0.45; }
+
+  .incident .title { font-size: 0.92rem; font-weight: 600; margin-bottom: 4px; }
+  .incident .meta { font-size: 0.75rem; color: var(--text-dim); display: flex; flex-wrap: wrap; gap: 6px 10px; }
+  .badge {
+    display: inline-block;
+    padding: 1px 8px;
+    border-radius: 999px;
+    font-size: 0.68rem;
+    font-weight: 600;
+    text-transform: uppercase;
+  }
+  .badge.critical { background: rgba(239,68,68,0.15); color: var(--crit-critical); }
+  .badge.high { background: rgba(249,115,22,0.15); color: var(--crit-high); }
+  .badge.medium { background: rgba(234,179,8,0.15); color: var(--crit-medium); }
+  .badge.low { background: rgba(100,116,139,0.15); color: var(--crit-low); }
+  .badge.offline { background: rgba(148,163,184,0.15); color: var(--text-dim); }
+
+  .empty, .error, .loading {
+    text-align: center;
+    color: var(--text-dim);
+    padding: 40px 20px;
+    font-size: 0.9rem;
+  }
+  .error { color: var(--crit-critical); }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🛰️ Supervision RG System</h1>
+  <div class="status-line">
+    <span id="statusText">Chargement…</span>
+    <button class="refresh-btn" id="refreshBtn">↻ Actualiser</button>
+  </div>
+</header>
+
+<div class="summary" id="summary">
+  <div class="tile critical"><span class="n" id="countCritical">–</span><span class="l">Critique</span></div>
+  <div class="tile high"><span class="n" id="countHigh">–</span><span class="l">Haute</span></div>
+  <div class="tile medium"><span class="n" id="countMedium">–</span><span class="l">Moyenne</span></div>
+  <div class="tile low"><span class="n" id="countLow">–</span><span class="l">Basse</span></div>
+</div>
+
+<div class="filters">
+  <label><input type="checkbox" id="hideAcquitted" checked> Masquer les alertes acquittées</label>
+</div>
+
+<div class="list" id="list">
+  <div class="loading">Chargement des données…</div>
+</div>
+
+<script>
+// ⚠️ Remplacez cette URL par celle de VOTRE Cloudflare Worker une fois déployé.
+const WORKER_URL = "https://VOTRE-WORKER.VOTRE-SOUS-DOMAINE.workers.dev";
+
+const CRITICALITY_ORDER = { critical: 0, high: 1, medium: 2, low: 3 };
+const CRITICALITY_LABEL = { critical: "Critique", high: "Haute", medium: "Moyenne", low: "Basse" };
+
+const listEl = document.getElementById("list");
+const statusText = document.getElementById("statusText");
+const hideAcquittedEl = document.getElementById("hideAcquitted");
+let lastIncidents = [];
+
+function extractIncidents(data) {
+  const incidents = [];
+  const sections = [
+    { key: "servers", groupKey: "plugins" },
+    { key: "workstations", groupKey: "plugins" },
+    { key: "devices", groupKey: "protocols" },
+  ];
+
+  for (const { key, groupKey } of sections) {
+    for (const entry of data[key] || []) {
+      const agent = entry.agent || {};
+      const groups = entry[groupKey] || {};
+      for (const [category, items] of Object.entries(groups)) {
+        for (const item of items || []) {
+          incidents.push({
+            ...item,
+            category,
+            agentName: agent.name || agent.id || "Agent inconnu",
+            agentId: agent.id,
+            nodePath: Array.isArray(agent.nodePath) ? agent.nodePath.join(" / ") : "",
+            isOnline: agent.isOnline,
+          });
+        }
+      }
+    }
+  }
+
+  incidents.sort((a, b) => {
+    const ca = CRITICALITY_ORDER[a.criticality] ?? 9;
+    const cb = CRITICALITY_ORDER[b.criticality] ?? 9;
+    if (ca !== cb) return ca - cb;
+    if (a.acquitted !== b.acquitted) return a.acquitted ? 1 : -1;
+    return 0;
+  });
+
+  return incidents;
+}
+
+function renderSummary(incidents) {
+  const counts = { critical: 0, high: 0, medium: 0, low: 0 };
+  for (const inc of incidents) {
+    if (inc.acquitted) continue;
+    if (counts[inc.criticality] !== undefined) counts[inc.criticality]++;
+  }
+  document.getElementById("countCritical").textContent = counts.critical;
+  document.getElementById("countHigh").textContent = counts.high;
+  document.getElementById("countMedium").textContent = counts.medium;
+  document.getElementById("countLow").textContent = counts.low;
+}
+
+function renderList() {
+  const hideAcquitted = hideAcquittedEl.checked;
+  const items = lastIncidents.filter((inc) => !hideAcquitted || !inc.acquitted);
+
+  if (items.length === 0) {
+    listEl.innerHTML = '<div class="empty">✅ Aucune alerte à afficher</div>';
+    return;
+  }
+
+  listEl.innerHTML = items.map((inc) => {
+    const crit = CRITICALITY_ORDER[inc.criticality] !== undefined ? inc.criticality : "low";
+    const label = CRITICALITY_LABEL[crit] || inc.criticality || "?";
+    return `
+      <div class="incident ${crit} ${inc.acquitted ? "acquitted" : ""}">
+        <div class="title">${escapeHtml(inc.title || "Incident sans titre")}</div>
+        <div class="meta">
+          <span class="badge ${crit}">${label}</span>
+          ${inc.isOnline === false ? '<span class="badge offline">Hors ligne</span>' : ""}
+          <span>${escapeHtml(inc.agentName)}</span>
+          ${inc.acquitted ? "<span>· acquittée</span>" : ""}
+        </div>
+      </div>
+    `;
+  }).join("");
+}
+
+function escapeHtml(str) {
+  return String(str)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+}
+
+async function loadData() {
+  statusText.textContent = "Actualisation…";
+  try {
+    const res = await fetch(WORKER_URL, { cache: "no-store" });
+    if (!res.ok) throw new Error("HTTP " + res.status);
+    const payload = await res.json();
+    if (payload?.result?.code && payload.result.code !== 200) {
+      throw new Error(payload.result.message || "Erreur API");
+    }
+    lastIncidents = extractIncidents(payload.data || {});
+    renderSummary(lastIncidents);
+    renderList();
+    const now = new Date();
+    statusText.textContent = "Mis à jour à " + now.toLocaleTimeString("fr-FR");
+  } catch (err) {
+    listEl.innerHTML = '<div class="error">Erreur de chargement : ' + escapeHtml(err.message) + '</div>';
+    statusText.textContent = "Échec de la dernière actualisation";
+    console.error(err);
+  }
+}
+
+document.getElementById("refreshBtn").addEventListener("click", loadData);
+hideAcquittedEl.addEventListener("change", renderList);
+
+loadData();
+setInterval(loadData, 60000); // rafraîchissement automatique toutes les 60s
+
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("sw.js").catch(console.error);
+  });
+}
+</script>
+</body>
+</html>
