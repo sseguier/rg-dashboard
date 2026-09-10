@@ -462,24 +462,53 @@ function agentSearchRowHtml(a) {
     </div>`;
 }
 
+// On charge une seule fois tout le pedigree du compte (un seul appel, via
+// maxResults élevé) puis on filtre en mémoire sur de vrais sous-chaînes,
+// dans un large jeu de champs. Ça évite d'interroger l'API à chaque frappe
+// (risque de dépasser la limite de requêtes) et garantit une correspondance
+// fiable sur le nom complet plutôt que de dépendre du filtre serveur.
+let allAgentsCache = null;
+let allAgentsPromise = null;
+
+async function loadAllAgents() {
+  if (allAgentsCache) return allAgentsCache;
+  if (!allAgentsPromise) {
+    allAgentsPromise = fetchJson(`/api/node/${ROOT_NODE_ID}/pedigree?maxResults=1000`)
+      .then((data) => { allAgentsCache = data.agents || []; return allAgentsCache; })
+      .catch((err) => { allAgentsPromise = null; throw err; });
+  }
+  return allAgentsPromise;
+}
+
+function agentHaystack(a) {
+  const fields = [
+    a.agentName, a.csName, a.dnsHostname, a.privateIp, a.publicIp, a.configuredIp,
+    a.osName, a.osVersion, a.comment, a.manufacturer, a.model, a.serialNumber,
+    a.hardwareSerialNumber, a.installedBy, a.lastLoggedOnUser, a.domain, a.nodeName,
+    a.cpuInfos, a.memoryInfos, a.diskInfos, a.networkInfos, a.agentVersion,
+    Array.isArray(a.agentPath) ? a.agentPath.join(" ") : "",
+    Array.isArray(a.tags) ? a.tags.join(" ") : "",
+  ];
+  return fields.filter(Boolean).join("  ").toLowerCase();
+}
+
 let parcSearchRequestId = 0;
 
 async function renderParcSearch() {
-  const q = searchQuery.trim();
+  const q = searchQuery.trim().toLowerCase();
   if (q.length < 2) {
-    parcSearchList.innerHTML = '<div class="empty">Tapez au moins 2 caractères pour rechercher un agent</div>';
+    parcSearchList.innerHTML = '<div class="empty">Tapez au moins 2 caractères pour rechercher</div>';
     return;
   }
 
   const requestId = ++parcSearchRequestId;
   parcSearchList.innerHTML = '<div class="loading">Recherche…</div>';
   try {
-    const qs = new URLSearchParams({ agentName: q, maxResults: "30" }).toString();
-    const data = await fetchJson(`/api/node/${ROOT_NODE_ID}/pedigree?${qs}`);
+    const agents = await loadAllAgents();
     if (requestId !== parcSearchRequestId) return; // une frappe plus récente a pris le dessus
-    const agents = data.agents || [];
-    parcSearchList.innerHTML = agents.length
-      ? agents.map(agentSearchRowHtml).join("")
+    const matches = agents.filter((a) => agentHaystack(a).includes(q)).slice(0, 30);
+    parcSearchList.innerHTML = matches.length
+      ? matches.map(agentSearchRowHtml).join("")
       : '<div class="empty">Aucun agent trouvé</div>';
   } catch (err) {
     if (requestId !== parcSearchRequestId) return;
@@ -510,7 +539,7 @@ searchInputEl.addEventListener("input", () => {
   }
   updateParcVisibility();
   clearTimeout(searchDebounce);
-  searchDebounce = setTimeout(renderParcSearch, 300);
+  searchDebounce = setTimeout(renderParcSearch, 120);
 });
 
 async function loadAlerts() {
@@ -887,7 +916,7 @@ function router() {
   pageParc.hidden = !onParc;
   tabAlerts.classList.toggle("active", !onParc);
   tabParc.classList.toggle("active", onParc);
-  searchInputEl.placeholder = onParc ? "Rechercher un agent par nom…" : "Rechercher dans les alertes…";
+  searchInputEl.placeholder = onParc ? "Rechercher un agent (nom, IP, OS, série…)" : "Rechercher dans les alertes…";
 
   if (!onParc) {
     renderAlertList();
