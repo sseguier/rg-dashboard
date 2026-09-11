@@ -256,7 +256,7 @@
 <body>
 
 <header>
-  <h1 id="homeLink">🛰️ RG System Suite <span class="app-version">v0.25</span></h1>
+  <h1 id="homeLink">🛰️ RG System Suite <span class="app-version">v0.26</span></h1>
   <div class="search-bar">
     <input type="search" id="searchInput" placeholder="Rechercher dans les alertes…" autocomplete="off">
   </div>
@@ -714,7 +714,7 @@ function domainSummary(p) {
 // device SNMP, connecteur O365) : la plupart des champs seraient vides.
 const NO_PEDIGREE_TYPES = new Set(["D", "E", "O"]);
 
-function renderAgentPedigree(agentId, ped) {
+function renderAgentPedigree(agentId, ped, orgName) {
   const p = ped.pedigree || {};
   const uptime = ped.uptime || {};
   agentTitleEl.textContent = ped.name || agentId;
@@ -725,7 +725,8 @@ function renderAgentPedigree(agentId, ped) {
         <span class="dot ${ped.isOnline ? "online" : "offline-dot"}"></span>
         ${ped.isOnline ? "En ligne" : "Hors ligne"}
         ${ped.isInMaintenance ? " · en maintenance" : ""}
-      </div>`;
+      </div>
+      ${orgName ? `<div class="agent-sub">🌐 ${escapeHtml(orgName)}</div>` : ""}`;
 
   if (NO_PEDIGREE_TYPES.has(ped.type)) {
     return `<div class="agent-card">${header}</div>`;
@@ -904,6 +905,10 @@ async function renderBackupActivitySection(agentId) {
     const data = await fetchJson(`/api/target/${encodeURIComponent(agentId)}/backup/activity?${qs}`);
     const activities = data.data || [];
 
+    // Le domaine M365 (organization) est porté par chaque activité : on le
+    // récupère au passage pour l'afficher dans l'en-tête de la fiche agent.
+    const orgName = activities.find((a) => a.organization?.name)?.organization?.name || null;
+
     // Un job par produit ET par volet, par exécution : on garde le plus récent
     // de chaque combinaison (un même plugin, ex. "file", peut exister sous
     // deux produits différents en parallèle, ex. Files & Data 1.0 et 2.0).
@@ -913,12 +918,12 @@ async function renderBackupActivitySection(agentId) {
       if (!latestByKey.has(key)) latestByKey.set(key, a);
     }
 
-    if (latestByKey.size === 0) return ""; // aucune sauvegarde détectée : section masquée
+    if (latestByKey.size === 0) return { html: "", orgName }; // aucune sauvegarde détectée : section masquée
 
     const rows = [...latestByKey.values()].map(backupActivityRowHtml).join("");
-    return `<div class="chart-cat">Sauvegarde</div><div class="list">${rows}</div>`;
+    return { html: `<div class="chart-cat">Sauvegarde</div><div class="list">${rows}</div>`, orgName };
   } catch (err) {
-    return `<div class="chart-cat">Sauvegarde</div><div class="error">Erreur : ${escapeHtml(err.message)}</div>`;
+    return { html: `<div class="chart-cat">Sauvegarde</div><div class="error">Erreur : ${escapeHtml(err.message)}</div>`, orgName: null };
   }
 }
 
@@ -939,9 +944,14 @@ async function loadAgent(agentId) {
         `).join("")
       : '<div class="empty">Aucune courbe disponible pour cet agent</div>';
 
-    const backupHtml = ["S", "W", "O"].includes(ped.type) ? await renderBackupActivitySection(agentId) : "";
+    let backupHtml = "", orgName = null;
+    if (["S", "W", "O"].includes(ped.type)) {
+      const backupResult = await renderBackupActivitySection(agentId);
+      backupHtml = backupResult.html;
+      orgName = backupResult.orgName;
+    }
 
-    agentBodyEl.innerHTML = renderAgentPedigree(agentId, ped) + backupHtml + chartsHtml + renderAgentIncidents(agentId);
+    agentBodyEl.innerHTML = renderAgentPedigree(agentId, ped, orgName) + backupHtml + chartsHtml + renderAgentIncidents(agentId);
   } catch (err) {
     agentBodyEl.innerHTML = '<div class="error">Erreur de chargement : ' + escapeHtml(err.message) + '</div>';
     console.error(err);
