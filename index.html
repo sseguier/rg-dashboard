@@ -256,7 +256,7 @@
 <body>
 
 <header>
-  <h1 id="homeLink">🛰️ RG System Suite <span class="app-version">v0.23</span></h1>
+  <h1 id="homeLink">🛰️ RG System Suite <span class="app-version">v0.24</span></h1>
   <div class="search-bar">
     <input type="search" id="searchInput" placeholder="Rechercher dans les alertes…" autocomplete="off">
   </div>
@@ -846,6 +846,11 @@ function backupActivityClass(status) {
   return "low"; // running, waiting_first_backup, unknown
 }
 
+const PLUGIN_LABEL = {
+  file: "Fichiers", mssql: "SQL Server", oracle: "Oracle", hyperV: "Hyper-V",
+  bareMetal: "Bare Metal", vCenter: "vCenter", replication: "Réplication", exchange: "Exchange",
+};
+
 function backupActivityMeta(a) {
   const parts = [];
   if (Number.isFinite(a.duration)) parts.push(Math.round(a.duration / 60) + " min");
@@ -859,12 +864,14 @@ function backupActivityRowHtml(a, index) {
   const meta = backupActivityMeta(a);
   const detail = (a.backupError || "").trim();
   const uid = "backup-" + index;
+  const title = PLUGIN_LABEL[a.plugin] || a.plugin || a.product || "Sauvegarde";
 
   return `
     <div class="incident ${cls}" ${detail ? `data-uid="${uid}" style="cursor:pointer;"` : `style="cursor:default;"`}>
-      <div class="title">${escapeHtml(a.plugin || a.product || "Sauvegarde")}</div>
+      <div class="title">${escapeHtml(title)}</div>
       <div class="meta">
         <span class="badge ${cls}">${escapeHtml(label)}</span>
+        ${a.product ? `<span>${escapeHtml(a.product)}</span>` : ""}
         <span>${formatDate(a.date)}</span>
         ${meta ? `<span>${escapeHtml(meta)}</span>` : ""}
       </div>
@@ -879,16 +886,18 @@ async function renderBackupActivitySection(agentId) {
     const data = await fetchJson(`/api/target/${encodeURIComponent(agentId)}/backup/activity?${qs}`);
     const activities = data.data || [];
 
-    // Un job par volet/produit et par exécution : on ne garde que le plus récent de chaque.
-    const latestByPlugin = new Map();
+    // Un job par produit ET par volet, par exécution : on garde le plus récent
+    // de chaque combinaison (un même plugin, ex. "file", peut exister sous
+    // deux produits différents en parallèle, ex. Files & Data 1.0 et 2.0).
+    const latestByKey = new Map();
     for (const a of activities) {
-      const key = a.plugin || a.product;
-      if (!latestByPlugin.has(key)) latestByPlugin.set(key, a);
+      const key = (a.product || "") + "|" + (a.plugin || "");
+      if (!latestByKey.has(key)) latestByKey.set(key, a);
     }
 
-    if (latestByPlugin.size === 0) return ""; // aucune sauvegarde détectée : section masquée
+    if (latestByKey.size === 0) return ""; // aucune sauvegarde détectée : section masquée
 
-    const rows = [...latestByPlugin.values()].map(backupActivityRowHtml).join("");
+    const rows = [...latestByKey.values()].map(backupActivityRowHtml).join("");
     return `<div class="chart-cat">Sauvegarde</div><div class="list">${rows}</div>`;
   } catch (err) {
     return `<div class="chart-cat">Sauvegarde</div><div class="error">Erreur : ${escapeHtml(err.message)}</div>`;
