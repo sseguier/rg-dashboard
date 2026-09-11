@@ -257,13 +257,13 @@
     <input type="search" id="searchInput" placeholder="Rechercher dans les alertes…" autocomplete="off">
   </div>
   <nav class="tabbar">
-    <button id="tabAlerts" class="active">🔔 Alertes</button>
-    <button id="tabParc">🗂️ Parc</button>
+    <button id="tabParc" class="active">🗂️ Parc</button>
+    <button id="tabAlerts">🔔 Alertes</button>
   </nav>
 </header>
 
 <!-- ===== Page Alertes ===== -->
-<div id="page-alerts">
+<div id="page-alerts" hidden>
   <div class="status-line">
     <span id="statusText">Chargement…</span>
     <button class="refresh-btn" id="refreshBtn">↻ Actualiser</button>
@@ -281,7 +281,7 @@
 </div>
 
 <!-- ===== Page Parc (navigation + fiche agent) ===== -->
-<div id="page-parc" hidden>
+<div id="page-parc">
 
   <div id="parcSearchView" hidden>
     <div class="parc-header">
@@ -348,7 +348,7 @@ const summaryEl = document.getElementById("summary");
 const searchInputEl = document.getElementById("searchInput");
 let lastIncidents = [];
 let activeCriticality = null;
-let currentPage = "alerts";
+let currentPage = "parc";
 let searchQuery = "";
 
 function extractIncidents(data) {
@@ -426,7 +426,7 @@ function renderAlertList() {
     const crit = CRITICALITY_ORDER[inc.criticality] !== undefined ? inc.criticality : "low";
     const label = CRITICALITY_LABEL[crit] || inc.criticality || "?";
     return `
-      <div class="incident ${crit} ${inc.acquitted ? "acquitted" : ""}">
+      <div class="incident ${crit} ${inc.acquitted ? "acquitted" : ""}" data-agent-id="${escapeHtml(inc.agentId || "")}">
         <div class="title">${escapeHtml(inc.title || "Incident sans titre")}</div>
         <div class="meta">
           <span class="badge ${crit}">${label}</span>
@@ -439,6 +439,12 @@ function renderAlertList() {
     `;
   }).join("");
 }
+
+listEl.addEventListener("click", (e) => {
+  const incident = e.target.closest(".incident");
+  const agentId = incident?.dataset.agentId;
+  if (agentId) location.hash = "#/parc/agent/" + encodeURIComponent(agentId);
+});
 
 summaryEl.addEventListener("click", (e) => {
   const tile = e.target.closest(".tile");
@@ -750,6 +756,22 @@ function chartItemHtml(item) {
     </div>`;
 }
 
+function renderAgentIncidents(agentId) {
+  const items = lastIncidents.filter((inc) => inc.agentId === agentId && !inc.acquitted);
+  const body = items.length
+    ? items.map((inc) => {
+        const crit = CRITICALITY_ORDER[inc.criticality] !== undefined ? inc.criticality : "low";
+        const label = CRITICALITY_LABEL[crit] || inc.criticality || "?";
+        return `
+          <div class="incident ${crit}" style="cursor:default;">
+            <div class="title">${escapeHtml(inc.title || "Incident sans titre")}</div>
+            <div class="meta"><span class="badge ${crit}">${label}</span></div>
+          </div>`;
+      }).join("")
+    : '<div class="empty">✅ Aucune alerte pour cet agent</div>';
+  return `<div class="chart-cat">Alertes</div><div class="list">${body}</div>`;
+}
+
 async function loadAgent(agentId) {
   agentTitleEl.textContent = "Agent";
   agentBodyEl.innerHTML = '<div class="loading">Chargement…</div>';
@@ -767,7 +789,7 @@ async function loadAgent(agentId) {
         `).join("")
       : '<div class="empty">Aucune courbe disponible pour cet agent</div>';
 
-    agentBodyEl.innerHTML = renderAgentPedigree(agentId, ped) + chartsHtml;
+    agentBodyEl.innerHTML = renderAgentPedigree(agentId, ped) + chartsHtml + renderAgentIncidents(agentId);
   } catch (err) {
     agentBodyEl.innerHTML = '<div class="error">Erreur de chargement : ' + escapeHtml(err.message) + '</div>';
     console.error(err);
@@ -915,8 +937,8 @@ function parseHash() {
   let m;
   if ((m = h.match(/^#\/parc\/agent\/(.+)$/))) return { page: "parc", view: "agent", agentId: decodeURIComponent(m[1]) };
   if ((m = h.match(/^#\/parc\/node\/(.+)$/))) return { page: "parc", view: "tree", nodeId: decodeURIComponent(m[1]) };
-  if (h === "#/parc") return { page: "parc", view: "tree", nodeId: ROOT_NODE_ID };
-  return { page: "alerts" };
+  if (h === "#/alerts") return { page: "alerts" };
+  return { page: "parc", view: "tree", nodeId: ROOT_NODE_ID }; // Parc = page par defaut
 }
 
 function router() {
