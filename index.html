@@ -256,7 +256,7 @@
 <body>
 
 <header>
-  <h1 id="homeLink">🛰️ RG System Suite <span class="app-version">v0.24</span></h1>
+  <h1 id="homeLink">🛰️ RG System Suite <span class="app-version">v0.25</span></h1>
   <div class="search-bar">
     <input type="search" id="searchInput" placeholder="Rechercher dans les alertes…" autocomplete="off">
   </div>
@@ -904,6 +904,41 @@ async function renderBackupActivitySection(agentId) {
   }
 }
 
+// Devices SNMP (type E) : pas de courbes classiques, mais les objets peuvent
+// exposer des attributs ponctuels (ex. DriveType, statut...) via cet endpoint
+// -- confirmé fonctionnel empiriquement, même si aucun device en ligne dans
+// ce compte n'avait de valeur à montrer au moment du test.
+async function renderDeviceAttributesSection(objects) {
+  const targets = [];
+  for (const [catKey, cat] of Object.entries(objects || {})) {
+    if (catKey === "Scheduler") continue; // objets techniques génériques, jamais de valeur SNMP
+    for (const [objId, obj] of Object.entries(cat.objects || {})) {
+      targets.push({ objId, name: obj.name || catKey });
+    }
+  }
+  if (targets.length === 0) return "";
+
+  const results = await Promise.all(
+    targets.map((t) =>
+      fetchJson(`/api/object/${t.objId}/attributes`)
+        .then((attrs) => ({ ...t, attrs: attrs && typeof attrs === "object" ? attrs : {} }))
+        .catch(() => ({ ...t, attrs: {} }))
+    )
+  );
+
+  const withData = results.filter((r) => Object.keys(r.attrs).length > 0);
+  if (withData.length === 0) return "";
+
+  const body = withData.map((r) => {
+    const rows = Object.entries(r.attrs)
+      .map(([key, v]) => `<dt>${escapeHtml(key)}</dt><dd>${escapeHtml(String(v?.value ?? "–"))}</dd>`)
+      .join("");
+    return `<div class="chart-cat">${escapeHtml(r.name)}</div><div class="agent-card"><dl class="kv">${rows}</dl></div>`;
+  }).join("");
+
+  return body;
+}
+
 async function loadAgent(agentId) {
   agentTitleEl.textContent = "Agent";
   agentBodyEl.innerHTML = '<div class="loading">Chargement…</div>';
@@ -913,13 +948,19 @@ async function loadAgent(agentId) {
       fetchJson(`/api/agent/${encodeURIComponent(agentId)}/objects`).catch(() => ({})),
     ]);
 
-    const categories = collectChartables(objects);
-    const chartsHtml = categories.length
-      ? categories.map((cat) => `
-          <div class="chart-cat">${escapeHtml(cat.name)}</div>
-          ${cat.items.map(chartItemHtml).join("")}
-        `).join("")
-      : '<div class="empty">Aucune courbe disponible pour cet agent</div>';
+    let chartsHtml;
+    if (ped.type === "E") {
+      chartsHtml = await renderDeviceAttributesSection(objects);
+      if (!chartsHtml) chartsHtml = '<div class="empty">Aucune donnée disponible pour ce device</div>';
+    } else {
+      const categories = collectChartables(objects);
+      chartsHtml = categories.length
+        ? categories.map((cat) => `
+            <div class="chart-cat">${escapeHtml(cat.name)}</div>
+            ${cat.items.map(chartItemHtml).join("")}
+          `).join("")
+        : '<div class="empty">Aucune courbe disponible pour cet agent</div>';
+    }
 
     const backupHtml = ["S", "W", "O"].includes(ped.type) ? await renderBackupActivitySection(agentId) : "";
 
