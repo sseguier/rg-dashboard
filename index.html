@@ -362,6 +362,7 @@ function extractIncidents(data) {
   for (const { key, groupKey } of sections) {
     for (const entry of data[key] || []) {
       const agent = entry.agent || {};
+      if (HIDDEN_AGENT_TYPES.has(agent.type)) continue;
       const groups = entry[groupKey] || {};
       for (const [category, items] of Object.entries(groups)) {
         for (const item of items || []) {
@@ -506,7 +507,9 @@ async function renderParcSearch() {
   try {
     const agents = await loadAllAgents();
     if (requestId !== parcSearchRequestId) return; // une frappe plus récente a pris le dessus
-    const matches = agents.filter((a) => agentHaystack(a).includes(q)).slice(0, 30);
+    const matches = agents
+      .filter((a) => !HIDDEN_AGENT_TYPES.has(a.agentType) && agentHaystack(a).includes(q))
+      .slice(0, 30);
     parcSearchList.innerHTML = matches.length
       ? matches.map(agentSearchRowHtml).join("")
       : '<div class="empty">Aucun agent trouvé</div>';
@@ -564,7 +567,9 @@ setInterval(loadAlerts, 60000);
    Page Parc : navigation nodes/agents
    ========================================================= */
 
-const AGENT_TYPE_ICON = { S: "🖥️", W: "💻", E: "📡", O: "☁️", A: "🧩", G: "💾" };
+const AGENT_TYPE_ICON = { S: "🖥️", W: "💻", D: "🗄️", E: "📡", O: "☁️", A: "🧩", G: "💾" };
+// Type G (passerelle de sauvegarde cloud) volontairement masqué partout dans l'appli.
+const HIDDEN_AGENT_TYPES = new Set(["G"]);
 
 const parcListEl = document.getElementById("parcList");
 const parcTitleEl = document.getElementById("parcTitle");
@@ -620,7 +625,9 @@ async function loadNode(nodeId) {
 
     const children = Object.entries(node.children || {});
     const folders = children.filter(([, c]) => c.nodeType === "node").sort((a, b) => a[1].name.localeCompare(b[1].name));
-    const agents = children.filter(([, c]) => c.nodeType === "agent").sort((a, b) => a[1].name.localeCompare(b[1].name));
+    const agents = children
+      .filter(([, c]) => c.nodeType === "agent" && !HIDDEN_AGENT_TYPES.has(c.type))
+      .sort((a, b) => a[1].name.localeCompare(b[1].name));
 
     if (folders.length === 0 && agents.length === 0) {
       parcListEl.innerHTML = '<div class="empty">Ce dossier est vide</div>';
