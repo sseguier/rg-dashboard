@@ -679,15 +679,6 @@ function formatDate(iso) {
   try { return new Date(iso).toLocaleString("fr-FR"); } catch { return iso; }
 }
 
-function backupSummary(backup) {
-  const status = backup?.status || {};
-  const issues = Object.entries(status)
-    .filter(([, s]) => s && s.isRequired && s.mainState !== "INSTALLED")
-    .map(([k]) => k);
-  if (issues.length === 0) return "OK";
-  return "À vérifier (" + issues.join(", ") + ")";
-}
-
 function uptimeSummary(uptime) {
   const fmt = (v) => (typeof v === "number" ? v.toFixed(1) + " %" : "–");
   return `${fmt(uptime.day)} (24h) · ${fmt(uptime.week)} (7j) · ${fmt(uptime.month)} (30j)`;
@@ -748,7 +739,6 @@ function renderAgentPedigree(agentId, ped) {
         <dt>Disponibilité</dt><dd>${escapeHtml(uptimeSummary(uptime))}</dd>
         <dt>Windows Update</dt><dd>${escapeHtml(windowsUpdateSummary(p))}</dd>
         <dt>Sécurité</dt><dd>${ped.security?.status === 0 ? "OK" : "À vérifier"}</dd>
-        <dt>Sauvegarde</dt><dd>${escapeHtml(backupSummary(ped.backup))}</dd>
         <dt>Agent RG System</dt><dd>v${escapeHtml(ped.version || "–")} · installé le ${formatDate(ped.installDate)}</dd>
       </dl>
       ${comment ? `
