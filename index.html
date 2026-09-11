@@ -130,6 +130,7 @@
   .incident.critical { border-left-color: var(--crit-critical); }
   .incident.medium { border-left-color: var(--crit-medium); }
   .incident.low { border-left-color: var(--crit-low); }
+  .incident.success { border-left-color: var(--ok); }
   .incident.acquitted { opacity: 0.45; }
 
   .incident .title { font-size: 0.92rem; font-weight: 600; margin-bottom: 4px; }
@@ -146,6 +147,7 @@
   .badge.critical { background: rgba(239,68,68,0.15); color: var(--crit-critical); }
   .badge.medium { background: rgba(234,179,8,0.15); color: var(--crit-medium); }
   .badge.low { background: rgba(100,116,139,0.15); color: var(--crit-low); }
+  .badge.success { background: rgba(34,197,94,0.15); color: var(--ok); }
   .badge.offline { background: rgba(148,163,184,0.15); color: var(--text-dim); }
 
   .empty, .error, .loading {
@@ -812,6 +814,48 @@ function renderAgentIncidents(agentId) {
   return `<div class="chart-cat">Alertes</div><div class="list">${body}</div>`;
 }
 
+const VBO_STATUS_LABEL = { success: "Succès", error: "Erreur", warning: "Avertissement", running: "En cours" };
+
+function vboStatusClass(status) {
+  if (status === "success") return "success";
+  if (status === "error") return "critical";
+  if (status === "warning") return "medium";
+  return "low";
+}
+
+async function renderBackupJobsSection(agentId) {
+  try {
+    const qs = new URLSearchParams({ sortField: "startDate", sortWay: "DESC" }).toString();
+    const data = await fetchJson(`/api/target/${encodeURIComponent(agentId)}/vbo/jobsessions?${qs}`);
+    const sessions = data.data || [];
+
+    // Une session par produit et par run : on ne garde que la plus récente de chaque produit.
+    const latestByProduct = new Map();
+    for (const s of sessions) {
+      if (!latestByProduct.has(s.product)) latestByProduct.set(s.product, s);
+    }
+
+    const body = latestByProduct.size
+      ? [...latestByProduct.values()].map((s) => {
+          const cls = vboStatusClass(s.status);
+          const label = VBO_STATUS_LABEL[s.status] || s.status;
+          return `
+            <div class="incident ${cls}" style="cursor:default;">
+              <div class="title">${escapeHtml(s.product || "Produit inconnu")}</div>
+              <div class="meta">
+                <span class="badge ${cls}">${escapeHtml(label)}</span>
+                <span>${formatDate(s.startDate)}</span>
+              </div>
+            </div>`;
+        }).join("")
+      : '<div class="empty">Aucune sauvegarde trouvée</div>';
+
+    return `<div class="chart-cat">Sauvegarde Microsoft 365</div><div class="list">${body}</div>`;
+  } catch (err) {
+    return `<div class="chart-cat">Sauvegarde Microsoft 365</div><div class="error">Erreur : ${escapeHtml(err.message)}</div>`;
+  }
+}
+
 async function loadAgent(agentId) {
   agentTitleEl.textContent = "Agent";
   agentBodyEl.innerHTML = '<div class="loading">Chargement…</div>';
@@ -829,7 +873,9 @@ async function loadAgent(agentId) {
         `).join("")
       : '<div class="empty">Aucune courbe disponible pour cet agent</div>';
 
-    agentBodyEl.innerHTML = renderAgentPedigree(agentId, ped) + chartsHtml + renderAgentIncidents(agentId);
+    const backupHtml = ped.type === "O" ? await renderBackupJobsSection(agentId) : "";
+
+    agentBodyEl.innerHTML = renderAgentPedigree(agentId, ped) + backupHtml + chartsHtml + renderAgentIncidents(agentId);
   } catch (err) {
     agentBodyEl.innerHTML = '<div class="error">Erreur de chargement : ' + escapeHtml(err.message) + '</div>';
     console.error(err);
