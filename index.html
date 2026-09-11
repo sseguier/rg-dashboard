@@ -47,6 +47,7 @@
     display: flex;
     align-items: center;
     gap: 8px;
+    cursor: pointer;
   }
   .tabbar { display: flex; gap: 6px; }
   .tabbar button {
@@ -252,7 +253,7 @@
 <body>
 
 <header>
-  <h1>🛰️ Supervision RG System</h1>
+  <h1 id="homeLink">🛰️ RG System Suite</h1>
   <div class="search-bar">
     <input type="search" id="searchInput" placeholder="Rechercher dans les alertes…" autocomplete="off">
   </div>
@@ -718,15 +719,19 @@ function renderAgentPedigree(agentId, ped) {
   `;
 }
 
+// "Onair" (Communication) est fusionné dans le groupe "Heartbeat" : ce sont
+// deux indicateurs de présence de l'agent, plus lisibles regroupés.
+const CHART_GROUP_OVERRIDE = { Onair: "Heartbeat" };
+
 function collectChartables(objects) {
-  const categories = [];
-  for (const cat of Object.values(objects || {})) {
+  const groups = new Map(); // nom de groupe affiché -> { name, items }
+  for (const [key, cat] of Object.entries(objects || {})) {
     const items = [];
-    for (const obj of Object.values(cat.objects || {})) {
+    for (const [objId, obj] of Object.entries(cat.objects || {})) {
       if (!obj.charts) continue;
       for (const [chartId, chart] of Object.entries(obj.charts)) {
         items.push({
-          objId: Object.keys(cat.objects).find((k) => cat.objects[k] === obj),
+          objId,
           chartId,
           chartName: chart.name,
           counters: chart.counters,
@@ -735,8 +740,13 @@ function collectChartables(objects) {
         });
       }
     }
-    if (items.length) categories.push({ name: cat.name, items });
+    if (!items.length) continue;
+
+    const groupName = CHART_GROUP_OVERRIDE[key] || cat.name;
+    if (!groups.has(groupName)) groups.set(groupName, { name: groupName, items: [] });
+    groups.get(groupName).items.push(...items);
   }
+  const categories = [...groups.values()];
   categories.sort((a, b) => a.name.localeCompare(b.name));
   return categories;
 }
@@ -814,6 +824,10 @@ function scaleSelectorHtml(scale) {
   `;
 }
 
+// Ces compteurs ne prennent jamais que deux valeurs (0 ou 1) : un graphique
+// en ligne classique n'est pas lisible pour ça, on affiche une barre d'état.
+const BOOLEAN_COUNTERS = new Set(["Alive", "AvActive", "AvUpToDate"]);
+
 async function loadChart(panel, objId, chartId, counters, scale) {
   panel.innerHTML = scaleSelectorHtml(scale);
   panel.querySelectorAll(".scale-selector button").forEach((b) => {
@@ -823,11 +837,35 @@ async function loadChart(panel, objId, chartId, counters, scale) {
   const host = panel.querySelector(".chart-host");
   try {
     const data = await fetchJson(`/api/chart/data/${objId}/${chartId}/${scale}`);
-    const interpreted = interpretChartData(counters, data);
-    host.innerHTML = buildLineChartSvg(interpreted, scale);
+    if (BOOLEAN_COUNTERS.has(counters)) {
+      host.innerHTML = buildStatusBarSvg(data[counters] || [], scale);
+    } else {
+      const interpreted = interpretChartData(counters, data);
+      host.innerHTML = buildLineChartSvg(interpreted, scale);
+    }
   } catch (err) {
     host.innerHTML = '<div class="error">Erreur : ' + escapeHtml(err.message) + '</div>';
   }
+}
+
+function buildStatusBarSvg(values, scale) {
+  if (!values.length) return '<div class="empty">Pas de données sur cette période</div>';
+
+  const W = 300, H = 50, padL = 2, padR = 2, padT = 2, padB = 2;
+  const n = values.length;
+  const barW = (W - padL - padR) / n;
+  const bars = values.map((v, i) => {
+    const active = v >= 0.5;
+    const x = padL + i * barW;
+    return `<rect x="${x.toFixed(2)}" y="${padT}" width="${Math.max(barW - 0.3, 0.5).toFixed(2)}" height="${H - padT - padB}" fill="${active ? "#22c55e" : "#ef4444"}" />`;
+  }).join("");
+  const activeCount = values.filter((v) => v >= 0.5).length;
+  const pct = ((activeCount / n) * 100).toFixed(1);
+
+  return `
+    <div class="chart-meta">Actif <strong>${pct}%</strong> du temps · période : ${SCALE_LABEL[scale] || scale}</div>
+    <svg viewBox="0 0 ${W} ${H}" width="100%" height="${H}">${bars}</svg>
+  `;
 }
 
 function interpretChartData(counters, data) {
@@ -971,6 +1009,12 @@ function router() {
 tabAlerts.addEventListener("click", () => { location.hash = "#/alerts"; });
 tabParc.addEventListener("click", () => { location.hash = "#/parc"; });
 window.addEventListener("hashchange", router);
+
+document.getElementById("homeLink").addEventListener("click", () => {
+  searchQuery = "";
+  searchInputEl.value = "";
+  location.hash = "#/parc";
+});
 
 loadAlerts();
 router();
