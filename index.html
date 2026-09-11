@@ -709,22 +709,33 @@ function domainSummary(p) {
   return p.Domain || "–";
 }
 
+// Ces types n'ont pas de pedigree matériel/OS exploitable (device generique,
+// device SNMP, connecteur O365) : la plupart des champs seraient vides.
+const NO_PEDIGREE_TYPES = new Set(["D", "E", "O"]);
+
 function renderAgentPedigree(agentId, ped) {
   const p = ped.pedigree || {};
   const uptime = ped.uptime || {};
   agentTitleEl.textContent = ped.name || agentId;
+
+  const header = `
+      <h2>${escapeHtml(ped.name || agentId)}</h2>
+      <div class="agent-sub">
+        <span class="dot ${ped.isOnline ? "online" : "offline-dot"}"></span>
+        ${ped.isOnline ? "En ligne" : "Hors ligne"}
+        ${ped.isInMaintenance ? " · en maintenance" : ""}
+      </div>`;
+
+  if (NO_PEDIGREE_TYPES.has(ped.type)) {
+    return `<div class="agent-card">${header}</div>`;
+  }
 
   const hostname = p.CSName || p.DNSHostName || "–";
   const comment = (ped.comment || "").trim();
 
   return `
     <div class="agent-card">
-      <h2>${escapeHtml(ped.name || agentId)}</h2>
-      <div class="agent-sub">
-        <span class="dot ${ped.isOnline ? "online" : "offline-dot"}"></span>
-        ${ped.isOnline ? "En ligne" : "Hors ligne"}
-        ${ped.isInMaintenance ? " · en maintenance" : ""}
-      </div>
+      ${header}
       <dl class="kv">
         <dt>Nom d'hôte</dt><dd>${escapeHtml(hostname)}</dd>
         <dt>Domaine</dt><dd>${escapeHtml(domainSummary(p))}</dd>
@@ -856,6 +867,36 @@ async function renderBackupJobsSection(agentId) {
   }
 }
 
+// Volets de sauvegarde classique (serveurs/postes) exposés par /api/agent/{id}.
+const BACKUP_COMPONENT_LABEL = { client: "Fichiers", mssql: "SQL Server", oracle: "Oracle", hyperV: "Hyper-V", exchange: "Exchange" };
+
+function backupComponentStatus(s) {
+  if (!s || !s.isRequired) return null; // pas de sauvegarde configurée sur ce volet
+  if (s.isTimeout || s.isError) return "critical";
+  if (s.mainState !== "INSTALLED" && s.mainState !== "INSTALL_AND_REGISTER_OK") return "medium";
+  return "success";
+}
+
+function renderBackupStatusSection(ped) {
+  const status = ped.backup?.status || {};
+  const rows = Object.entries(BACKUP_COMPONENT_LABEL)
+    .map(([key, label]) => ({ label, cls: backupComponentStatus(status[key]) }))
+    .filter((r) => r.cls);
+
+  if (rows.length === 0) return ""; // aucune sauvegarde détectée : section masquée
+
+  const body = rows.map((r) => {
+    const statusLabel = r.cls === "success" ? "OK" : r.cls === "critical" ? "Erreur" : "À vérifier";
+    return `
+      <div class="incident ${r.cls}" style="cursor:default;">
+        <div class="title">${escapeHtml(r.label)}</div>
+        <div class="meta"><span class="badge ${r.cls}">${statusLabel}</span></div>
+      </div>`;
+  }).join("");
+
+  return `<div class="chart-cat">Sauvegarde</div><div class="list">${body}</div>`;
+}
+
 async function loadAgent(agentId) {
   agentTitleEl.textContent = "Agent";
   agentBodyEl.innerHTML = '<div class="loading">Chargement…</div>';
@@ -873,7 +914,9 @@ async function loadAgent(agentId) {
         `).join("")
       : '<div class="empty">Aucune courbe disponible pour cet agent</div>';
 
-    const backupHtml = ped.type === "O" ? await renderBackupJobsSection(agentId) : "";
+    let backupHtml = "";
+    if (ped.type === "O") backupHtml = await renderBackupJobsSection(agentId);
+    else if (ped.type === "S" || ped.type === "W") backupHtml = renderBackupStatusSection(ped);
 
     agentBodyEl.innerHTML = renderAgentPedigree(agentId, ped) + backupHtml + chartsHtml + renderAgentIncidents(agentId);
   } catch (err) {
