@@ -256,7 +256,7 @@
 <body>
 
 <header>
-  <h1 id="homeLink">🛰️ RG System Suite <span class="app-version">v0.24</span></h1>
+  <h1 id="homeLink">🛰️ RG System Suite <span class="app-version">v0.25</span></h1>
   <div class="search-bar">
     <input type="search" id="searchInput" placeholder="Rechercher dans les alertes…" autocomplete="off">
   </div>
@@ -858,11 +858,29 @@ function backupActivityMeta(a) {
   return parts.join(" · ");
 }
 
+function backupActivityDetail(a) {
+  const parts = [];
+  if (a.backupError) parts.push(String(a.backupError).trim());
+
+  let specific = null;
+  try { specific = JSON.parse(a.specificData || "null"); } catch (e) { /* pas de JSON exploitable */ }
+  if (specific && Array.isArray(specific.logs) && specific.logs.length) {
+    parts.push(specific.logs.map((l) => (typeof l === "string" ? l : JSON.stringify(l))).join("\n"));
+  }
+
+  const succ = a.objectSuccess, fail = a.objectFailure;
+  if ((Number.isFinite(succ) && succ > 0) || (Number.isFinite(fail) && fail > 0)) {
+    parts.push(`Objets : ${succ ?? 0} réussi(s), ${fail ?? 0} échoué(s)`);
+  }
+
+  return parts.join("\n\n").trim();
+}
+
 function backupActivityRowHtml(a, index) {
   const cls = backupActivityClass(a.status);
   const label = BACKUP_STATUS_LABEL[a.status] || a.status || "?";
   const meta = backupActivityMeta(a);
-  const detail = (a.backupError || "").trim();
+  const detail = backupActivityDetail(a);
   const uid = "backup-" + index;
   const title = PLUGIN_LABEL[a.plugin] || a.plugin || a.product || "Sauvegarde";
 
@@ -1013,7 +1031,9 @@ function interpretChartData(counters, data) {
         const total = data[totalKey][i];
         return total ? (v / total) * 100 : 0;
       });
-      return { unit: "%", series: [{ name: "Utilisation", values }] };
+      // Tendance affichée uniquement pour Disque/Mémoire (branche "utilisation
+      // sur capacité"), pas pour les compteurs bruts (CPU, réseau...).
+      return { unit: "%", series: [{ name: "Utilisation", values }], showTrend: true };
     }
   }
 
@@ -1044,8 +1064,25 @@ function formatValue(v, unit) {
   return unit === "%" ? v.toFixed(1) + " %" : formatBytes(v);
 }
 
+// Régression linéaire simple (moindres carrés) sur une série de valeurs
+// régulièrement espacées, pour tracer une tendance générale.
+function computeTrend(values) {
+  const pts = values.map((v, i) => [i, v]).filter(([, v]) => Number.isFinite(v));
+  if (pts.length < 2) return null;
+  const n = pts.length;
+  const sumX = pts.reduce((s, [x]) => s + x, 0);
+  const sumY = pts.reduce((s, [, y]) => s + y, 0);
+  const sumXY = pts.reduce((s, [x, y]) => s + x * y, 0);
+  const sumXX = pts.reduce((s, [x]) => s + x * x, 0);
+  const denom = n * sumXX - sumX * sumX;
+  if (denom === 0) return null;
+  const slope = (n * sumXY - sumX * sumY) / denom;
+  const intercept = (sumY - slope * sumX) / n;
+  return { slope, intercept };
+}
+
 function buildLineChartSvg(interpreted, scale) {
-  const { unit, series } = interpreted;
+  const { unit, series, showTrend } = interpreted;
   if (!series.length || series.every((s) => s.values.length === 0)) {
     return '<div class="empty">Pas de données sur cette période</div>';
   }
@@ -1073,6 +1110,19 @@ function buildLineChartSvg(interpreted, scale) {
     return `<polyline points="${points}" fill="none" stroke="${colors[idx % colors.length]}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" />`;
   }).join("");
 
+  let trendLine = "";
+  if (showTrend) {
+    const trend = computeTrend(series[0].values);
+    if (trend) {
+      const n = series[0].values.length;
+      const y0 = clampNum(trend.intercept, min, max);
+      const y1 = clampNum(trend.slope * (n - 1) + trend.intercept, min, max);
+      const yy0 = padT + (1 - (y0 - min) / ((max - min) || 1)) * (H - padT - padB);
+      const yy1 = padT + (1 - (y1 - min) / ((max - min) || 1)) * (H - padT - padB);
+      trendLine = `<line x1="${padL}" y1="${yy0.toFixed(1)}" x2="${W - padR}" y2="${yy1.toFixed(1)}" stroke="#ef4444" stroke-width="1.5" stroke-dasharray="4 3" opacity="0.55" />`;
+    }
+  }
+
   const gridLines = [0, 0.5, 1].map((f) => {
     const y = padT + f * (H - padT - padB);
     const val = max - f * (max - min);
@@ -1088,7 +1138,7 @@ function buildLineChartSvg(interpreted, scale) {
 
   return `
     <div class="chart-meta">Dernière valeur : <strong>${formatValue(latest, unit)}</strong> · période : ${SCALE_LABEL[scale] || scale}</div>
-    <svg viewBox="0 0 ${W} ${H}" width="100%" height="${H}">${gridLines}${paths}</svg>
+    <svg viewBox="0 0 ${W} ${H}" width="100%" height="${H}">${gridLines}${trendLine}${paths}</svg>
     ${legend}
   `;
 }
