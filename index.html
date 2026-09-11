@@ -574,7 +574,7 @@ setInterval(loadAlerts, 60000);
    Page Parc : navigation nodes/agents
    ========================================================= */
 
-const AGENT_TYPE_ICON = { S: "🖥️", W: "💻", D: "🗄️", E: "📡", O: "☁️", A: "🧩", G: "💾" };
+const AGENT_TYPE_ICON = { S: "🖥️", W: "💻", D: "🗄️", E: "📡", O: "☁️", A: "🧩", G: "💾", L: "🖱️" };
 // Type G (passerelle de sauvegarde cloud) volontairement masqué partout dans l'appli.
 const HIDDEN_AGENT_TYPES = new Set(["G"]);
 
@@ -688,10 +688,41 @@ function backupSummary(backup) {
   return "À vérifier (" + issues.join(", ") + ")";
 }
 
+function uptimeSummary(uptime) {
+  const fmt = (v) => (typeof v === "number" ? v.toFixed(1) + " %" : "–");
+  return `${fmt(uptime.day)} (24h) · ${fmt(uptime.week)} (7j) · ${fmt(uptime.month)} (30j)`;
+}
+
+function windowsUpdateSummary(p) {
+  if (!p.WindowsUpdateStatus) return "–";
+  const details = [];
+  if (p.WindowsUpdateCriticalCount) details.push(p.WindowsUpdateCriticalCount + " critique(s)");
+  if (p.WindowsUpdateOptionalCount) details.push(p.WindowsUpdateOptionalCount + " optionnelle(s)");
+  if (p.WindowsUpdateIsRebootNeeded) details.push("redémarrage requis");
+  return p.WindowsUpdateStatus + (details.length ? " (" + details.join(", ") + ")" : "");
+}
+
+function serialSummary(p) {
+  // Le SerialNumber Windows est souvent masqué par RG System (XXXXX-...) ;
+  // le HardwareSerialNumber (UUID matériel) est lui exploitable.
+  if (p.HardwareSerialNumber) return p.HardwareSerialNumber;
+  if (p.SerialNumber && !/^X+-/i.test(p.SerialNumber)) return p.SerialNumber;
+  return "–";
+}
+
+function domainSummary(p) {
+  if (p.PartOfDomain === "1" && p.Domain) return p.Domain;
+  if (p.PartOfDomain === "0") return "Hors domaine";
+  return p.Domain || "–";
+}
+
 function renderAgentPedigree(agentId, ped) {
   const p = ped.pedigree || {};
   const uptime = ped.uptime || {};
   agentTitleEl.textContent = ped.name || agentId;
+
+  const hostname = p.CSName || p.DNSHostName || "–";
+  const comment = (ped.comment || "").trim();
 
   return `
     <div class="agent-card">
@@ -702,19 +733,28 @@ function renderAgentPedigree(agentId, ped) {
         ${ped.isInMaintenance ? " · en maintenance" : ""}
       </div>
       <dl class="kv">
-        <dt>Système</dt><dd>${escapeHtml(p.OSName || "–")}</dd>
+        <dt>Nom d'hôte</dt><dd>${escapeHtml(hostname)}</dd>
+        <dt>Domaine</dt><dd>${escapeHtml(domainSummary(p))}</dd>
+        <dt>Système</dt><dd>${escapeHtml([p.OSName, p.OSVersion].filter(Boolean).join(" — ") || "–")}</dd>
         <dt>CPU</dt><dd>${escapeHtml(p.CpuInfos || "–")}</dd>
         <dt>Mémoire</dt><dd>${escapeHtml(p.MemoryInfos || "–")}</dd>
         <dt>Disque</dt><dd>${escapeHtml(p.DiskInfos || "–")}</dd>
+        <dt>Fabricant</dt><dd>${escapeHtml([p.Manufacturer, p.Model].filter(Boolean).join(" ") || "–")}</dd>
+        <dt>N° de série</dt><dd>${escapeHtml(serialSummary(p))}</dd>
         <dt>IP privée</dt><dd>${escapeHtml(ped.privateIp || "–")}</dd>
         <dt>IP publique</dt><dd>${escapeHtml(ped.publicIp || "–")}</dd>
-        <dt>Fabricant</dt><dd>${escapeHtml(p.Manufacturer || "–")} ${escapeHtml(p.Model || "")}</dd>
+        <dt>Dernier utilisateur</dt><dd>${escapeHtml(p.LastLoggedOnUser || "–")}</dd>
         <dt>Dernier démarrage</dt><dd>${formatDate(p.LastBootTime)}</dd>
-        <dt>Disponibilité (7j)</dt><dd>${uptime.week ?? "–"} %</dd>
-        <dt>Windows Update</dt><dd>${escapeHtml(p.WindowsUpdateStatus || "–")}</dd>
+        <dt>Disponibilité</dt><dd>${escapeHtml(uptimeSummary(uptime))}</dd>
+        <dt>Windows Update</dt><dd>${escapeHtml(windowsUpdateSummary(p))}</dd>
         <dt>Sécurité</dt><dd>${ped.security?.status === 0 ? "OK" : "À vérifier"}</dd>
         <dt>Sauvegarde</dt><dd>${escapeHtml(backupSummary(ped.backup))}</dd>
+        <dt>Agent RG System</dt><dd>v${escapeHtml(ped.version || "–")} · installé le ${formatDate(ped.installDate)}</dd>
       </dl>
+      ${comment ? `
+        <button type="button" class="chart-toggle" data-uid="agent-comment" style="margin-top:10px;">🔒 Afficher le commentaire</button>
+        <div class="chart-panel" id="panel-agent-comment" hidden>${escapeHtml(comment).replace(/\n/g, "<br>")}</div>
+      ` : ""}
     </div>
   `;
 }
@@ -812,7 +852,10 @@ agentBodyEl.addEventListener("click", (e) => {
   const panel = document.getElementById("panel-" + btn.dataset.uid);
   if (!panel.hidden) { panel.hidden = true; return; }
   panel.hidden = false;
-  loadChart(panel, btn.dataset.obj, btn.dataset.chart, btn.dataset.counters, "week");
+  // Le panneau "commentaire" n'a pas de graphique associé, juste du texte déjà en place.
+  if (btn.dataset.obj) {
+    loadChart(panel, btn.dataset.obj, btn.dataset.chart, btn.dataset.counters, "week");
+  }
 });
 
 function scaleSelectorHtml(scale) {
@@ -857,7 +900,7 @@ function buildStatusBarSvg(values, scale) {
   const bars = values.map((v, i) => {
     const active = v >= 0.5;
     const x = padL + i * barW;
-    return `<rect x="${x.toFixed(2)}" y="${padT}" width="${Math.max(barW - 0.3, 0.5).toFixed(2)}" height="${H - padT - padB}" fill="${active ? "#22c55e" : "#ef4444"}" />`;
+    return `<rect x="${x.toFixed(2)}" y="${padT}" width="${Math.max(barW - 0.3, 0.5).toFixed(2)}" height="${H - padT - padB}" fill="${active ? "#5aa06a" : "#c9615f"}" />`;
   }).join("");
   const activeCount = values.filter((v) => v >= 0.5).length;
   const pct = ((activeCount / n) * 100).toFixed(1);
