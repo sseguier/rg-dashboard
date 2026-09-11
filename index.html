@@ -49,6 +49,7 @@
     gap: 8px;
     cursor: pointer;
   }
+  .app-version { font-size: 0.65rem; font-weight: 400; color: var(--text-dim); }
   .tabbar { display: flex; gap: 6px; }
   .tabbar button {
     flex: 1;
@@ -255,7 +256,7 @@
 <body>
 
 <header>
-  <h1 id="homeLink">🛰️ RG System Suite</h1>
+  <h1 id="homeLink">🛰️ RG System Suite <span class="app-version">v0.23</span></h1>
   <div class="search-bar">
     <input type="search" id="searchInput" placeholder="Rechercher dans les alertes…" autocomplete="off">
   </div>
@@ -825,76 +826,73 @@ function renderAgentIncidents(agentId) {
   return `<div class="chart-cat">Alertes</div><div class="list">${body}</div>`;
 }
 
-const VBO_STATUS_LABEL = { success: "Succès", error: "Erreur", warning: "Avertissement", running: "En cours" };
+// Historique unifié des jobs de sauvegarde (Files & Data pour S/W, Microsoft
+// 365 pour O) via /api/target/{agent}/backup/activity. Un seul endpoint pour
+// les deux familles de produits, avec un vrai statut de job (pas juste
+// "installé ou pas").
+const BACKUP_STATUS_LABEL = {
+  success: "Succès",
+  error: "Erreur",
+  warning: "Avertissement",
+  running: "En cours",
+  waiting_first_backup: "Première sauvegarde en attente",
+  unknown: "Inconnu",
+};
 
-function vboStatusClass(status) {
+function backupActivityClass(status) {
   if (status === "success") return "success";
   if (status === "error") return "critical";
   if (status === "warning") return "medium";
-  return "low";
+  return "low"; // running, waiting_first_backup, unknown
 }
 
-async function renderBackupJobsSection(agentId) {
-  try {
-    const qs = new URLSearchParams({ sortField: "startDate", sortWay: "DESC" }).toString();
-    const data = await fetchJson(`/api/target/${encodeURIComponent(agentId)}/vbo/jobsessions?${qs}`);
-    const sessions = data.data || [];
+function backupActivityMeta(a) {
+  const parts = [];
+  if (Number.isFinite(a.duration)) parts.push(Math.round(a.duration / 60) + " min");
+  if (Number.isFinite(a.size) && a.size > 0) parts.push(formatBytes(a.size));
+  return parts.join(" · ");
+}
 
-    // Une session par produit et par run : on ne garde que la plus récente de chaque produit.
-    const latestByProduct = new Map();
-    for (const s of sessions) {
-      if (!latestByProduct.has(s.product)) latestByProduct.set(s.product, s);
+function backupActivityRowHtml(a, index) {
+  const cls = backupActivityClass(a.status);
+  const label = BACKUP_STATUS_LABEL[a.status] || a.status || "?";
+  const meta = backupActivityMeta(a);
+  const detail = (a.backupError || "").trim();
+  const uid = "backup-" + index;
+
+  return `
+    <div class="incident ${cls}" ${detail ? `data-uid="${uid}" style="cursor:pointer;"` : `style="cursor:default;"`}>
+      <div class="title">${escapeHtml(a.plugin || a.product || "Sauvegarde")}</div>
+      <div class="meta">
+        <span class="badge ${cls}">${escapeHtml(label)}</span>
+        <span>${formatDate(a.date)}</span>
+        ${meta ? `<span>${escapeHtml(meta)}</span>` : ""}
+      </div>
+    </div>
+    ${detail ? `<div class="chart-panel" id="panel-${uid}" hidden>${escapeHtml(detail).replace(/\n/g, "<br>")}</div>` : ""}
+  `;
+}
+
+async function renderBackupActivitySection(agentId) {
+  try {
+    const qs = new URLSearchParams({ sortField: "date", sortWay: "DESC" }).toString();
+    const data = await fetchJson(`/api/target/${encodeURIComponent(agentId)}/backup/activity?${qs}`);
+    const activities = data.data || [];
+
+    // Un job par volet/produit et par exécution : on ne garde que le plus récent de chaque.
+    const latestByPlugin = new Map();
+    for (const a of activities) {
+      const key = a.plugin || a.product;
+      if (!latestByPlugin.has(key)) latestByPlugin.set(key, a);
     }
 
-    const body = latestByProduct.size
-      ? [...latestByProduct.values()].map((s) => {
-          const cls = vboStatusClass(s.status);
-          const label = VBO_STATUS_LABEL[s.status] || s.status;
-          return `
-            <div class="incident ${cls}" style="cursor:default;">
-              <div class="title">${escapeHtml(s.product || "Produit inconnu")}</div>
-              <div class="meta">
-                <span class="badge ${cls}">${escapeHtml(label)}</span>
-                <span>${formatDate(s.startDate)}</span>
-              </div>
-            </div>`;
-        }).join("")
-      : '<div class="empty">Aucune sauvegarde trouvée</div>';
+    if (latestByPlugin.size === 0) return ""; // aucune sauvegarde détectée : section masquée
 
-    return `<div class="chart-cat">Sauvegarde Microsoft 365</div><div class="list">${body}</div>`;
+    const rows = [...latestByPlugin.values()].map(backupActivityRowHtml).join("");
+    return `<div class="chart-cat">Sauvegarde</div><div class="list">${rows}</div>`;
   } catch (err) {
-    return `<div class="chart-cat">Sauvegarde Microsoft 365</div><div class="error">Erreur : ${escapeHtml(err.message)}</div>`;
+    return `<div class="chart-cat">Sauvegarde</div><div class="error">Erreur : ${escapeHtml(err.message)}</div>`;
   }
-}
-
-// Volets de sauvegarde classique (serveurs/postes) exposés par /api/agent/{id}.
-const BACKUP_COMPONENT_LABEL = { client: "Fichiers", mssql: "SQL Server", oracle: "Oracle", hyperV: "Hyper-V", exchange: "Exchange" };
-
-function backupComponentStatus(s) {
-  if (!s || !s.isRequired) return null; // pas de sauvegarde configurée sur ce volet
-  if (s.isTimeout || s.isError) return "critical";
-  if (s.mainState !== "INSTALLED" && s.mainState !== "INSTALL_AND_REGISTER_OK") return "medium";
-  return "success";
-}
-
-function renderBackupStatusSection(ped) {
-  const status = ped.backup?.status || {};
-  const rows = Object.entries(BACKUP_COMPONENT_LABEL)
-    .map(([key, label]) => ({ label, cls: backupComponentStatus(status[key]) }))
-    .filter((r) => r.cls);
-
-  if (rows.length === 0) return ""; // aucune sauvegarde détectée : section masquée
-
-  const body = rows.map((r) => {
-    const statusLabel = r.cls === "success" ? "OK" : r.cls === "critical" ? "Erreur" : "À vérifier";
-    return `
-      <div class="incident ${r.cls}" style="cursor:default;">
-        <div class="title">${escapeHtml(r.label)}</div>
-        <div class="meta"><span class="badge ${r.cls}">${statusLabel}</span></div>
-      </div>`;
-  }).join("");
-
-  return `<div class="chart-cat">Sauvegarde</div><div class="list">${body}</div>`;
 }
 
 async function loadAgent(agentId) {
@@ -914,9 +912,7 @@ async function loadAgent(agentId) {
         `).join("")
       : '<div class="empty">Aucune courbe disponible pour cet agent</div>';
 
-    let backupHtml = "";
-    if (ped.type === "O") backupHtml = await renderBackupJobsSection(agentId);
-    else if (ped.type === "S" || ped.type === "W") backupHtml = renderBackupStatusSection(ped);
+    const backupHtml = ["S", "W", "O"].includes(ped.type) ? await renderBackupActivitySection(agentId) : "";
 
     agentBodyEl.innerHTML = renderAgentPedigree(agentId, ped) + backupHtml + chartsHtml + renderAgentIncidents(agentId);
   } catch (err) {
@@ -926,6 +922,13 @@ async function loadAgent(agentId) {
 }
 
 agentBodyEl.addEventListener("click", (e) => {
+  const incident = e.target.closest(".incident[data-uid]");
+  if (incident) {
+    const panel = document.getElementById("panel-" + incident.dataset.uid);
+    if (panel) panel.hidden = !panel.hidden;
+    return;
+  }
+
   const btn = e.target.closest(".chart-toggle");
   if (!btn) return;
   const panel = document.getElementById("panel-" + btn.dataset.uid);
