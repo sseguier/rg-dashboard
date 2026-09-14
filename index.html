@@ -41,30 +41,21 @@
     padding: 16px 16px 8px;
     border-bottom: 1px solid var(--card-border);
   }
+  .header-top {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+  }
   h1 {
     font-size: 1.1rem;
-    margin: 0 0 10px;
+    margin: 0;
     display: flex;
     align-items: center;
     gap: 8px;
     cursor: pointer;
   }
   .app-version { font-size: 0.65rem; font-weight: 400; color: var(--text-dim); }
-  .tabbar { display: flex; gap: 6px; }
-  .tabbar button {
-    flex: 1;
-    background: var(--card);
-    border: 1px solid var(--card-border);
-    color: var(--text-dim);
-    padding: 8px;
-    border-radius: 10px;
-    font-size: 0.82rem;
-  }
-  .tabbar button.active {
-    color: var(--text);
-    border-color: var(--accent);
-    background: rgba(59,130,246,0.15);
-  }
 
   .status-line {
     font-size: 0.78rem;
@@ -338,14 +329,13 @@
 <body>
 
 <header>
-  <h1 id="homeLink">🛰️ RG System Suite <span class="app-version">v0.27</span></h1>
+  <div class="header-top">
+    <button class="hamburger-btn" id="mainMenuBtn">☰</button>
+    <h1 id="homeLink">🛰️ RG System Suite <span class="app-version">v0.28</span></h1>
+  </div>
   <div class="search-bar">
     <input type="search" id="searchInput" placeholder="Rechercher dans les alertes…" autocomplete="off">
   </div>
-  <nav class="tabbar">
-    <button id="tabParc" class="active">🗂️ Parc</button>
-    <button id="tabAlerts">🔔 Alertes</button>
-  </nav>
 </header>
 
 <!-- ===== Page Alertes ===== -->
@@ -380,7 +370,6 @@
     <div class="parc-header">
       <button class="back-btn" id="parcBackBtn" hidden>‹ Retour</button>
       <span class="parc-title" id="parcTitle">Parc</span>
-      <button class="hamburger-btn" id="parcFilterBtn">☰</button>
     </div>
     <div class="filter-chip" id="parcFilterChip" hidden>
       <span class="label"></span>
@@ -404,12 +393,18 @@
 </div>
 
 <div class="drawer-overlay" id="drawerOverlay" hidden></div>
-<div class="drawer" id="filterDrawer" hidden>
-  <div class="drawer-header">Filtrer ce dossier</div>
-  <button type="button" class="drawer-item" data-filter="all">📋 Tous les agents</button>
-  <button type="button" class="drawer-item" data-filter="S">🖥️ Serveurs uniquement</button>
-  <button type="button" class="drawer-item" data-filter="W">💻 Postes uniquement</button>
-  <button type="button" class="drawer-item" data-filter="alerts">🔔 Avec alertes uniquement</button>
+<div class="drawer" id="mainDrawer" hidden>
+  <div class="drawer-header">Navigation</div>
+  <button type="button" class="drawer-item" data-nav="parc">🗂️ Parc</button>
+  <button type="button" class="drawer-item" data-nav="alerts">🔔 Alertes</button>
+
+  <div id="drawerFilterSection" hidden>
+    <div class="drawer-header">Filtrer ce dossier</div>
+    <button type="button" class="drawer-item" data-filter="all">📋 Tous les agents</button>
+    <button type="button" class="drawer-item" data-filter="S">🖥️ Serveurs uniquement</button>
+    <button type="button" class="drawer-item" data-filter="W">💻 Postes uniquement</button>
+    <button type="button" class="drawer-item" data-filter="alerts">🔔 Avec alertes uniquement</button>
+  </div>
 </div>
 
 <script>
@@ -682,11 +677,12 @@ const parcTitleEl = document.getElementById("parcTitle");
 const parcBackBtn = document.getElementById("parcBackBtn");
 const parcSearchView = document.getElementById("parcSearchView");
 const parcSearchList = document.getElementById("parcSearchList");
-const parcFilterBtn = document.getElementById("parcFilterBtn");
 const parcFilterChip = document.getElementById("parcFilterChip");
 const parcFilterClear = document.getElementById("parcFilterClear");
-const filterDrawer = document.getElementById("filterDrawer");
+const mainMenuBtn = document.getElementById("mainMenuBtn");
+const mainDrawer = document.getElementById("mainDrawer");
 const drawerOverlay = document.getElementById("drawerOverlay");
+const drawerFilterSection = document.getElementById("drawerFilterSection");
 
 parcSearchList.addEventListener("click", (e) => {
   const agentRow = e.target.closest("[data-agent]");
@@ -771,7 +767,7 @@ function renderNodeList() {
     parcFilterChip.hidden = false;
     parcFilterChip.querySelector(".label").textContent = "Filtre : " + FILTER_LABEL[parcTypeFilter];
   }
-  parcFilterBtn.classList.toggle("active", parcTypeFilter !== "all");
+  mainMenuBtn.classList.toggle("active", parcTypeFilter !== "all");
 
   const children = Object.entries(node.children || {});
   const folders = children
@@ -805,25 +801,36 @@ parcListEl.addEventListener("click", (e) => {
 
 parcBackBtn.addEventListener("click", () => history.back());
 
-function openFilterDrawer() {
-  filterDrawer.hidden = false;
+function openDrawer() {
+  mainDrawer.hidden = false;
   drawerOverlay.hidden = false;
-  filterDrawer.querySelectorAll(".drawer-item").forEach((b) => {
+  mainDrawer.querySelectorAll("[data-nav]").forEach((b) => {
+    b.classList.toggle("active", b.dataset.nav === currentPage);
+  });
+  const onParcList = currentPage === "parc" && !parcTreeView.hidden;
+  drawerFilterSection.hidden = !onParcList;
+  drawerFilterSection.querySelectorAll(".drawer-item").forEach((b) => {
     b.classList.toggle("active", b.dataset.filter === parcTypeFilter);
   });
 }
-function closeFilterDrawer() {
-  filterDrawer.hidden = true;
+function closeDrawer() {
+  mainDrawer.hidden = true;
   drawerOverlay.hidden = true;
 }
 
-parcFilterBtn.addEventListener("click", openFilterDrawer);
-drawerOverlay.addEventListener("click", closeFilterDrawer);
-filterDrawer.addEventListener("click", (e) => {
-  const btn = e.target.closest(".drawer-item");
-  if (!btn) return;
-  parcTypeFilter = btn.dataset.filter;
-  closeFilterDrawer();
+mainMenuBtn.addEventListener("click", openDrawer);
+drawerOverlay.addEventListener("click", closeDrawer);
+mainDrawer.addEventListener("click", (e) => {
+  const navBtn = e.target.closest("[data-nav]");
+  if (navBtn) {
+    closeDrawer();
+    location.hash = navBtn.dataset.nav === "alerts" ? "#/alerts" : "#/parc";
+    return;
+  }
+  const filterBtn = e.target.closest("[data-filter]");
+  if (!filterBtn) return;
+  parcTypeFilter = filterBtn.dataset.filter;
+  closeDrawer();
   renderNodeList();
 });
 parcFilterClear.addEventListener("click", () => {
@@ -1325,8 +1332,6 @@ const pageAlerts = document.getElementById("page-alerts");
 const pageParc = document.getElementById("page-parc");
 const parcTreeView = document.getElementById("parcTreeView");
 const parcAgentView = document.getElementById("parcAgentView");
-const tabAlerts = document.getElementById("tabAlerts");
-const tabParc = document.getElementById("tabParc");
 
 function parseHash() {
   const h = location.hash;
@@ -1344,8 +1349,6 @@ function router() {
 
   pageAlerts.hidden = onParc;
   pageParc.hidden = !onParc;
-  tabAlerts.classList.toggle("active", !onParc);
-  tabParc.classList.toggle("active", onParc);
   searchInputEl.placeholder = onParc ? "Rechercher un agent (nom, IP, OS, série…)" : "Rechercher dans les alertes…";
 
   if (!onParc) {
@@ -1364,8 +1367,6 @@ function router() {
   else loadNode(r.nodeId);
 }
 
-tabAlerts.addEventListener("click", () => { location.hash = "#/alerts"; });
-tabParc.addEventListener("click", () => { location.hash = "#/parc"; });
 window.addEventListener("hashchange", router);
 
 document.getElementById("homeLink").addEventListener("click", () => {
