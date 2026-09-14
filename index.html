@@ -176,6 +176,88 @@
   }
   .parc-title { font-weight: 600; font-size: 0.95rem; flex: 1; }
 
+  .hamburger-btn {
+    background: none;
+    border: 1px solid var(--card-border);
+    color: var(--text);
+    border-radius: 8px;
+    padding: 4px 10px;
+    font-size: 0.95rem;
+    position: relative;
+  }
+  .hamburger-btn.active::after {
+    content: "";
+    position: absolute;
+    top: -2px;
+    right: -2px;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--accent);
+    border: 1px solid var(--bg);
+  }
+
+  .filter-chip {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0 16px 10px;
+    background: rgba(59,130,246,0.15);
+    border: 1px solid var(--accent);
+    border-radius: 999px;
+    padding: 6px 12px;
+    font-size: 0.78rem;
+    width: fit-content;
+  }
+  .filter-chip button {
+    background: none;
+    border: none;
+    color: var(--text);
+    font-size: 0.8rem;
+    padding: 0;
+    line-height: 1;
+  }
+
+  .drawer-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 20;
+  }
+  .drawer {
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: 250px;
+    max-width: 80vw;
+    background: var(--card);
+    border-right: 1px solid var(--card-border);
+    z-index: 21;
+    display: flex;
+    flex-direction: column;
+    padding: 16px 0;
+    overflow-y: auto;
+  }
+  .drawer-header {
+    padding: 0 16px 12px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    border-bottom: 1px solid var(--card-border);
+    margin-bottom: 8px;
+  }
+  .drawer-item {
+    display: block;
+    width: 100%;
+    text-align: left;
+    background: none;
+    border: none;
+    color: var(--text);
+    padding: 12px 16px;
+    font-size: 0.88rem;
+  }
+  .drawer-item.active { background: rgba(59,130,246,0.15); color: var(--accent); font-weight: 600; }
+
   .row {
     display: flex;
     align-items: center;
@@ -256,7 +338,7 @@
 <body>
 
 <header>
-  <h1 id="homeLink">🛰️ RG System Suite <span class="app-version">v0.26</span></h1>
+  <h1 id="homeLink">🛰️ RG System Suite <span class="app-version">v0.27</span></h1>
   <div class="search-bar">
     <input type="search" id="searchInput" placeholder="Rechercher dans les alertes…" autocomplete="off">
   </div>
@@ -298,6 +380,11 @@
     <div class="parc-header">
       <button class="back-btn" id="parcBackBtn" hidden>‹ Retour</button>
       <span class="parc-title" id="parcTitle">Parc</span>
+      <button class="hamburger-btn" id="parcFilterBtn">☰</button>
+    </div>
+    <div class="filter-chip" id="parcFilterChip" hidden>
+      <span class="label"></span>
+      <button type="button" id="parcFilterClear">✕</button>
     </div>
     <div class="list" id="parcList">
       <div class="loading">Chargement…</div>
@@ -314,6 +401,15 @@
     </div>
   </div>
 
+</div>
+
+<div class="drawer-overlay" id="drawerOverlay" hidden></div>
+<div class="drawer" id="filterDrawer" hidden>
+  <div class="drawer-header">Filtrer ce dossier</div>
+  <button type="button" class="drawer-item" data-filter="all">📋 Tous les agents</button>
+  <button type="button" class="drawer-item" data-filter="S">🖥️ Serveurs uniquement</button>
+  <button type="button" class="drawer-item" data-filter="W">💻 Postes uniquement</button>
+  <button type="button" class="drawer-item" data-filter="alerts">🔔 Avec alertes uniquement</button>
 </div>
 
 <script>
@@ -586,6 +682,11 @@ const parcTitleEl = document.getElementById("parcTitle");
 const parcBackBtn = document.getElementById("parcBackBtn");
 const parcSearchView = document.getElementById("parcSearchView");
 const parcSearchList = document.getElementById("parcSearchList");
+const parcFilterBtn = document.getElementById("parcFilterBtn");
+const parcFilterChip = document.getElementById("parcFilterChip");
+const parcFilterClear = document.getElementById("parcFilterClear");
+const filterDrawer = document.getElementById("filterDrawer");
+const drawerOverlay = document.getElementById("drawerOverlay");
 
 parcSearchList.addEventListener("click", (e) => {
   const agentRow = e.target.closest("[data-agent]");
@@ -623,6 +724,26 @@ function agentRowHtml(id, n) {
     </div>`;
 }
 
+/* --- Filtre du dossier courant (menu ☰) --- */
+
+let parcTypeFilter = "all"; // all | S | W | alerts
+let lastLoadedNode = null;
+
+const FILTER_LABEL = {
+  S: "Serveurs uniquement",
+  W: "Postes uniquement",
+  alerts: "Avec alertes uniquement",
+};
+
+function folderVisible(c) {
+  return parcTypeFilter === "alerts" ? !!c.hasAlerts : true;
+}
+function agentVisible(c) {
+  if (parcTypeFilter === "all") return true;
+  if (parcTypeFilter === "alerts") return !!c.hasAlerts;
+  return c.type === parcTypeFilter;
+}
+
 async function loadNode(nodeId) {
   parcTitleEl.textContent = "Parc";
   parcBackBtn.hidden = String(nodeId) === String(ROOT_NODE_ID);
@@ -631,26 +752,43 @@ async function loadNode(nodeId) {
     const data = await fetchJson(`/api/node/${encodeURIComponent(nodeId)}/children`);
     const node = data[nodeId] || Object.values(data)[0];
     if (!node) throw new Error("Node introuvable");
-    parcTitleEl.textContent = node.name || "Parc";
-
-    const children = Object.entries(node.children || {});
-    const folders = children.filter(([, c]) => c.nodeType === "node").sort((a, b) => a[1].name.localeCompare(b[1].name));
-    const agents = children
-      .filter(([, c]) => c.nodeType === "agent" && !HIDDEN_AGENT_TYPES.has(c.type))
-      .sort((a, b) => a[1].name.localeCompare(b[1].name));
-
-    if (folders.length === 0 && agents.length === 0) {
-      parcListEl.innerHTML = '<div class="empty">Ce dossier est vide</div>';
-      return;
-    }
-
-    parcListEl.innerHTML =
-      folders.map(([id, c]) => nodeRowHtml(id, c)).join("") +
-      agents.map(([id, c]) => agentRowHtml(id, c)).join("");
+    lastLoadedNode = node;
+    renderNodeList();
   } catch (err) {
     parcListEl.innerHTML = '<div class="error">Erreur de chargement : ' + escapeHtml(err.message) + '</div>';
     console.error(err);
   }
+}
+
+function renderNodeList() {
+  const node = lastLoadedNode;
+  if (!node) return;
+  parcTitleEl.textContent = node.name || "Parc";
+
+  if (parcTypeFilter === "all") {
+    parcFilterChip.hidden = true;
+  } else {
+    parcFilterChip.hidden = false;
+    parcFilterChip.querySelector(".label").textContent = "Filtre : " + FILTER_LABEL[parcTypeFilter];
+  }
+  parcFilterBtn.classList.toggle("active", parcTypeFilter !== "all");
+
+  const children = Object.entries(node.children || {});
+  const folders = children
+    .filter(([, c]) => c.nodeType === "node" && folderVisible(c))
+    .sort((a, b) => a[1].name.localeCompare(b[1].name));
+  const agents = children
+    .filter(([, c]) => c.nodeType === "agent" && !HIDDEN_AGENT_TYPES.has(c.type) && agentVisible(c))
+    .sort((a, b) => a[1].name.localeCompare(b[1].name));
+
+  if (folders.length === 0 && agents.length === 0) {
+    parcListEl.innerHTML = '<div class="empty">Aucun résultat pour ce filtre</div>';
+    return;
+  }
+
+  parcListEl.innerHTML =
+    folders.map(([id, c]) => nodeRowHtml(id, c)).join("") +
+    agents.map(([id, c]) => agentRowHtml(id, c)).join("");
 }
 
 parcListEl.addEventListener("click", (e) => {
@@ -666,6 +804,32 @@ parcListEl.addEventListener("click", (e) => {
 });
 
 parcBackBtn.addEventListener("click", () => history.back());
+
+function openFilterDrawer() {
+  filterDrawer.hidden = false;
+  drawerOverlay.hidden = false;
+  filterDrawer.querySelectorAll(".drawer-item").forEach((b) => {
+    b.classList.toggle("active", b.dataset.filter === parcTypeFilter);
+  });
+}
+function closeFilterDrawer() {
+  filterDrawer.hidden = true;
+  drawerOverlay.hidden = true;
+}
+
+parcFilterBtn.addEventListener("click", openFilterDrawer);
+drawerOverlay.addEventListener("click", closeFilterDrawer);
+filterDrawer.addEventListener("click", (e) => {
+  const btn = e.target.closest(".drawer-item");
+  if (!btn) return;
+  parcTypeFilter = btn.dataset.filter;
+  closeFilterDrawer();
+  renderNodeList();
+});
+parcFilterClear.addEventListener("click", () => {
+  parcTypeFilter = "all";
+  renderNodeList();
+});
 
 /* =========================================================
    Page Parc : fiche agent (pedigree + courbes)
