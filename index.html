@@ -338,16 +338,19 @@
   .chart-meta { font-size: 0.75rem; color: var(--text-dim); margin-bottom: 4px; }
   .chart-legend { display: flex; gap: 12px; font-size: 0.72rem; color: var(--text-dim); margin-top: 4px; }
   .legend-item i { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 4px; }
+
+  .map-container { height: 65vh; width: 100%; }
 </style>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 </head>
 <body>
 
 <header>
   <div class="header-top">
     <button class="hamburger-btn" id="mainMenuBtn">☰</button>
-    <h1 id="homeLink">🛰️ RG System Suite <span class="app-version">v0.32</span></h1>
+    <h1 id="homeLink">🛰️ RG System Suite <span class="app-version">v0.33</span></h1>
   </div>
-  <div class="search-bar">
+  <div class="search-bar" id="searchBarWrap">
     <input type="search" id="searchInput" placeholder="Rechercher un agent..." autocomplete="off">
   </div>
 </header>
@@ -406,11 +409,23 @@
 
 </div>
 
+<!-- ===== Page Carte (clients géolocalisés) ===== -->
+<div id="page-map" hidden>
+  <div class="parc-header">
+    <span class="parc-title">Carte des clients</span>
+  </div>
+  <div id="mapStatus" class="loading">Chargement…</div>
+  <div id="mapContainer" class="map-container" style="display:none;"></div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
 <div class="drawer-overlay" id="drawerOverlay" hidden></div>
 <div class="drawer" id="mainDrawer" hidden>
   <div class="drawer-header">Navigation</div>
   <button type="button" class="drawer-item" data-nav="parc">🗂️ Parc</button>
   <button type="button" class="drawer-item" data-nav="alerts">🔔 Alertes</button>
+  <button type="button" class="drawer-item" data-nav="map">🗺️ Carte</button>
 
   <div id="drawerFilterSection" hidden>
     <div class="drawer-header">Filtrer ce dossier</div>
@@ -838,7 +853,7 @@ mainDrawer.addEventListener("click", (e) => {
   const navBtn = e.target.closest("[data-nav]");
   if (navBtn) {
     closeDrawer();
-    location.hash = navBtn.dataset.nav === "alerts" ? "#/alerts" : "#/parc";
+    location.hash = "#/" + navBtn.dataset.nav;
     return;
   }
   const filterBtn = e.target.closest("[data-filter]");
@@ -1452,13 +1467,129 @@ function buildLineChartSvg(interpreted, scale) {
 }
 
 /* =========================================================
+   Page Carte (clients géolocalisés via OpenStreetMap/Leaflet)
+   ========================================================= */
+
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+// Géocodage gratuit via Nominatim (OpenStreetMap) : pas de clé API, mais
+// limité à 1 requête/seconde et à utiliser avec parcimonie. Les résultats
+// sont mis en cache dans le navigateur (une adresse d'entreprise change
+// rarement) pour ne géocoder chaque client qu'une seule fois.
+async function geocodeAddress(address) {
+  const cacheKey = "rgdash-geocode:" + address;
+  try {
+    const cached = localStorage.getItem(cacheKey);
+    if (cached) return JSON.parse(cached);
+  } catch (e) { /* stockage indisponible : on re-géocode simplement */ }
+
+  const url = "https://nominatim.openstreetmap.org/search?format=json&limit=1&q=" + encodeURIComponent(address);
+  const res = await fetch(url);
+  if (!res.ok) throw new Error("Géocodage indisponible (HTTP " + res.status + ")");
+  const results = await res.json();
+  if (!results.length) return null;
+  const point = { lat: parseFloat(results[0].lat), lng: parseFloat(results[0].lon) };
+  try { localStorage.setItem(cacheKey, JSON.stringify(point)); } catch (e) { /* pas bloquant */ }
+  return point;
+}
+
+let mapInstance = null;
+let mapLoaded = false; // évite de re-géocoder à chaque retour sur la page
+
+async function loadMapPage() {
+  const statusEl = document.getElementById("mapStatus");
+  const containerEl = document.getElementById("mapContainer");
+
+  if (mapLoaded) {
+    statusEl.hidden = true;
+    containerEl.style.display = "block";
+    if (mapInstance) setTimeout(() => mapInstance.invalidateSize(), 0);
+    return;
+  }
+
+  statusEl.hidden = false;
+  statusEl.textContent = "Chargement des clients…";
+  containerEl.style.display = "none";
+
+  try {
+    const agents = await loadAllAgents();
+    const customers = new Map();
+    for (const a of agents) {
+      if (a.customer?.id && !customers.has(a.customer.id)) {
+        customers.set(a.customer.id, { id: a.customer.id, name: a.customer.name });
+      }
+    }
+
+    if (customers.size === 0) {
+      statusEl.textContent = "Aucun client trouvé dans le parc.";
+      return;
+    }
+
+    const pins = [];
+    let i = 0;
+    for (const customer of customers.values()) {
+      i++;
+      statusEl.textContent = `Localisation des clients… (${i}/${customers.size})`;
+      try {
+        const details = await fetchJson(`/api/node/${encodeURIComponent(customer.id)}/customer`);
+        if (!details.companyAddress) continue;
+        const point = await geocodeAddress(details.companyAddress);
+        if (point) pins.push({ ...point, name: details.companyName || customer.name, address: details.companyAddress, nodeId: customer.id });
+      } catch (err) {
+        console.error("Client " + customer.id + " :", err);
+      }
+      await sleep(1000); // politique d'usage Nominatim : 1 requête/seconde max
+    }
+
+    if (pins.length === 0) {
+      statusEl.textContent = "Aucun client n'a pu être localisé (adresse manquante ou introuvable).";
+      return;
+    }
+
+    statusEl.hidden = true;
+    containerEl.style.display = "block";
+
+    mapInstance = L.map(containerEl);
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+      maxZoom: 19,
+    }).addTo(mapInstance);
+
+    const markers = pins.map((pin) => {
+      const marker = L.marker([pin.lat, pin.lng]).addTo(mapInstance);
+      marker.bindPopup(
+        `<strong>${escapeHtml(pin.name)}</strong><br>${escapeHtml(pin.address)}<br>` +
+        `<a href="#/parc/node/${encodeURIComponent(pin.nodeId)}">Voir ce client</a>`
+      );
+      return marker;
+    });
+
+    if (markers.length > 1) {
+      mapInstance.fitBounds(L.featureGroup(markers).getBounds().pad(0.2));
+    } else {
+      mapInstance.setView([pins[0].lat, pins[0].lng], 13);
+    }
+
+    mapLoaded = true;
+  } catch (err) {
+    statusEl.hidden = false;
+    statusEl.textContent = "Erreur : " + err.message;
+    console.error(err);
+  }
+}
+
+/* =========================================================
    Routeur (hash-based)
    ========================================================= */
 
 const pageAlerts = document.getElementById("page-alerts");
 const pageParc = document.getElementById("page-parc");
+const pageMap = document.getElementById("page-map");
 const parcTreeView = document.getElementById("parcTreeView");
 const parcAgentView = document.getElementById("parcAgentView");
+const searchBarWrap = document.getElementById("searchBarWrap");
 
 function parseHash() {
   const h = location.hash;
@@ -1466,19 +1597,25 @@ function parseHash() {
   if ((m = h.match(/^#\/parc\/agent\/(.+)$/))) return { page: "parc", view: "agent", agentId: decodeURIComponent(m[1]) };
   if ((m = h.match(/^#\/parc\/node\/(.+)$/))) return { page: "parc", view: "tree", nodeId: decodeURIComponent(m[1]) };
   if (h === "#/alerts") return { page: "alerts" };
+  if (h === "#/map") return { page: "map" };
   return { page: "parc", view: "tree", nodeId: ROOT_NODE_ID }; // Parc = page par defaut
 }
 
 function router() {
   const r = parseHash();
-  const onParc = r.page === "parc";
-  currentPage = onParc ? "parc" : "alerts";
+  currentPage = r.page;
 
-  pageAlerts.hidden = onParc;
-  pageParc.hidden = !onParc;
+  pageAlerts.hidden = currentPage !== "alerts";
+  pageParc.hidden = currentPage !== "parc";
+  pageMap.hidden = currentPage !== "map";
+  searchBarWrap.hidden = currentPage === "map"; // la recherche ne porte que sur les agents, pas la carte
 
-  if (!onParc) {
+  if (currentPage === "alerts") {
     renderAlertList();
+    return;
+  }
+  if (currentPage === "map") {
+    loadMapPage();
     return;
   }
 
