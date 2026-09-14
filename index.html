@@ -38,7 +38,10 @@
     top: 0;
     z-index: 5;
     background: var(--bg);
-    padding: 16px 16px 8px;
+    /* iOS (PWA installée, barre de statut "black-translucent") dessine le
+       contenu sous l'encoche/l'heure : on ajoute la zone sûre en plus du
+       padding habituel pour ne pas passer dessous. env(...) vaut 0 ailleurs. */
+    padding: calc(16px + env(safe-area-inset-top)) 16px 8px;
     border-bottom: 1px solid var(--card-border);
   }
   .header-top {
@@ -238,7 +241,7 @@
     z-index: 21;
     display: flex;
     flex-direction: column;
-    padding: 16px 0;
+    padding: calc(16px + env(safe-area-inset-top)) 0 16px;
     overflow-y: auto;
   }
   .drawer-header {
@@ -342,7 +345,7 @@
 <header>
   <div class="header-top">
     <button class="hamburger-btn" id="mainMenuBtn">☰</button>
-    <h1 id="homeLink">🛰️ RG System Suite <span class="app-version">v0.31</span></h1>
+    <h1 id="homeLink">🛰️ RG System Suite <span class="app-version">v0.32</span></h1>
   </div>
   <div class="search-bar">
     <input type="search" id="searchInput" placeholder="Rechercher un agent..." autocomplete="off">
