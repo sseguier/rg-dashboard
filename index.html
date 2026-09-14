@@ -331,7 +331,7 @@
 <header>
   <div class="header-top">
     <button class="hamburger-btn" id="mainMenuBtn">☰</button>
-    <h1 id="homeLink">🛰️ RG System Suite <span class="app-version">v0.29</span></h1>
+    <h1 id="homeLink">🛰️ RG System Suite <span class="app-version">v0.30</span></h1>
   </div>
   <div class="search-bar">
     <input type="search" id="searchInput" placeholder="Rechercher un agent..." autocomplete="off">
@@ -1098,6 +1098,44 @@ async function renderBackupActivitySection(agentId) {
   }
 }
 
+// Journaux d'événements Windows (System/Application/SNMP Traps) remontés par
+// l'agent. Seuls error/warning sont conservés côté API (pas de bruit
+// "information"), donc la criticité se calque directement sur le vocabulaire
+// déjà utilisé pour les alertes (critique/moyen/bas).
+const EVENT_TYPE_CLASS = { error: "critical", warning: "medium", information: "low" };
+const EVENT_TYPE_LABEL = { error: "Erreur", warning: "Avertissement", information: "Information" };
+
+function eventRowHtml(ev, index) {
+  const cls = EVENT_TYPE_CLASS[ev.type] || "low";
+  const label = EVENT_TYPE_LABEL[ev.type] || ev.type || "?";
+  const uid = "event-" + index;
+  return `
+    <div class="incident ${cls}" data-uid="${uid}" style="cursor:pointer;">
+      <div class="title">${escapeHtml(ev.source || "Source inconnue")}</div>
+      <div class="meta">
+        <span class="badge ${cls}">${escapeHtml(label)}</span>
+        <span>${escapeHtml(ev.logName || "")}</span>
+        <span>${formatDate(ev.textDate)}</span>
+      </div>
+    </div>
+    <div class="chart-panel" id="panel-${uid}" hidden>${escapeHtml(ev.text || "").replace(/\n/g, "<br>")}</div>
+  `;
+}
+
+async function renderAgentEventsSection(agentId) {
+  try {
+    const qs = new URLSearchParams({ maxResults: "20" }).toString();
+    const data = await fetchJson(`/api/agent/${encodeURIComponent(agentId)}/event/list?${qs}`);
+    const events = Array.isArray(data) ? data : [];
+    if (events.length === 0) return ""; // pas d'erreur/avertissement récent : section masquée
+
+    const rows = events.map(eventRowHtml).join("");
+    return `<div class="chart-cat">Journal d'événements</div><div class="list">${rows}</div>`;
+  } catch (err) {
+    return `<div class="chart-cat">Journal d'événements</div><div class="error">Erreur : ${escapeHtml(err.message)}</div>`;
+  }
+}
+
 async function loadAgent(agentId) {
   agentTitleEl.textContent = "Agent";
   agentBodyEl.innerHTML = '<div class="loading">Chargement…</div>';
@@ -1115,14 +1153,13 @@ async function loadAgent(agentId) {
         `).join("")
       : '<div class="empty">Aucune courbe disponible pour cet agent</div>';
 
-    let backupHtml = "", orgName = null;
-    if (["S", "W", "O"].includes(ped.type)) {
-      const backupResult = await renderBackupActivitySection(agentId);
-      backupHtml = backupResult.html;
-      orgName = backupResult.orgName;
-    }
+    const backupPromise = ["S", "W", "O"].includes(ped.type)
+      ? renderBackupActivitySection(agentId)
+      : Promise.resolve({ html: "", orgName: null });
+    const [backupResult, eventsHtml] = await Promise.all([backupPromise, renderAgentEventsSection(agentId)]);
+    const { html: backupHtml, orgName } = backupResult;
 
-    agentBodyEl.innerHTML = renderAgentPedigree(agentId, ped, orgName) + backupHtml + chartsHtml + renderAgentIncidents(agentId);
+    agentBodyEl.innerHTML = renderAgentPedigree(agentId, ped, orgName) + backupHtml + chartsHtml + renderAgentIncidents(agentId) + eventsHtml;
   } catch (err) {
     agentBodyEl.innerHTML = '<div class="error">Erreur de chargement : ' + escapeHtml(err.message) + '</div>';
     console.error(err);
