@@ -331,10 +331,10 @@
 <header>
   <div class="header-top">
     <button class="hamburger-btn" id="mainMenuBtn">☰</button>
-    <h1 id="homeLink">🛰️ RG System Suite <span class="app-version">v0.28</span></h1>
+    <h1 id="homeLink">🛰️ RG System Suite <span class="app-version">v0.29</span></h1>
   </div>
   <div class="search-bar">
-    <input type="search" id="searchInput" placeholder="Rechercher dans les alertes…" autocomplete="off">
+    <input type="search" id="searchInput" placeholder="Rechercher un agent..." autocomplete="off">
   </div>
 </header>
 
@@ -1349,7 +1349,6 @@ function router() {
 
   pageAlerts.hidden = onParc;
   pageParc.hidden = !onParc;
-  searchInputEl.placeholder = onParc ? "Rechercher un agent (nom, IP, OS, série…)" : "Rechercher dans les alertes…";
 
   if (!onParc) {
     renderAlertList();
