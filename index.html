@@ -142,6 +142,17 @@
   .badge.success { background: rgba(34,197,94,0.15); color: var(--ok); }
   .badge.offline { background: rgba(148,163,184,0.15); color: var(--text-dim); }
 
+  .mini-filter { display: flex; gap: 6px; flex-wrap: wrap; padding: 0 16px 10px; }
+  .mini-filter-btn {
+    background: var(--card);
+    border: 1px solid var(--card-border);
+    color: var(--text-dim);
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-size: 0.75rem;
+  }
+  .mini-filter-btn.active { color: var(--text); border-color: var(--accent); background: rgba(59,130,246,0.15); }
+
   .empty, .error, .loading {
     text-align: center;
     color: var(--text-dim);
@@ -331,7 +342,7 @@
 <header>
   <div class="header-top">
     <button class="hamburger-btn" id="mainMenuBtn">☰</button>
-    <h1 id="homeLink">🛰️ RG System Suite <span class="app-version">v0.30</span></h1>
+    <h1 id="homeLink">🛰️ RG System Suite <span class="app-version">v0.31</span></h1>
   </div>
   <div class="search-bar">
     <input type="search" id="searchInput" placeholder="Rechercher un agent..." autocomplete="off">
@@ -939,6 +950,16 @@ function renderAgentPedigree(agentId, ped, orgName) {
 // deux indicateurs de présence de l'agent, plus lisibles regroupés.
 const CHART_GROUP_OVERRIDE = { Onair: "Heartbeat" };
 
+// Ordre d'affichage demandé (retour utilisateur) : présence de l'agent
+// d'abord, puis capacité (disque, disque E/S, mémoire, CPU), puis sécurité et
+// réseau. Tout groupe non listé (peu probable en pratique) est ajouté à la
+// fin par ordre alphabétique plutôt que d'être perdu silencieusement.
+const CHART_GROUP_ORDER = ["Heartbeat", "Disques", "Disques E/S", "Mémoire", "Processeurs", "Antivirus", "Trafic réseau"];
+
+// "Octets Transmis par l'Agent" (bruit technique bas niveau, sans intérêt pour
+// un diagnostic rapide) est volontairement exclu de l'affichage.
+const EXCLUDED_CHART_COUNTERS = new Set(["SentBytes"]);
+
 function collectChartables(objects) {
   const groups = new Map(); // nom de groupe affiché -> { name, items }
   for (const [key, cat] of Object.entries(objects || {})) {
@@ -946,6 +967,8 @@ function collectChartables(objects) {
     for (const [objId, obj] of Object.entries(cat.objects || {})) {
       if (!obj.charts) continue;
       for (const [chartId, chart] of Object.entries(obj.charts)) {
+        const countersStr = Array.isArray(chart.counters) ? chart.counters.join(" ") : (chart.counters || "");
+        if (countersStr.split(" ").some((c) => EXCLUDED_CHART_COUNTERS.has(c))) continue;
         items.push({
           objId,
           chartId,
@@ -963,12 +986,25 @@ function collectChartables(objects) {
     groups.get(groupName).items.push(...items);
   }
   const categories = [...groups.values()];
-  categories.sort((a, b) => a.name.localeCompare(b.name));
+  categories.sort((a, b) => {
+    const ia = CHART_GROUP_ORDER.indexOf(a.name);
+    const ib = CHART_GROUP_ORDER.indexOf(b.name);
+    if (ia === -1 && ib === -1) return a.name.localeCompare(b.name);
+    if (ia === -1) return 1;
+    if (ib === -1) return -1;
+    return ia - ib;
+  });
   return categories;
 }
 
-function chartItemHtml(item) {
-  const label = item.isMono ? item.chartName : `${item.chartName} — ${item.objName}`;
+function chartItemHtml(item, groupName) {
+  const base = item.isMono ? item.chartName : `${item.chartName} — ${item.objName}`;
+  // Certains noms de courbe ("Actif") existent dans plusieurs groupes
+  // (Heartbeat, Antivirus...) : on préfixe par le groupe pour lever
+  // l'ambiguïté, sauf quand le nom du groupe est déjà redondant avec le libellé.
+  const label = groupName && !base.toLowerCase().includes(groupName.toLowerCase())
+    ? `${groupName} — ${base}`
+    : base;
   const uid = item.objId + "_" + item.chartId;
   // Selon les agents, l'API renvoie "counters" soit en chaîne ("A B"), soit en tableau (["A","B"]).
   // On normalise ici en chaîne espacée pour que l'attribut data- et interpretChartData restent simples.
@@ -982,11 +1018,32 @@ function chartItemHtml(item) {
     </div>`;
 }
 
+// Petite barre de filtres pill-shaped, réutilisée pour les alertes et les
+// événements de la fiche agent (options = [[valeur, libellé], ...], valeur
+// vide = "Toutes").
+function miniFilterBarHtml(options, active, dataAttr) {
+  const buttons = options.map(([val, label]) => {
+    const isActive = (active || "") === val;
+    return `<button type="button" class="mini-filter-btn ${isActive ? "active" : ""}" data-${dataAttr}="${escapeHtml(val)}">${escapeHtml(label)}</button>`;
+  }).join("");
+  return `<div class="mini-filter">${buttons}</div>`;
+}
+
+function incidentCriticality(inc) {
+  return CRITICALITY_ORDER[inc.criticality] !== undefined ? inc.criticality : "low";
+}
+
+let agentAlertFilter = null; // null (Toutes) | "critical" | "medium" | "low"
+
 function renderAgentIncidents(agentId) {
-  const items = lastIncidents.filter((inc) => inc.agentId === agentId && !inc.acquitted);
+  const all = lastIncidents.filter((inc) => inc.agentId === agentId && !inc.acquitted);
+  const items = agentAlertFilter ? all.filter((inc) => incidentCriticality(inc) === agentAlertFilter) : all;
+  const filterBar = all.length
+    ? miniFilterBarHtml([["", "Toutes"], ["critical", "Critique"], ["medium", "Moyenne"], ["low", "Basse"]], agentAlertFilter, "agent-alert-filter")
+    : "";
   const body = items.length
     ? items.map((inc) => {
-        const crit = CRITICALITY_ORDER[inc.criticality] !== undefined ? inc.criticality : "low";
+        const crit = incidentCriticality(inc);
         const label = CRITICALITY_LABEL[crit] || inc.criticality || "?";
         return `
           <div class="incident ${crit}" style="cursor:default;">
@@ -994,8 +1051,8 @@ function renderAgentIncidents(agentId) {
             <div class="meta"><span class="badge ${crit}">${label}</span></div>
           </div>`;
       }).join("")
-    : '<div class="empty">✅ Aucune alerte pour cet agent</div>';
-  return `<div class="chart-cat">Alertes</div><div class="list">${body}</div>`;
+    : `<div class="empty">${all.length ? "Aucune alerte pour ce filtre" : "✅ Aucune alerte pour cet agent"}</div>`;
+  return `<div id="agentAlertsSection"><div class="chart-cat">Alertes</div>${filterBar}<div class="list">${body}</div></div>`;
 }
 
 // Historique unifié des jobs de sauvegarde (Files & Data pour S/W, Microsoft
@@ -1122,21 +1179,38 @@ function eventRowHtml(ev, index) {
   `;
 }
 
+// Données brutes conservées à part (plutôt que rejetées après le premier
+// rendu) pour pouvoir ré-appliquer un filtre sans refaire d'appel API.
+let lastAgentEvents = [];
+let agentEventFilter = null; // null (Toutes) | "error" | "warning"
+
+function renderAgentEventsBlock() {
+  if (lastAgentEvents.length === 0) return ""; // pas d'erreur/avertissement récent : section masquée
+  const items = agentEventFilter ? lastAgentEvents.filter((ev) => ev.type === agentEventFilter) : lastAgentEvents;
+  const filterBar = miniFilterBarHtml([["", "Toutes"], ["error", "Erreur"], ["warning", "Avertissement"]], agentEventFilter, "agent-event-filter");
+  const body = items.length ? items.map(eventRowHtml).join("") : '<div class="empty">Aucun événement pour ce filtre</div>';
+  return `<div id="agentEventsSection"><div class="chart-cat">Journal d'événements</div>${filterBar}<div class="list">${body}</div></div>`;
+}
+
 async function renderAgentEventsSection(agentId) {
   try {
     const qs = new URLSearchParams({ maxResults: "20" }).toString();
     const data = await fetchJson(`/api/agent/${encodeURIComponent(agentId)}/event/list?${qs}`);
-    const events = Array.isArray(data) ? data : [];
-    if (events.length === 0) return ""; // pas d'erreur/avertissement récent : section masquée
-
-    const rows = events.map(eventRowHtml).join("");
-    return `<div class="chart-cat">Journal d'événements</div><div class="list">${rows}</div>`;
+    lastAgentEvents = Array.isArray(data) ? data : [];
+    return renderAgentEventsBlock();
   } catch (err) {
-    return `<div class="chart-cat">Journal d'événements</div><div class="error">Erreur : ${escapeHtml(err.message)}</div>`;
+    lastAgentEvents = [];
+    return `<div id="agentEventsSection"><div class="chart-cat">Journal d'événements</div><div class="error">Erreur : ${escapeHtml(err.message)}</div></div>`;
   }
 }
 
+let currentAgentId = null;
+
 async function loadAgent(agentId) {
+  currentAgentId = agentId;
+  agentAlertFilter = null;
+  agentEventFilter = null;
+  lastAgentEvents = [];
   agentTitleEl.textContent = "Agent";
   agentBodyEl.innerHTML = '<div class="loading">Chargement…</div>';
   try {
@@ -1147,10 +1221,7 @@ async function loadAgent(agentId) {
 
     const categories = collectChartables(objects);
     const chartsHtml = categories.length
-      ? categories.map((cat) => `
-          <div class="chart-cat">${escapeHtml(cat.name)}</div>
-          ${cat.items.map(chartItemHtml).join("")}
-        `).join("")
+      ? `<div class="chart-cat">Courbes</div>` + categories.map((cat) => cat.items.map((item) => chartItemHtml(item, cat.name)).join("")).join("")
       : '<div class="empty">Aucune courbe disponible pour cet agent</div>';
 
     const backupPromise = ["S", "W", "O"].includes(ped.type)
@@ -1167,6 +1238,22 @@ async function loadAgent(agentId) {
 }
 
 agentBodyEl.addEventListener("click", (e) => {
+  const alertFilterBtn = e.target.closest("[data-agent-alert-filter]");
+  if (alertFilterBtn) {
+    agentAlertFilter = alertFilterBtn.dataset.agentAlertFilter || null;
+    const section = document.getElementById("agentAlertsSection");
+    if (section) section.outerHTML = renderAgentIncidents(currentAgentId);
+    return;
+  }
+
+  const eventFilterBtn = e.target.closest("[data-agent-event-filter]");
+  if (eventFilterBtn) {
+    agentEventFilter = eventFilterBtn.dataset.agentEventFilter || null;
+    const section = document.getElementById("agentEventsSection");
+    if (section) section.outerHTML = renderAgentEventsBlock();
+    return;
+  }
+
   const incident = e.target.closest(".incident[data-uid]");
   if (incident) {
     const panel = document.getElementById("panel-" + incident.dataset.uid);
