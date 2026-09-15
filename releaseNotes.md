@@ -36,3 +36,6 @@ Retrait des icônes (œil / singe) sur le bouton d'affichage des courbes, ne gar
 
 ## v0.36
 Retrait du trait sous "Filtrer ce dossier" dans le menu latéral (ne garde que la ligne de séparation au-dessus). Les cadres récapitulatifs d'un dossier client affichent désormais "Serveur(s)", "Poste(s)", "Device(s)".
+
+## v0.37
+Bouton "Actualiser" ajouté sur la fiche agent et sur l'arborescence Parc. Les compteurs Serveur(s)/Poste(s)/Device(s) apparaissent maintenant sur n'importe quel dossier, pas seulement les nodes clients. Le libellé de la recherche s'adapte à l'écran ("Rechercher une alerte..." sur Alertes). Nouvel onglet "Nouveautés" dans le menu latéral, affichant l'historique des versions directement dans l'app.
