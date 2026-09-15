@@ -379,7 +379,7 @@
 <header>
   <div class="header-top">
     <button class="hamburger-btn" id="mainMenuBtn">☰</button>
-    <h1 id="homeLink">🛰️ RG System Suite <span class="app-version">v0.38</span></h1>
+    <h1 id="homeLink">🛰️ RG System Suite <span class="app-version">v0.39</span></h1>
   </div>
   <div class="search-bar" id="searchBarWrap">
     <input type="search" id="searchInput" placeholder="Rechercher un agent..." autocomplete="off">
@@ -1335,13 +1335,13 @@ async function loadAgent(agentId) {
       fetchJson(`/api/agent/${encodeURIComponent(agentId)}/objects`).catch(() => ({})),
     ]);
 
-    // Type "L" (lien/agent léger) n'a ni courbes de supervision exploitables
-    // ni journal d'événements Windows : on masque ces deux blocs plutôt que
-    // d'afficher des sections vides.
-    const showChartsAndEvents = ped.type !== "L";
+    // Type "L" (lien/agent léger) n'a ni courbes de supervision exploitables,
+    // ni journal d'événements Windows, ni alertes pertinentes : on masque ces
+    // trois blocs plutôt que d'afficher des sections vides.
+    const showSupervisionBlocks = ped.type !== "L";
 
-    const categories = showChartsAndEvents ? collectChartables(objects) : [];
-    const chartsHtml = !showChartsAndEvents ? "" : categories.length
+    const categories = showSupervisionBlocks ? collectChartables(objects) : [];
+    const chartsHtml = !showSupervisionBlocks ? "" : categories.length
       ? `<div class="chart-cat">Courbes</div>` +
         `<div class="mini-filter"><button type="button" class="mini-filter-btn" data-charts-toggle-all>Tout afficher</button></div>` +
         `<div id="agentChartsList">${categories.map((cat) => cat.items.map((item) => chartItemHtml(item, cat.name)).join("")).join("")}</div>`
@@ -1350,11 +1350,12 @@ async function loadAgent(agentId) {
     const backupPromise = ["S", "W", "O"].includes(ped.type)
       ? renderBackupActivitySection(agentId)
       : Promise.resolve({ html: "", orgName: null });
-    const eventsPromise = showChartsAndEvents ? renderAgentEventsSection(agentId) : Promise.resolve("");
+    const eventsPromise = showSupervisionBlocks ? renderAgentEventsSection(agentId) : Promise.resolve("");
     const [backupResult, eventsHtml] = await Promise.all([backupPromise, eventsPromise]);
     const { html: backupHtml, orgName } = backupResult;
 
-    agentBodyEl.innerHTML = renderAgentPedigree(agentId, ped, orgName) + backupHtml + chartsHtml + renderAgentIncidents(agentId) + eventsHtml;
+    const incidentsHtml = showSupervisionBlocks ? renderAgentIncidents(agentId) : "";
+    agentBodyEl.innerHTML = renderAgentPedigree(agentId, ped, orgName) + backupHtml + chartsHtml + incidentsHtml + eventsHtml;
   } catch (err) {
     agentBodyEl.innerHTML = '<div class="error">Erreur de chargement : ' + escapeHtml(err.message) + '</div>';
     console.error(err);
@@ -1600,6 +1601,7 @@ function buildLineChartSvg(interpreted, scale) {
 // ⚠️ À tenir à jour à chaque nouvelle version livrée (garder aussi
 // releaseNotes.md synchronisé, à la racine du dossier fourni à l'utilisateur).
 const RELEASE_NOTES = [
+  { version: "0.39", text: "Le bloc Alertes est aussi masqué sur la fiche d'un agent de type L (comme Courbes et Journal d'événements déjà en v0.38) — reste visible sur l'écran Alertes global." },
   { version: "0.38", text: "Les agents de type L (lien) n'affichent plus les blocs Courbes et Journal d'événements sur leur fiche." },
   { version: "0.37", text: "Bouton Actualiser sur la fiche agent et sur l'arborescence Parc. Compteurs Serveur(s)/Poste(s)/Device(s) désormais sur tout dossier (pas seulement les clients). Recherche : libellé adapté selon l'écran. Nouvel onglet Nouveautés (cette page) dans le menu ☰." },
   { version: "0.36", text: "Retrait du trait sous « Filtrer ce dossier » dans le menu latéral. Les cadres récapitulatifs d'un dossier affichent « Serveur(s) », « Poste(s) », « Device(s) »." },
