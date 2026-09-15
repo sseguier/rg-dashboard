@@ -33,3 +33,6 @@ Sur un dossier client, affichage du nombre de serveurs, postes et devices (compt
 
 ## v0.35
 Retrait des icônes (œil / singe) sur le bouton d'affichage des courbes, ne garde que le texte. Ajout d'un bouton "Actualiser" sur l'onglet Carte pour recharger la liste des clients. Correction du positionnement du titre "Filtrer ce dossier" dans le menu latéral (bien séparé du groupe de navigation au-dessus). Création de ce fichier de notes de version.
+
+## v0.36
+Retrait du trait sous "Filtrer ce dossier" dans le menu latéral (ne garde que la ligne de séparation au-dessus). Les cadres récapitulatifs d'un dossier client affichent désormais "Serveur(s)", "Poste(s)", "Device(s)".
