@@ -272,6 +272,7 @@
     margin-top: 8px;
     padding-top: 8px;
   }
+  #drawerFilterSection .drawer-header { border-bottom: none; }
   .drawer-item {
     display: block;
     width: 100%;
@@ -369,7 +370,7 @@
 <header>
   <div class="header-top">
     <button class="hamburger-btn" id="mainMenuBtn">☰</button>
-    <h1 id="homeLink">🛰️ RG System Suite <span class="app-version">v0.35</span></h1>
+    <h1 id="homeLink">🛰️ RG System Suite <span class="app-version">v0.36</span></h1>
   </div>
   <div class="search-bar" id="searchBarWrap">
     <input type="search" id="searchInput" placeholder="Rechercher un agent..." autocomplete="off">
@@ -817,9 +818,9 @@ async function updateClientStats(nodeId) {
       else if (t === "D" || t === "E") devices++;
     }
     parcClientStats.innerHTML = `
-      <div class="stat"><span class="n">${servers}</span>🖥️ Serveurs</div>
-      <div class="stat"><span class="n">${workstations}</span>💻 Postes</div>
-      <div class="stat"><span class="n">${devices}</span>📡 Devices</div>
+      <div class="stat"><span class="n">${servers}</span>🖥️ Serveur(s)</div>
+      <div class="stat"><span class="n">${workstations}</span>💻 Poste(s)</div>
+      <div class="stat"><span class="n">${devices}</span>📡 Device(s)</div>
     `;
     parcClientStats.hidden = false;
   } catch (err) {
