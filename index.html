@@ -202,6 +202,19 @@
     border: 1px solid var(--bg);
   }
 
+  .client-stats { display: flex; gap: 8px; padding: 0 16px 10px; }
+  .client-stats .stat {
+    flex: 1;
+    background: var(--card);
+    border: 1px solid var(--card-border);
+    border-radius: 10px;
+    padding: 6px 4px;
+    text-align: center;
+    font-size: 0.7rem;
+    color: var(--text-dim);
+  }
+  .client-stats .stat .n { display: block; font-size: 1rem; font-weight: 700; color: var(--text); }
+
   .filter-chip {
     display: flex;
     align-items: center;
@@ -348,7 +361,7 @@
 <header>
   <div class="header-top">
     <button class="hamburger-btn" id="mainMenuBtn">☰</button>
-    <h1 id="homeLink">🛰️ RG System Suite <span class="app-version">v0.33</span></h1>
+    <h1 id="homeLink">🛰️ RG System Suite <span class="app-version">v0.34</span></h1>
   </div>
   <div class="search-bar" id="searchBarWrap">
     <input type="search" id="searchInput" placeholder="Rechercher un agent..." autocomplete="off">
@@ -388,6 +401,7 @@
       <button class="back-btn" id="parcBackBtn" hidden>‹ Retour</button>
       <span class="parc-title" id="parcTitle">Parc</span>
     </div>
+    <div class="client-stats" id="parcClientStats" hidden></div>
     <div class="filter-chip" id="parcFilterChip" hidden>
       <span class="label"></span>
       <button type="button" id="parcFilterClear">✕</button>
@@ -706,6 +720,7 @@ const parcTitleEl = document.getElementById("parcTitle");
 const parcBackBtn = document.getElementById("parcBackBtn");
 const parcSearchView = document.getElementById("parcSearchView");
 const parcSearchList = document.getElementById("parcSearchList");
+const parcClientStats = document.getElementById("parcClientStats");
 const parcFilterChip = document.getElementById("parcFilterChip");
 const parcFilterClear = document.getElementById("parcFilterClear");
 const mainMenuBtn = document.getElementById("mainMenuBtn");
@@ -769,16 +784,53 @@ function agentVisible(c) {
   return c.type === parcTypeFilter;
 }
 
+// Certains agents ont un type "corrigé" (agentTrueType) différent du type
+// brut (agentType) — ex. un agent déclaré "S" (serveur) qui est en réalité
+// un poste "W". Le type effectif privilégie toujours la correction.
+function agentEffectiveType(a) {
+  return a.agentTrueType || a.agentType;
+}
+
+let clientStatsRequestId = 0; // ignore une réponse async devenue obsolète si on change vite de dossier
+
+async function updateClientStats(nodeId) {
+  const requestId = ++clientStatsRequestId;
+  try {
+    const agents = await loadAllAgents();
+    if (requestId !== clientStatsRequestId) return; // l'utilisateur a déjà changé de dossier
+    const nodeIdStr = String(nodeId);
+    const underNode = agents.filter((a) => Array.isArray(a.path) && a.path.some((p) => String(p) === nodeIdStr));
+    let servers = 0, workstations = 0, devices = 0;
+    for (const a of underNode) {
+      const t = agentEffectiveType(a);
+      if (t === "S") servers++;
+      else if (t === "W") workstations++;
+      else if (t === "D" || t === "E") devices++;
+    }
+    parcClientStats.innerHTML = `
+      <div class="stat"><span class="n">${servers}</span>🖥️ Serveurs</div>
+      <div class="stat"><span class="n">${workstations}</span>💻 Postes</div>
+      <div class="stat"><span class="n">${devices}</span>📡 Devices</div>
+    `;
+    parcClientStats.hidden = false;
+  } catch (err) {
+    console.error(err);
+  }
+}
+
 async function loadNode(nodeId) {
   parcTitleEl.textContent = "Parc";
   parcBackBtn.hidden = String(nodeId) === String(ROOT_NODE_ID);
   parcListEl.innerHTML = '<div class="loading">Chargement…</div>';
+  parcClientStats.hidden = true;
+  clientStatsRequestId++; // annule toute stat en cours de calcul pour l'ancien dossier
   try {
     const data = await fetchJson(`/api/node/${encodeURIComponent(nodeId)}/children`);
     const node = data[nodeId] || Object.values(data)[0];
     if (!node) throw new Error("Node introuvable");
     lastLoadedNode = node;
     renderNodeList();
+    if (node.isCustomerNode) updateClientStats(nodeId);
   } catch (err) {
     parcListEl.innerHTML = '<div class="error">Erreur de chargement : ' + escapeHtml(err.message) + '</div>';
     console.error(err);
@@ -1239,7 +1291,9 @@ async function loadAgent(agentId) {
 
     const categories = collectChartables(objects);
     const chartsHtml = categories.length
-      ? `<div class="chart-cat">Courbes</div>` + categories.map((cat) => cat.items.map((item) => chartItemHtml(item, cat.name)).join("")).join("")
+      ? `<div class="chart-cat">Courbes</div>` +
+        `<div class="mini-filter"><button type="button" class="mini-filter-btn" data-charts-toggle-all>👁️ Tout afficher</button></div>` +
+        `<div id="agentChartsList">${categories.map((cat) => cat.items.map((item) => chartItemHtml(item, cat.name)).join("")).join("")}</div>`
       : '<div class="empty">Aucune courbe disponible pour cet agent</div>';
 
     const backupPromise = ["S", "W", "O"].includes(ped.type)
@@ -1256,6 +1310,27 @@ async function loadAgent(agentId) {
 }
 
 agentBodyEl.addEventListener("click", (e) => {
+  const expandAllBtn = e.target.closest("[data-charts-toggle-all]");
+  if (expandAllBtn) {
+    const list = document.getElementById("agentChartsList");
+    const toggles = list ? [...list.querySelectorAll(".chart-toggle")] : [];
+    const anyCollapsed = toggles.some((t) => document.getElementById("panel-" + t.dataset.uid)?.hidden);
+    toggles.forEach((t) => {
+      const panel = document.getElementById("panel-" + t.dataset.uid);
+      if (!panel) return;
+      if (anyCollapsed) {
+        if (panel.hidden) {
+          panel.hidden = false;
+          if (t.dataset.obj) loadChart(panel, t.dataset.obj, t.dataset.chart, t.dataset.counters, "week");
+        }
+      } else {
+        panel.hidden = true;
+      }
+    });
+    expandAllBtn.textContent = anyCollapsed ? "🙈 Tout replier" : "👁️ Tout afficher";
+    return;
+  }
+
   const alertFilterBtn = e.target.closest("[data-agent-alert-filter]");
   if (alertFilterBtn) {
     agentAlertFilter = alertFilterBtn.dataset.agentAlertFilter || null;
