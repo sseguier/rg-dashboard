@@ -264,6 +264,14 @@
     border-bottom: 1px solid var(--card-border);
     margin-bottom: 8px;
   }
+  /* Sépare visuellement le groupe "Filtrer ce dossier" du groupe de
+     navigation au-dessus : la ligne de séparation vient d'abord, le titre
+     de la section se place juste en dessous. */
+  #drawerFilterSection {
+    border-top: 1px solid var(--card-border);
+    margin-top: 8px;
+    padding-top: 8px;
+  }
   .drawer-item {
     display: block;
     width: 100%;
@@ -361,7 +369,7 @@
 <header>
   <div class="header-top">
     <button class="hamburger-btn" id="mainMenuBtn">☰</button>
-    <h1 id="homeLink">🛰️ RG System Suite <span class="app-version">v0.34</span></h1>
+    <h1 id="homeLink">🛰️ RG System Suite <span class="app-version">v0.35</span></h1>
   </div>
   <div class="search-bar" id="searchBarWrap">
     <input type="search" id="searchInput" placeholder="Rechercher un agent..." autocomplete="off">
@@ -427,6 +435,7 @@
 <div id="page-map" hidden>
   <div class="parc-header">
     <span class="parc-title">Carte des clients</span>
+    <button type="button" class="refresh-btn" id="mapRefreshBtn">↻ Actualiser</button>
   </div>
   <div id="mapStatus" class="loading">Chargement…</div>
   <div id="mapContainer" class="map-container" style="display:none;"></div>
@@ -1292,7 +1301,7 @@ async function loadAgent(agentId) {
     const categories = collectChartables(objects);
     const chartsHtml = categories.length
       ? `<div class="chart-cat">Courbes</div>` +
-        `<div class="mini-filter"><button type="button" class="mini-filter-btn" data-charts-toggle-all>👁️ Tout afficher</button></div>` +
+        `<div class="mini-filter"><button type="button" class="mini-filter-btn" data-charts-toggle-all>Tout afficher</button></div>` +
         `<div id="agentChartsList">${categories.map((cat) => cat.items.map((item) => chartItemHtml(item, cat.name)).join("")).join("")}</div>`
       : '<div class="empty">Aucune courbe disponible pour cet agent</div>';
 
@@ -1327,7 +1336,7 @@ agentBodyEl.addEventListener("click", (e) => {
         panel.hidden = true;
       }
     });
-    expandAllBtn.textContent = anyCollapsed ? "🙈 Tout replier" : "👁️ Tout afficher";
+    expandAllBtn.textContent = anyCollapsed ? "Tout replier" : "Tout afficher";
     return;
   }
 
@@ -1654,6 +1663,17 @@ async function loadMapPage() {
     console.error(err);
   }
 }
+
+document.getElementById("mapRefreshBtn").addEventListener("click", () => {
+  if (mapInstance) { mapInstance.remove(); mapInstance = null; }
+  mapLoaded = false;
+  // On force aussi le rafraîchissement de la liste des agents/clients (cache
+  // partagé avec la recherche) : un nouveau client ajouté depuis la dernière
+  // ouverture de la carte doit apparaître sans recharger toute la page.
+  allAgentsCache = null;
+  allAgentsPromise = null;
+  loadMapPage();
+});
 
 /* =========================================================
    Routeur (hash-based)
