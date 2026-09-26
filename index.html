@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Supervision RG System</title>
-<meta name="theme-color" content="#141a33">
+<meta name="theme-color" content="#1d4ed8">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -13,20 +13,16 @@
 <style>
   :root {
     color-scheme: light dark;
-    /* Charte Septeo (couleurs officielles du site septeo.com) : orange comme
-       accent principal, bleu ardoise foncé pour les fonds, vert/sarcelle pour
-       les indicateurs positifs. Rouge/jaune d'alerte restent universels
-       (non-marque), pour ne pas nuire à la lisibilité des criticités. */
-    --bg: #141a33;
-    --card: #2e3862;
-    --card-border: #3d4a7a;
-    --text: #eef0fa;
-    --text-dim: #98a2b3;
+    --bg: #0b1220;
+    --card: #131c2e;
+    --card-border: #232f45;
+    --text: #e7ecf5;
+    --text-dim: #8ea0bd;
     --crit-critical: #ef4444;
     --crit-medium: #eab308;
-    --crit-low: #667085;
-    --accent: #ff6136;
-    --ok: #65d5c5;
+    --crit-low: #64748b;
+    --accent: #3b82f6;
+    --ok: #22c55e;
   }
   * { box-sizing: border-box; }
   body {
@@ -100,7 +96,7 @@
   .summary .tile.critical .n { color: var(--crit-critical); }
   .summary .tile.medium .n { color: var(--crit-medium); }
   .summary .tile.low .n { color: var(--crit-low); }
-  .summary .tile.active { border-color: var(--accent); background: rgba(255,97,54,0.15); }
+  .summary .tile.active { border-color: var(--accent); background: rgba(59,130,246,0.15); }
 
   .search-bar { margin-bottom: 10px; }
   .search-bar input[type="search"] {
@@ -145,9 +141,9 @@
   }
   .badge.critical { background: rgba(239,68,68,0.15); color: var(--crit-critical); }
   .badge.medium { background: rgba(234,179,8,0.15); color: var(--crit-medium); }
-  .badge.low { background: rgba(102,112,133,0.15); color: var(--crit-low); }
-  .badge.success { background: rgba(101,213,197,0.15); color: var(--ok); }
-  .badge.offline { background: rgba(152,162,179,0.15); color: var(--text-dim); }
+  .badge.low { background: rgba(100,116,139,0.15); color: var(--crit-low); }
+  .badge.success { background: rgba(34,197,94,0.15); color: var(--ok); }
+  .badge.offline { background: rgba(148,163,184,0.15); color: var(--text-dim); }
 
   .mini-filter { display: flex; gap: 6px; flex-wrap: wrap; padding: 0 16px 10px; }
   .mini-filter-btn {
@@ -158,7 +154,7 @@
     border-radius: 999px;
     font-size: 0.75rem;
   }
-  .mini-filter-btn.active { color: var(--text); border-color: var(--accent); background: rgba(255,97,54,0.15); }
+  .mini-filter-btn.active { color: var(--text); border-color: var(--accent); background: rgba(59,130,246,0.15); }
 
   .empty, .error, .loading {
     text-align: center;
@@ -224,7 +220,7 @@
     align-items: center;
     gap: 8px;
     margin: 0 16px 10px;
-    background: rgba(255,97,54,0.15);
+    background: rgba(59,130,246,0.15);
     border: 1px solid var(--accent);
     border-radius: 999px;
     padding: 6px 12px;
@@ -287,7 +283,7 @@
     padding: 12px 16px;
     font-size: 0.88rem;
   }
-  .drawer-item.active { background: rgba(255,97,54,0.15); color: var(--accent); font-weight: 600; }
+  .drawer-item.active { background: rgba(59,130,246,0.15); color: var(--accent); font-weight: 600; }
 
   .row {
     display: flex;
@@ -359,33 +355,13 @@
   .scale-selector button.active {
     color: var(--text);
     border-color: var(--accent);
-    background: rgba(255,97,54,0.15);
+    background: rgba(59,130,246,0.15);
   }
   .chart-meta { font-size: 0.75rem; color: var(--text-dim); margin-bottom: 4px; }
   .chart-legend { display: flex; gap: 12px; font-size: 0.72rem; color: var(--text-dim); margin-top: 4px; }
   .legend-item i { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 4px; }
 
-  .map-container { height: 65vh; width: 100%; border-radius: 12px; overflow: hidden; border: 1px solid var(--card-border); }
-  /* La carte OpenStreetMap garde ses tuiles claires (plus lisibles pour s'y
-     repérer qu'une carte inversée en sombre) mais tous les éléments
-     d'interface de Leaflet (zoom, popup, attribution) reprennent le thème. */
-  .leaflet-bar, .leaflet-bar a {
-    background: var(--card) !important;
-    border-color: var(--card-border) !important;
-    color: var(--text) !important;
-  }
-  .leaflet-bar a:hover { background: var(--card-border) !important; }
-  .leaflet-popup-content-wrapper, .leaflet-popup-tip {
-    background: var(--card) !important;
-    color: var(--text) !important;
-  }
-  .leaflet-popup-content a { color: var(--accent); }
-  .leaflet-popup-close-button { color: var(--text-dim) !important; }
-  .leaflet-control-attribution {
-    background: rgba(20,26,51,0.75) !important;
-    color: var(--text-dim) !important;
-  }
-  .leaflet-control-attribution a { color: var(--text-dim) !important; }
+  .map-container { height: 65vh; width: 100%; }
 
   .note-item {
     background: var(--card);
@@ -403,7 +379,7 @@
 <header>
   <div class="header-top">
     <button class="hamburger-btn" id="mainMenuBtn">☰</button>
-    <h1 id="homeLink">🛰️ RG System Suite <span class="app-version">v0.41</span></h1>
+    <h1 id="homeLink">🛰️ RG System Suite <span class="app-version">v0.42</span></h1>
   </div>
   <div class="search-bar" id="searchBarWrap">
     <input type="search" id="searchInput" placeholder="Rechercher un agent..." autocomplete="off">
@@ -1484,7 +1460,7 @@ function buildStatusBarSvg(values, scale) {
   const bars = values.map((v, i) => {
     const active = v >= 0.5;
     const x = padL + i * barW;
-    return `<rect x="${x.toFixed(2)}" y="${padT}" width="${Math.max(barW - 0.3, 0.5).toFixed(2)}" height="${H - padT - padB}" fill="${active ? "#4aa696" : "#c9615f"}" />`;
+    return `<rect x="${x.toFixed(2)}" y="${padT}" width="${Math.max(barW - 0.3, 0.5).toFixed(2)}" height="${H - padT - padB}" fill="${active ? "#5aa06a" : "#c9615f"}" />`;
   }).join("");
   const activeCount = values.filter((v) => v >= 0.5).length;
   const pct = ((activeCount / n) * 100).toFixed(1);
@@ -1573,7 +1549,7 @@ function buildLineChartSvg(interpreted, scale) {
     max = max === min ? min + 1 : max + (max - min) * 0.1;
   }
 
-  const colors = ["#ff6136", "#636fc1", "#65d5c5"];
+  const colors = ["#3b82f6", "#22c55e", "#f97316"];
 
   const paths = series.map((s, idx) => {
     const n = s.values.length;
@@ -1601,8 +1577,8 @@ function buildLineChartSvg(interpreted, scale) {
   const gridLines = [0, 0.5, 1].map((f) => {
     const y = padT + f * (H - padT - padB);
     const val = max - f * (max - min);
-    return `<line x1="${padL}" y1="${y.toFixed(1)}" x2="${W - padR}" y2="${y.toFixed(1)}" stroke="#3d4a7a" stroke-width="1" />
-      <text x="${(padL - 4).toFixed(1)}" y="${(y + 3).toFixed(1)}" text-anchor="end" font-size="9" fill="#98a2b3">${formatValue(val, unit)}</text>`;
+    return `<line x1="${padL}" y1="${y.toFixed(1)}" x2="${W - padR}" y2="${y.toFixed(1)}" stroke="#232f45" stroke-width="1" />
+      <text x="${(padL - 4).toFixed(1)}" y="${(y + 3).toFixed(1)}" text-anchor="end" font-size="9" fill="#8ea0bd">${formatValue(val, unit)}</text>`;
   }).join("");
 
   const legend = series.length > 1
@@ -1625,6 +1601,7 @@ function buildLineChartSvg(interpreted, scale) {
 // ⚠️ À tenir à jour à chaque nouvelle version livrée (garder aussi
 // releaseNotes.md synchronisé, à la racine du dossier fourni à l'utilisateur).
 const RELEASE_NOTES = [
+  { version: "0.42", text: "Retour aux couleurs d'origine (bleu) sur toute l'application — la charte Septeo (v0.40-v0.41) est annulée à la demande de l'utilisateur." },
   { version: "0.41", text: "L'onglet Carte reprend aussi la charte Septeo : pin orange, contrôles de zoom et infobulle assortis au thème sombre (les tuiles OpenStreetMap restent claires pour la lisibilité)." },
   { version: "0.40", text: "Interface adaptée aux couleurs officielles de Septeo (orange, bleu ardoise foncé, vert sarcelle) à la place du thème bleu générique. Rouge/jaune d'alerte restent inchangés pour la lisibilité." },
   { version: "0.39", text: "Le bloc Alertes est aussi masqué sur la fiche d'un agent de type L (comme Courbes et Journal d'événements déjà en v0.38) — reste visible sur l'écran Alertes global." },
@@ -1665,25 +1642,6 @@ function renderWhatsNew() {
 
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
-// Pin de carte à la couleur d'accent Septeo (plutôt que le marqueur bleu par
-// défaut de Leaflet), construit une seule fois au premier besoin.
-let septeoMarkerIcon = null;
-function getMarkerIcon() {
-  if (!septeoMarkerIcon) {
-    septeoMarkerIcon = L.divIcon({
-      className: "",
-      html: `<svg width="25" height="41" viewBox="0 0 25 41" xmlns="http://www.w3.org/2000/svg">
-        <path d="M12.5 0C5.6 0 0 5.6 0 12.5c0 9.4 12.5 28.5 12.5 28.5S25 21.9 25 12.5C25 5.6 19.4 0 12.5 0z" fill="#ff6136"/>
-        <circle cx="12.5" cy="12.5" r="5" fill="#fff"/>
-      </svg>`,
-      iconSize: [25, 41],
-      iconAnchor: [12, 41],
-      popupAnchor: [1, -34],
-    });
-  }
-  return septeoMarkerIcon;
 }
 
 // Géocodage gratuit via Nominatim (OpenStreetMap) : pas de clé API, mais
@@ -1770,7 +1728,7 @@ async function loadMapPage() {
     }).addTo(mapInstance);
 
     const markers = pins.map((pin) => {
-      const marker = L.marker([pin.lat, pin.lng], { icon: getMarkerIcon() }).addTo(mapInstance);
+      const marker = L.marker([pin.lat, pin.lng]).addTo(mapInstance);
       marker.bindPopup(
         `<strong>${escapeHtml(pin.name)}</strong><br>${escapeHtml(pin.address)}<br>` +
         `<a href="#/parc/node/${encodeURIComponent(pin.nodeId)}">Voir ce client</a>`
