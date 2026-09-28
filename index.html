@@ -208,12 +208,17 @@
     background: var(--card);
     border: 1px solid var(--card-border);
     border-radius: 10px;
-    padding: 6px 4px;
+    padding: 6px 2px;
     text-align: center;
-    font-size: 0.7rem;
+    font-size: 0.68rem;
     color: var(--text-dim);
+    cursor: pointer;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
-  .client-stats .stat .n { display: block; font-size: 1rem; font-weight: 700; color: var(--text); }
+  .client-stats .stat .n { font-weight: 700; color: var(--text); }
+  .client-stats .stat.active { border-color: var(--accent); background: rgba(59,130,246,0.15); color: var(--text); }
 
   .filter-chip {
     display: flex;
@@ -266,15 +271,6 @@
     border-bottom: 1px solid var(--card-border);
     margin-bottom: 8px;
   }
-  /* Sépare visuellement le groupe "Filtrer ce dossier" du groupe de
-     navigation au-dessus : la ligne de séparation vient d'abord, le titre
-     de la section se place juste en dessous. */
-  #drawerFilterSection {
-    border-top: 1px solid var(--card-border);
-    margin-top: 8px;
-    padding-top: 8px;
-  }
-  #drawerFilterSection .drawer-header { border-bottom: none; }
   .drawer-item {
     display: block;
     width: 100%;
@@ -381,7 +377,7 @@
 <header>
   <div class="header-top">
     <button class="hamburger-btn" id="mainMenuBtn">☰</button>
-    <h1 id="homeLink">🛰️ RG System Suite <span class="app-version">v0.44</span></h1>
+    <h1 id="homeLink">🛰️ RG System Suite <span class="app-version">v0.46</span></h1>
   </div>
   <div class="search-bar" id="searchBarWrap">
     <input type="search" id="searchInput" placeholder="Rechercher un agent..." autocomplete="off">
@@ -473,14 +469,6 @@
   <button type="button" class="drawer-item" data-nav="alerts">🔔 Alertes</button>
   <button type="button" class="drawer-item" data-nav="map">🗺️ Carte</button>
   <button type="button" class="drawer-item" data-nav="whatsnew">🆕 Nouveautés</button>
-
-  <div id="drawerFilterSection" hidden>
-    <div class="drawer-header">Filtrer ce dossier</div>
-    <button type="button" class="drawer-item" data-filter="all">📋 Tous les agents</button>
-    <button type="button" class="drawer-item" data-filter="S">🖥️ Serveurs uniquement</button>
-    <button type="button" class="drawer-item" data-filter="W">💻 Postes uniquement</button>
-    <button type="button" class="drawer-item" data-filter="alerts">🔔 Avec alertes uniquement</button>
-  </div>
 </div>
 
 <script>
@@ -745,8 +733,8 @@ setInterval(loadAlerts, 60000);
    ========================================================= */
 
 const AGENT_TYPE_ICON = { S: "🖥️", W: "💻", D: "🗄️", E: "📡", O: "☁️", A: "🧩", G: "💾", L: "🖱️" };
-// Type G (passerelle de sauvegarde cloud) volontairement masqué partout dans l'appli.
-const HIDDEN_AGENT_TYPES = new Set(["G"]);
+// Type G (passerelle de sauvegarde cloud) et type A volontairement masqués partout dans l'appli.
+const HIDDEN_AGENT_TYPES = new Set(["G", "A"]);
 
 const parcListEl = document.getElementById("parcList");
 const parcTitleEl = document.getElementById("parcTitle");
@@ -759,7 +747,6 @@ const parcFilterClear = document.getElementById("parcFilterClear");
 const mainMenuBtn = document.getElementById("mainMenuBtn");
 const mainDrawer = document.getElementById("mainDrawer");
 const drawerOverlay = document.getElementById("drawerOverlay");
-const drawerFilterSection = document.getElementById("drawerFilterSection");
 
 parcSearchList.addEventListener("click", (e) => {
   const agentRow = e.target.closest("[data-agent]");
@@ -797,24 +784,21 @@ function agentRowHtml(id, n) {
     </div>`;
 }
 
-/* --- Filtre du dossier courant (menu ☰) --- */
+/* --- Filtre du dossier courant (cadres récapitulatifs S/W/Devices) --- */
 
-let parcTypeFilter = "all"; // all | S | W | alerts
+let parcTypeFilter = "all"; // all | S | W | devices
 let lastLoadedNode = null;
 let currentTreeNodeId = null;
 
 const FILTER_LABEL = {
   S: "Serveurs uniquement",
   W: "Postes uniquement",
-  alerts: "Avec alertes uniquement",
+  devices: "Devices uniquement",
 };
 
-function folderVisible(c) {
-  return parcTypeFilter === "alerts" ? !!c.hasAlerts : true;
-}
 function agentVisible(c) {
   if (parcTypeFilter === "all") return true;
-  if (parcTypeFilter === "alerts") return !!c.hasAlerts;
+  if (parcTypeFilter === "devices") return c.type === "D" || c.type === "E";
   return c.type === parcTypeFilter;
 }
 
@@ -841,11 +825,12 @@ async function updateClientStats(nodeId) {
       else if (t === "W") workstations++;
       else if (t === "D" || t === "E") devices++;
     }
-    parcClientStats.innerHTML = `
-      <div class="stat"><span class="n">${servers}</span>🖥️ Serveur(s)</div>
-      <div class="stat"><span class="n">${workstations}</span>💻 Poste(s)</div>
-      <div class="stat"><span class="n">${devices}</span>📡 Device(s)</div>
-    `;
+    const statHtml = (type, count, label) =>
+      `<div class="stat ${parcTypeFilter === type ? "active" : ""}" data-filter="${type}"><span class="n">${count}</span> ${label}</div>`;
+    parcClientStats.innerHTML =
+      statHtml("S", servers, "Serveur(s)") +
+      statHtml("W", workstations, "Poste(s)") +
+      statHtml("devices", devices, "Device(s)");
     parcClientStats.hidden = false;
   } catch (err) {
     console.error(err);
@@ -885,11 +870,13 @@ function renderNodeList() {
     parcFilterChip.hidden = false;
     parcFilterChip.querySelector(".label").textContent = "Filtre : " + FILTER_LABEL[parcTypeFilter];
   }
-  mainMenuBtn.classList.toggle("active", parcTypeFilter !== "all");
+  parcClientStats.querySelectorAll(".stat[data-filter]").forEach((el) => {
+    el.classList.toggle("active", el.dataset.filter === parcTypeFilter);
+  });
 
   const children = Object.entries(node.children || {});
   const folders = children
-    .filter(([, c]) => c.nodeType === "node" && folderVisible(c))
+    .filter(([, c]) => c.nodeType === "node")
     .sort((a, b) => a[1].name.localeCompare(b[1].name));
   const agents = children
     .filter(([, c]) => c.nodeType === "agent" && !HIDDEN_AGENT_TYPES.has(c.type) && agentVisible(c))
@@ -934,11 +921,6 @@ function openDrawer() {
   mainDrawer.querySelectorAll("[data-nav]").forEach((b) => {
     b.classList.toggle("active", b.dataset.nav === currentPage);
   });
-  const onParcList = currentPage === "parc" && !parcTreeView.hidden;
-  drawerFilterSection.hidden = !onParcList;
-  drawerFilterSection.querySelectorAll(".drawer-item").forEach((b) => {
-    b.classList.toggle("active", b.dataset.filter === parcTypeFilter);
-  });
 }
 function closeDrawer() {
   mainDrawer.hidden = true;
@@ -949,19 +931,20 @@ mainMenuBtn.addEventListener("click", openDrawer);
 drawerOverlay.addEventListener("click", closeDrawer);
 mainDrawer.addEventListener("click", (e) => {
   const navBtn = e.target.closest("[data-nav]");
-  if (navBtn) {
-    closeDrawer();
-    location.hash = "#/" + navBtn.dataset.nav;
-    return;
-  }
-  const filterBtn = e.target.closest("[data-filter]");
-  if (!filterBtn) return;
-  parcTypeFilter = filterBtn.dataset.filter;
+  if (!navBtn) return;
   closeDrawer();
-  renderNodeList();
+  location.hash = "#/" + navBtn.dataset.nav;
 });
 parcFilterClear.addEventListener("click", () => {
   parcTypeFilter = "all";
+  renderNodeList();
+});
+parcClientStats.addEventListener("click", (e) => {
+  const stat = e.target.closest(".stat[data-filter]");
+  if (!stat) return;
+  const type = stat.dataset.filter;
+  // Un second clic sur le même bloc retire le filtre plutôt que de rester bloqué dessus.
+  parcTypeFilter = parcTypeFilter === type ? "all" : type;
   renderNodeList();
 });
 
@@ -1604,6 +1587,8 @@ function buildLineChartSvg(interpreted, scale) {
 // ⚠️ À tenir à jour à chaque nouvelle version livrée (garder aussi
 // releaseNotes.md synchronisé, à la racine du dossier fourni à l'utilisateur).
 const RELEASE_NOTES = [
+  { version: "0.46", text: "Les filtres du menu latéral sont retirés : on filtre maintenant en cliquant directement sur les cadres Serveur(s)/Poste(s)/Device(s) en haut de la liste, réduits pour tenir sur une seule ligne." },
+  { version: "0.45", text: "Les agents de type A ne sont plus affichés (arborescence Parc, recherche, alertes), comme déjà le cas pour le type G." },
   { version: "0.44", text: "Correction du menu latéral qui restait caché derrière la carte (les contrôles de Leaflet passaient au-dessus de tout le reste de l'app)." },
   { version: "0.43", text: "Carte : les clients sans adresse (ou dont l'adresse n'est pas reconnue) sont maintenant listés sous la carte au lieu de disparaître silencieusement." },
   { version: "0.42", text: "Retour aux couleurs d'origine (bleu) sur toute l'application — la charte Septeo (v0.40-v0.41) est annulée à la demande de l'utilisateur." },
