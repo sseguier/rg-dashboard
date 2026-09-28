@@ -240,7 +240,9 @@
     position: fixed;
     inset: 0;
     background: rgba(0,0,0,0.5);
-    z-index: 20;
+    /* Doit rester au-dessus des contrôles Leaflet de la page Carte (zoom,
+       popup...), qui montent jusqu'à z-index 1000 dans leaflet.css. */
+    z-index: 2000;
   }
   .drawer {
     position: fixed;
@@ -251,7 +253,7 @@
     max-width: 80vw;
     background: var(--card);
     border-right: 1px solid var(--card-border);
-    z-index: 21;
+    z-index: 2001;
     display: flex;
     flex-direction: column;
     padding: calc(16px + env(safe-area-inset-top)) 0 16px;
@@ -379,7 +381,7 @@
 <header>
   <div class="header-top">
     <button class="hamburger-btn" id="mainMenuBtn">☰</button>
-    <h1 id="homeLink">🛰️ RG System Suite <span class="app-version">v0.43</span></h1>
+    <h1 id="homeLink">🛰️ RG System Suite <span class="app-version">v0.44</span></h1>
   </div>
   <div class="search-bar" id="searchBarWrap">
     <input type="search" id="searchInput" placeholder="Rechercher un agent..." autocomplete="off">
@@ -1602,6 +1604,7 @@ function buildLineChartSvg(interpreted, scale) {
 // ⚠️ À tenir à jour à chaque nouvelle version livrée (garder aussi
 // releaseNotes.md synchronisé, à la racine du dossier fourni à l'utilisateur).
 const RELEASE_NOTES = [
+  { version: "0.44", text: "Correction du menu latéral qui restait caché derrière la carte (les contrôles de Leaflet passaient au-dessus de tout le reste de l'app)." },
   { version: "0.43", text: "Carte : les clients sans adresse (ou dont l'adresse n'est pas reconnue) sont maintenant listés sous la carte au lieu de disparaître silencieusement." },
   { version: "0.42", text: "Retour aux couleurs d'origine (bleu) sur toute l'application — la charte Septeo (v0.40-v0.41) est annulée à la demande de l'utilisateur." },
   { version: "0.41", text: "L'onglet Carte reprend aussi la charte Septeo : pin orange, contrôles de zoom et infobulle assortis au thème sombre (les tuiles OpenStreetMap restent claires pour la lisibilité)." },
