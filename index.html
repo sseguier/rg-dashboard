@@ -450,7 +450,7 @@
 <header>
   <div class="header-top">
     <button class="hamburger-btn" id="mainMenuBtn">☰</button>
-    <h1 id="homeLink">🛰️ RG System Suite <span class="app-version">v0.53</span></h1>
+    <h1 id="homeLink">🛰️ RG System Suite <span class="app-version">v0.54</span></h1>
     <div class="search-bar" id="searchBarWrap">
       <button type="button" class="search-toggle-btn" id="searchToggleBtn" title="Rechercher" aria-label="Rechercher">🔍</button>
       <div class="search-input-row" id="searchInputRow" hidden>
@@ -1689,6 +1689,7 @@ function buildLineChartSvg(interpreted, scale) {
 // ⚠️ À tenir à jour à chaque nouvelle version livrée (garder aussi
 // releaseNotes.md synchronisé, à la racine du dossier fourni à l'utilisateur).
 const RELEASE_NOTES = [
+  { version: "0.54", text: "La carte se charge plus vite quand il y a beaucoup de clients : les fiches clients sont récupérées en parallèle au lieu d'une par une, et l'attente d'une seconde imposée par le service de géolocalisation n'est plus appliquée pour une adresse déjà connue (mise en cache)." },
   { version: "0.53", text: "Le bouton 🔍 revient à droite du titre en haut de page (même emplacement que la croix ✕ qui le remplace une fois ouvert), retiré des écrans individuels. La page Nouveautés n'affiche plus que les 5 dernières versions." },
   { version: "0.52", text: "Sur la carte, l'épingle d'un client passe en rouge s'il a au moins une alerte critique en cours, avec un message dans l'infobulle." },
   { version: "0.51", text: "Le bouton ↻ de chaque écran (Alertes, Parc, fiche agent, Carte) est remplacé par 🔍 pour ouvrir la recherche directement — le tirer-pour-actualiser devient le seul moyen de rafraîchir." },
@@ -1769,17 +1770,31 @@ async function geocodeAddress(address) {
   const cacheKey = "rgdash-geocode:" + address;
   try {
     const cached = localStorage.getItem(cacheKey);
-    if (cached) return JSON.parse(cached);
+    if (cached) return { point: JSON.parse(cached), cached: true };
   } catch (e) { /* stockage indisponible : on re-géocode simplement */ }
 
   const url = "https://nominatim.openstreetmap.org/search?format=json&limit=1&q=" + encodeURIComponent(address);
   const res = await fetch(url);
   if (!res.ok) throw new Error("Géocodage indisponible (HTTP " + res.status + ")");
   const results = await res.json();
-  if (!results.length) return null;
+  if (!results.length) return { point: null, cached: false };
   const point = { lat: parseFloat(results[0].lat), lng: parseFloat(results[0].lon) };
   try { localStorage.setItem(cacheKey, JSON.stringify(point)); } catch (e) { /* pas bloquant */ }
-  return point;
+  return { point, cached: false };
+}
+
+// Exécute `items` via `fn` avec au plus `limit` appels en parallèle.
+async function mapLimit(items, limit, fn) {
+  const results = new Array(items.length);
+  let next = 0;
+  async function worker() {
+    while (next < items.length) {
+      const i = next++;
+      results[i] = await fn(items[i], i);
+    }
+  }
+  await Promise.all(Array.from({ length: Math.min(limit, items.length) }, worker));
+  return results;
 }
 
 let mapInstance = null;
@@ -1845,28 +1860,54 @@ async function loadMapPage() {
     // (adresse absente ou non reconnue par le géocodeur) : sans ça, un client
     // disparaît silencieusement de la carte sans que personne ne s'en aperçoive.
     const unlocated = [];
-    let i = 0;
-    for (const customer of customers.values()) {
-      i++;
-      statusEl.textContent = `Localisation des clients… (${i}/${customers.size})`;
+
+    // Étape 1 : récupérer les fiches client (nom, adresse) en parallèle — ces
+    // appels passent par notre propre relais et ne sont pas soumis à la limite
+    // de Nominatim, inutile de les faire un par un.
+    statusEl.textContent = `Récupération des fiches clients… (0/${customers.size})`;
+    let fetched = 0;
+    const customerList = Array.from(customers.values());
+    const detailsList = await mapLimit(customerList, 5, async (customer) => {
       try {
         const details = await fetchJson(`/api/node/${encodeURIComponent(customer.id)}/customer`);
-        const name = details.companyName || customer.name;
-        if (!details.companyAddress) {
-          unlocated.push({ id: customer.id, name, reason: "Adresse non renseignée dans RG System" });
-          continue;
-        }
-        const point = await geocodeAddress(details.companyAddress);
+        fetched++;
+        statusEl.textContent = `Récupération des fiches clients… (${fetched}/${customers.size})`;
+        return { customer, details, error: null };
+      } catch (err) {
+        fetched++;
+        console.error("Client " + customer.id + " :", err);
+        return { customer, details: null, error: err };
+      }
+    });
+
+    // Étape 2 : géocoder chaque adresse. Nominatim impose 1 requête/seconde,
+    // mais on ne fait vraiment cette pause que quand on interroge Nominatim —
+    // une adresse déjà en cache est traitée immédiatement.
+    let i = 0;
+    for (const { customer, details, error } of detailsList) {
+      i++;
+      if (error) {
+        unlocated.push({ id: customer.id, name: customer.name, reason: "Erreur : " + error.message });
+        continue;
+      }
+      const name = details.companyName || customer.name;
+      if (!details.companyAddress) {
+        unlocated.push({ id: customer.id, name, reason: "Adresse non renseignée dans RG System" });
+        continue;
+      }
+      statusEl.textContent = `Localisation des clients… (${i}/${detailsList.length})`;
+      try {
+        const { point, cached } = await geocodeAddress(details.companyAddress);
         if (point) {
           pins.push({ ...point, name, address: details.companyAddress, nodeId: customer.id, hasCritical: customer.hasCritical });
         } else {
           unlocated.push({ id: customer.id, name, reason: "Adresse non reconnue (" + details.companyAddress + ")" });
         }
+        if (!cached) await sleep(1000); // politique d'usage Nominatim : 1 requête/seconde max
       } catch (err) {
-        unlocated.push({ id: customer.id, name: customer.name, reason: "Erreur : " + err.message });
+        unlocated.push({ id: customer.id, name, reason: "Erreur : " + err.message });
         console.error("Client " + customer.id + " :", err);
       }
-      await sleep(1000); // politique d'usage Nominatim : 1 requête/seconde max
     }
 
     renderUnlocatedClients(unlocated);
