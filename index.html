@@ -73,7 +73,7 @@
     align-items: center;
     padding: 8px 16px 0;
   }
-  .search-page-btn {
+  .search-toggle-btn {
     background: none;
     border: 1px solid var(--card-border);
     color: var(--text);
@@ -209,7 +209,7 @@
     font-size: 1rem;
     line-height: 1;
   }
-  .parc-title { font-weight: 600; font-size: 0.95rem; flex: 1; text-align: center; }
+  .parc-title { font-weight: 600; font-size: 0.95rem; flex: 1; }
 
   .hamburger-btn {
     background: none;
@@ -450,13 +450,14 @@
 <header>
   <div class="header-top">
     <button class="hamburger-btn" id="mainMenuBtn">☰</button>
+    <h1 id="homeLink">🛰️ RG System Suite <span class="app-version">v0.53</span></h1>
     <div class="search-bar" id="searchBarWrap">
+      <button type="button" class="search-toggle-btn" id="searchToggleBtn" title="Rechercher" aria-label="Rechercher">🔍</button>
       <div class="search-input-row" id="searchInputRow" hidden>
         <input type="search" id="searchInput" placeholder="Rechercher un agent..." autocomplete="off">
         <button type="button" class="search-close-btn" id="searchCloseBtn" title="Fermer la recherche" aria-label="Fermer la recherche">✕</button>
       </div>
     </div>
-    <h1 id="homeLink">🛰️ RG System Suite <span class="app-version">v0.52</span></h1>
   </div>
 </header>
 
@@ -464,7 +465,6 @@
 <div id="page-alerts" hidden>
   <div class="status-line">
     <span id="statusText">Chargement…</span>
-    <button class="search-page-btn" id="alertsSearchBtn" title="Rechercher" aria-label="Rechercher">🔍</button>
   </div>
 
   <div class="summary" id="summary">
@@ -492,7 +492,6 @@
     <div class="parc-header">
       <button class="back-btn" id="parcBackBtn" hidden title="Retour" aria-label="Retour">←</button>
       <span class="parc-title" id="parcTitle">Parc</span>
-      <button type="button" class="search-page-btn" id="parcSearchBtn" title="Rechercher" aria-label="Rechercher">🔍</button>
     </div>
     <div class="client-stats" id="parcClientStats" hidden></div>
     <div class="filter-chip" id="parcFilterChip" hidden>
@@ -508,7 +507,6 @@
     <div class="parc-header">
       <button class="back-btn" id="agentBackBtn" title="Retour" aria-label="Retour">←</button>
       <span class="parc-title" id="agentTitle">Agent</span>
-      <button type="button" class="search-page-btn" id="agentSearchBtn" title="Rechercher" aria-label="Rechercher">🔍</button>
     </div>
     <div id="agentBody">
       <div class="loading">Chargement…</div>
@@ -521,7 +519,6 @@
 <div id="page-map" hidden>
   <div class="parc-header">
     <span class="parc-title">Carte des clients</span>
-    <button type="button" class="search-page-btn" id="mapSearchBtn" title="Rechercher" aria-label="Rechercher">🔍</button>
   </div>
   <div id="mapStatus" class="loading">Chargement…</div>
   <div id="mapContainer" class="map-container" style="display:none;"></div>
@@ -581,6 +578,7 @@ const listEl = document.getElementById("list");
 const statusText = document.getElementById("statusText");
 const summaryEl = document.getElementById("summary");
 const searchInputEl = document.getElementById("searchInput");
+const searchToggleBtn = document.getElementById("searchToggleBtn");
 const searchInputRow = document.getElementById("searchInputRow");
 const searchCloseBtn = document.getElementById("searchCloseBtn");
 const homeLinkEl = document.getElementById("homeLink");
@@ -589,11 +587,11 @@ let activeCriticality = null;
 let currentPage = "parc";
 let searchQuery = "";
 
-// La recherche n'a pas de bouton dédié dans l'en-tête : chaque écran ouvre la
-// même recherche via son propre bouton 🔍 (à la place de l'ancien ↻, devenu
-// inutile depuis le tirer-pour-actualiser). Elle se déploie à la place du
-// titre, dans la même ligne, plutôt que d'ajouter une nouvelle ligne.
+// Un seul bouton 🔍, à droite du titre (même emplacement que la croix ✕ qui
+// le remplace une fois ouvert). Elle se déploie à la place du titre, dans la
+// même ligne, plutôt que d'ajouter une nouvelle ligne.
 function openSearch() {
+  searchToggleBtn.hidden = true;
   searchInputRow.hidden = false;
   searchBarWrap.classList.add("expanded");
   homeLinkEl.hidden = true;
@@ -601,6 +599,7 @@ function openSearch() {
   updateStickyOffsets();
 }
 function closeSearch() {
+  searchToggleBtn.hidden = false;
   searchInputRow.hidden = true;
   searchBarWrap.classList.remove("expanded");
   homeLinkEl.hidden = false;
@@ -611,6 +610,19 @@ function closeSearch() {
   }
   updateStickyOffsets();
 }
+searchToggleBtn.addEventListener("click", () => {
+  // La recherche ne s'affiche que sur Alertes/Parc (résultats rendus dans
+  // l'écran Parc) : depuis Carte ou Nouveautés, on bascule d'abord sur Parc,
+  // puis on ouvre une fois la page réellement affichée (sinon le focus
+  // échoue sur un champ encore masqué, le changement de page étant
+  // asynchrone via le hashchange).
+  if (currentPage !== "parc" && currentPage !== "alerts") {
+    location.hash = "#/parc";
+    setTimeout(openSearch, 0);
+  } else {
+    openSearch();
+  }
+});
 searchCloseBtn.addEventListener("click", closeSearch);
 
 function extractIncidents(data) {
@@ -828,7 +840,6 @@ async function loadAlerts() {
   }
 }
 
-document.getElementById("alertsSearchBtn").addEventListener("click", openSearch);
 setInterval(loadAlerts, 60000);
 
 /* =========================================================
@@ -1008,7 +1019,6 @@ parcListEl.addEventListener("click", (e) => {
 });
 
 parcBackBtn.addEventListener("click", () => history.back());
-document.getElementById("parcSearchBtn").addEventListener("click", openSearch);
 
 function openDrawer() {
   mainDrawer.hidden = false;
@@ -1050,7 +1060,6 @@ parcClientStats.addEventListener("click", (e) => {
 const agentTitleEl = document.getElementById("agentTitle");
 const agentBodyEl = document.getElementById("agentBody");
 document.getElementById("agentBackBtn").addEventListener("click", () => history.back());
-document.getElementById("agentSearchBtn").addEventListener("click", openSearch);
 
 const SCALE_LABEL = { day: "24 h", week: "7 jours", month: "30 jours", year: "12 mois" };
 
@@ -1680,6 +1689,7 @@ function buildLineChartSvg(interpreted, scale) {
 // ⚠️ À tenir à jour à chaque nouvelle version livrée (garder aussi
 // releaseNotes.md synchronisé, à la racine du dossier fourni à l'utilisateur).
 const RELEASE_NOTES = [
+  { version: "0.53", text: "Le bouton 🔍 revient à droite du titre en haut de page (même emplacement que la croix ✕ qui le remplace une fois ouvert), retiré des écrans individuels. La page Nouveautés n'affiche plus que les 5 dernières versions." },
   { version: "0.52", text: "Sur la carte, l'épingle d'un client passe en rouge s'il a au moins une alerte critique en cours, avec un message dans l'infobulle." },
   { version: "0.51", text: "Le bouton ↻ de chaque écran (Alertes, Parc, fiche agent, Carte) est remplacé par 🔍 pour ouvrir la recherche directement — le tirer-pour-actualiser devient le seul moyen de rafraîchir." },
   { version: "0.50", text: "Ajout du geste \"tirer vers le bas\" pour actualiser (pull-to-refresh), en plus du bouton ↻ — tirer l'écran vers le bas en étant en haut de la liste déclenche la même actualisation." },
@@ -1709,20 +1719,18 @@ const RELEASE_NOTES = [
   { version: "0.26", text: "Affichage du domaine Microsoft 365 sur la fiche d'un agent M365." },
 ];
 
+// RELEASE_NOTES est trié du plus récent au plus ancien : on ne garde que les
+// 5 dernières versions pour que cet écran reste court à parcourir.
+const WHATS_NEW_LIMIT = 5;
+
 function renderWhatsNew() {
   const list = document.getElementById("whatsNewList");
-  const rows = RELEASE_NOTES.map((n) => `
+  list.innerHTML = RELEASE_NOTES.slice(0, WHATS_NEW_LIMIT).map((n) => `
     <div class="note-item">
       <div class="version">v${escapeHtml(n.version)}</div>
       <div class="text">${escapeHtml(n.text)}</div>
     </div>
   `).join("");
-  list.innerHTML = rows + `
-    <div class="note-item">
-      <div class="version">v0.1 à v0.25</div>
-      <div class="text">Fondations de l'application : navigation Parc/Alertes, fiche agent (infos système, courbes, sauvegardes), recherche, installation en PWA.</div>
-    </div>
-  `;
 }
 
 /* =========================================================
@@ -1911,15 +1919,6 @@ async function refreshMap() {
   allAgentsPromise = null;
   await loadMapPage();
 }
-document.getElementById("mapSearchBtn").addEventListener("click", () => {
-  // La recherche s'affiche dans l'écran Parc (pas de "résultats" sur la
-  // Carte elle-même) : on y bascule d'abord, puis on ouvre la recherche une
-  // fois la page réellement affichée (sinon le focus échoue sur un champ
-  // encore masqué, le changement de page étant asynchrone).
-  location.hash = "#/parc";
-  setTimeout(openSearch, 0);
-});
-
 // Un seul point d'entrée pour "actualiser la page actuelle", utilisé par les
 // boutons ↻ de chaque écran ET par le geste de tirage tactile (pull-to-refresh)
 // plus bas — les deux déclenchent toujours exactement la même action.
@@ -1974,7 +1973,8 @@ function router() {
   pageParc.hidden = currentPage !== "parc";
   pageMap.hidden = currentPage !== "map";
   pageWhatsNew.hidden = currentPage !== "whatsnew";
-  searchBarWrap.hidden = currentPage === "map" || currentPage === "whatsnew"; // la recherche ne porte que sur les agents/alertes
+  // Le bouton 🔍 reste toujours visible (même sur Carte/Nouveautés) : cliquer
+  // dessus bascule sur Parc avant d'ouvrir la recherche (cf. searchToggleBtn).
   // Le champ filtre des agents (nom/IP/OS/série) sur Parc, mais du texte
   // d'alerte (titre/agent/chemin) sur Alertes : le libellé doit refléter
   // ce qu'on tape réellement, pas rester générique partout.
