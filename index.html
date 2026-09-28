@@ -73,8 +73,10 @@
     border: 1px solid var(--card-border);
     color: var(--text);
     border-radius: 8px;
-    padding: 4px 10px;
-    font-size: 0.78rem;
+    min-width: 32px;
+    padding: 5px 8px;
+    font-size: 1rem;
+    line-height: 1;
   }
   .summary {
     display: grid;
@@ -176,10 +178,12 @@
     border: 1px solid var(--card-border);
     color: var(--text);
     border-radius: 8px;
-    padding: 4px 10px;
-    font-size: 0.85rem;
+    min-width: 32px;
+    padding: 5px 8px;
+    font-size: 1rem;
+    line-height: 1;
   }
-  .parc-title { font-weight: 600; font-size: 0.95rem; flex: 1; }
+  .parc-title { font-weight: 600; font-size: 0.95rem; flex: 1; text-align: center; }
 
   .hamburger-btn {
     background: none;
@@ -377,7 +381,7 @@
 <header>
   <div class="header-top">
     <button class="hamburger-btn" id="mainMenuBtn">☰</button>
-    <h1 id="homeLink">🛰️ RG System Suite <span class="app-version">v0.46</span></h1>
+    <h1 id="homeLink">🛰️ RG System Suite <span class="app-version">v0.47</span></h1>
   </div>
   <div class="search-bar" id="searchBarWrap">
     <input type="search" id="searchInput" placeholder="Rechercher un agent..." autocomplete="off">
@@ -388,7 +392,7 @@
 <div id="page-alerts" hidden>
   <div class="status-line">
     <span id="statusText">Chargement…</span>
-    <button class="refresh-btn" id="refreshBtn">↻ Actualiser</button>
+    <button class="refresh-btn" id="refreshBtn" title="Actualiser" aria-label="Actualiser">↻</button>
   </div>
 
   <div class="summary" id="summary">
@@ -414,9 +418,9 @@
 
   <div id="parcTreeView">
     <div class="parc-header">
-      <button class="back-btn" id="parcBackBtn" hidden>‹ Retour</button>
+      <button class="back-btn" id="parcBackBtn" hidden title="Retour" aria-label="Retour">←</button>
       <span class="parc-title" id="parcTitle">Parc</span>
-      <button type="button" class="refresh-btn" id="parcRefreshBtn">↻ Actualiser</button>
+      <button type="button" class="refresh-btn" id="parcRefreshBtn" title="Actualiser" aria-label="Actualiser">↻</button>
     </div>
     <div class="client-stats" id="parcClientStats" hidden></div>
     <div class="filter-chip" id="parcFilterChip" hidden>
@@ -430,9 +434,9 @@
 
   <div id="parcAgentView" hidden>
     <div class="parc-header">
-      <button class="back-btn" id="agentBackBtn">‹ Retour</button>
+      <button class="back-btn" id="agentBackBtn" title="Retour" aria-label="Retour">←</button>
       <span class="parc-title" id="agentTitle">Agent</span>
-      <button type="button" class="refresh-btn" id="agentRefreshBtn">↻ Actualiser</button>
+      <button type="button" class="refresh-btn" id="agentRefreshBtn" title="Actualiser" aria-label="Actualiser">↻</button>
     </div>
     <div id="agentBody">
       <div class="loading">Chargement…</div>
@@ -445,7 +449,7 @@
 <div id="page-map" hidden>
   <div class="parc-header">
     <span class="parc-title">Carte des clients</span>
-    <button type="button" class="refresh-btn" id="mapRefreshBtn">↻ Actualiser</button>
+    <button type="button" class="refresh-btn" id="mapRefreshBtn" title="Actualiser" aria-label="Actualiser">↻</button>
   </div>
   <div id="mapStatus" class="loading">Chargement…</div>
   <div id="mapContainer" class="map-container" style="display:none;"></div>
@@ -1587,6 +1591,7 @@ function buildLineChartSvg(interpreted, scale) {
 // ⚠️ À tenir à jour à chaque nouvelle version livrée (garder aussi
 // releaseNotes.md synchronisé, à la racine du dossier fourni à l'utilisateur).
 const RELEASE_NOTES = [
+  { version: "0.47", text: "Les boutons Retour et Actualiser n'affichent plus que leur icône (← et ↻), et le titre est bien centré entre les deux." },
   { version: "0.46", text: "Les filtres du menu latéral sont retirés : on filtre maintenant en cliquant directement sur les cadres Serveur(s)/Poste(s)/Device(s) en haut de la liste, réduits pour tenir sur une seule ligne." },
   { version: "0.45", text: "Les agents de type A ne sont plus affichés (arborescence Parc, recherche, alertes), comme déjà le cas pour le type G." },
   { version: "0.44", text: "Correction du menu latéral qui restait caché derrière la carte (les contrôles de Leaflet passaient au-dessus de tout le reste de l'app)." },
