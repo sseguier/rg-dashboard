@@ -379,7 +379,7 @@
 <header>
   <div class="header-top">
     <button class="hamburger-btn" id="mainMenuBtn">☰</button>
-    <h1 id="homeLink">🛰️ RG System Suite <span class="app-version">v0.42</span></h1>
+    <h1 id="homeLink">🛰️ RG System Suite <span class="app-version">v0.43</span></h1>
   </div>
   <div class="search-bar" id="searchBarWrap">
     <input type="search" id="searchInput" placeholder="Rechercher un agent..." autocomplete="off">
@@ -451,6 +451,7 @@
   </div>
   <div id="mapStatus" class="loading">Chargement…</div>
   <div id="mapContainer" class="map-container" style="display:none;"></div>
+  <div id="mapUnlocated" hidden></div>
 </div>
 
 <!-- ===== Page Nouveautés (notes de version) ===== -->
@@ -1601,6 +1602,7 @@ function buildLineChartSvg(interpreted, scale) {
 // ⚠️ À tenir à jour à chaque nouvelle version livrée (garder aussi
 // releaseNotes.md synchronisé, à la racine du dossier fourni à l'utilisateur).
 const RELEASE_NOTES = [
+  { version: "0.43", text: "Carte : les clients sans adresse (ou dont l'adresse n'est pas reconnue) sont maintenant listés sous la carte au lieu de disparaître silencieusement." },
   { version: "0.42", text: "Retour aux couleurs d'origine (bleu) sur toute l'application — la charte Septeo (v0.40-v0.41) est annulée à la demande de l'utilisateur." },
   { version: "0.41", text: "L'onglet Carte reprend aussi la charte Septeo : pin orange, contrôles de zoom et infobulle assortis au thème sombre (les tuiles OpenStreetMap restent claires pour la lisibilité)." },
   { version: "0.40", text: "Interface adaptée aux couleurs officielles de Septeo (orange, bleu ardoise foncé, vert sarcelle) à la place du thème bleu générique. Rouge/jaune d'alerte restent inchangés pour la lisibilité." },
@@ -1668,9 +1670,23 @@ async function geocodeAddress(address) {
 let mapInstance = null;
 let mapLoaded = false; // évite de re-géocoder à chaque retour sur la page
 
+function renderUnlocatedClients(unlocated) {
+  const el = document.getElementById("mapUnlocated");
+  if (unlocated.length === 0) { el.hidden = true; return; }
+  const rows = unlocated.map((c) => `
+    <div class="note-item">
+      <div class="version">${escapeHtml(c.name)}</div>
+      <div class="text">${escapeHtml(c.reason)} — <a href="#/parc/node/${encodeURIComponent(c.id)}">Voir ce client</a></div>
+    </div>
+  `).join("");
+  el.innerHTML = `<div class="chart-cat">Non localisés (${unlocated.length})</div><div class="list">${rows}</div>`;
+  el.hidden = false;
+}
+
 async function loadMapPage() {
   const statusEl = document.getElementById("mapStatus");
   const containerEl = document.getElementById("mapContainer");
+  const unlocatedEl = document.getElementById("mapUnlocated");
 
   if (mapLoaded) {
     statusEl.hidden = true;
@@ -1682,6 +1698,7 @@ async function loadMapPage() {
   statusEl.hidden = false;
   statusEl.textContent = "Chargement des clients…";
   containerEl.style.display = "none";
+  unlocatedEl.hidden = true;
 
   try {
     const agents = await loadAllAgents();
@@ -1698,20 +1715,35 @@ async function loadMapPage() {
     }
 
     const pins = [];
+    // On garde une trace des clients qu'on n'arrive pas à placer sur la carte
+    // (adresse absente ou non reconnue par le géocodeur) : sans ça, un client
+    // disparaît silencieusement de la carte sans que personne ne s'en aperçoive.
+    const unlocated = [];
     let i = 0;
     for (const customer of customers.values()) {
       i++;
       statusEl.textContent = `Localisation des clients… (${i}/${customers.size})`;
       try {
         const details = await fetchJson(`/api/node/${encodeURIComponent(customer.id)}/customer`);
-        if (!details.companyAddress) continue;
+        const name = details.companyName || customer.name;
+        if (!details.companyAddress) {
+          unlocated.push({ id: customer.id, name, reason: "Adresse non renseignée dans RG System" });
+          continue;
+        }
         const point = await geocodeAddress(details.companyAddress);
-        if (point) pins.push({ ...point, name: details.companyName || customer.name, address: details.companyAddress, nodeId: customer.id });
+        if (point) {
+          pins.push({ ...point, name, address: details.companyAddress, nodeId: customer.id });
+        } else {
+          unlocated.push({ id: customer.id, name, reason: "Adresse non reconnue (" + details.companyAddress + ")" });
+        }
       } catch (err) {
+        unlocated.push({ id: customer.id, name: customer.name, reason: "Erreur : " + err.message });
         console.error("Client " + customer.id + " :", err);
       }
       await sleep(1000); // politique d'usage Nominatim : 1 requête/seconde max
     }
+
+    renderUnlocatedClients(unlocated);
 
     if (pins.length === 0) {
       statusEl.textContent = "Aucun client n'a pu être localisé (adresse manquante ou introuvable).";
