@@ -456,7 +456,7 @@
         <button type="button" class="search-close-btn" id="searchCloseBtn" title="Fermer la recherche" aria-label="Fermer la recherche">✕</button>
       </div>
     </div>
-    <h1 id="homeLink">🛰️ RG System Suite <span class="app-version">v0.51</span></h1>
+    <h1 id="homeLink">🛰️ RG System Suite <span class="app-version">v0.52</span></h1>
   </div>
 </header>
 
@@ -1680,6 +1680,7 @@ function buildLineChartSvg(interpreted, scale) {
 // ⚠️ À tenir à jour à chaque nouvelle version livrée (garder aussi
 // releaseNotes.md synchronisé, à la racine du dossier fourni à l'utilisateur).
 const RELEASE_NOTES = [
+  { version: "0.52", text: "Sur la carte, l'épingle d'un client passe en rouge s'il a au moins une alerte critique en cours, avec un message dans l'infobulle." },
   { version: "0.51", text: "Le bouton ↻ de chaque écran (Alertes, Parc, fiche agent, Carte) est remplacé par 🔍 pour ouvrir la recherche directement — le tirer-pour-actualiser devient le seul moyen de rafraîchir." },
   { version: "0.50", text: "Ajout du geste \"tirer vers le bas\" pour actualiser (pull-to-refresh), en plus du bouton ↻ — tirer l'écran vers le bas en étant en haut de la liste déclenche la même actualisation." },
   { version: "0.49", text: "Le bouton loupe est déplacé juste à droite du menu ☰. La recherche se déploie maintenant à la place du titre (sans ajouter de ligne) au clic." },
@@ -1730,6 +1731,26 @@ function renderWhatsNew() {
 
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+// Pin rouge (couleur alignée sur --crit-critical) pour un client ayant au
+// moins une alerte critique active, à la place du pin bleu par défaut de
+// Leaflet, construit une seule fois au premier besoin.
+let criticalMarkerIcon = null;
+function getCriticalMarkerIcon() {
+  if (!criticalMarkerIcon) {
+    criticalMarkerIcon = L.divIcon({
+      className: "",
+      html: `<svg width="25" height="41" viewBox="0 0 25 41" xmlns="http://www.w3.org/2000/svg">
+        <path d="M12.5 0C5.6 0 0 5.6 0 12.5c0 9.4 12.5 28.5 12.5 28.5S25 21.9 25 12.5C25 5.6 19.4 0 12.5 0z" fill="#ef4444"/>
+        <circle cx="12.5" cy="12.5" r="5" fill="#fff"/>
+      </svg>`,
+      iconSize: [25, 41],
+      iconAnchor: [12, 41],
+      popupAnchor: [1, -34],
+    });
+  }
+  return criticalMarkerIcon;
 }
 
 // Géocodage gratuit via Nominatim (OpenStreetMap) : pas de clé API, mais
@@ -1787,11 +1808,22 @@ async function loadMapPage() {
   unlocatedEl.hidden = true;
 
   try {
-    const agents = await loadAllAgents();
+    // On rafraîchit aussi les alertes (pas seulement les agents) : c'est ce
+    // qui permet de savoir quel client a au moins un ticket critique en cours,
+    // pour colorer son épingle en rouge sur la carte.
+    const [agents] = await Promise.all([loadAllAgents(), loadAlerts()]);
+    const criticalAgentIds = new Set(
+      lastIncidents.filter((inc) => !inc.acquitted && inc.criticality === "critical").map((inc) => inc.agentId)
+    );
+
     const customers = new Map();
     for (const a of agents) {
-      if (a.customer?.id && !customers.has(a.customer.id)) {
-        customers.set(a.customer.id, { id: a.customer.id, name: a.customer.name });
+      if (!a.customer?.id) continue;
+      if (!customers.has(a.customer.id)) {
+        customers.set(a.customer.id, { id: a.customer.id, name: a.customer.name, hasCritical: false });
+      }
+      if (criticalAgentIds.has(a.agentId)) {
+        customers.get(a.customer.id).hasCritical = true;
       }
     }
 
@@ -1818,7 +1850,7 @@ async function loadMapPage() {
         }
         const point = await geocodeAddress(details.companyAddress);
         if (point) {
-          pins.push({ ...point, name, address: details.companyAddress, nodeId: customer.id });
+          pins.push({ ...point, name, address: details.companyAddress, nodeId: customer.id, hasCritical: customer.hasCritical });
         } else {
           unlocated.push({ id: customer.id, name, reason: "Adresse non reconnue (" + details.companyAddress + ")" });
         }
@@ -1846,9 +1878,10 @@ async function loadMapPage() {
     }).addTo(mapInstance);
 
     const markers = pins.map((pin) => {
-      const marker = L.marker([pin.lat, pin.lng]).addTo(mapInstance);
+      const marker = L.marker([pin.lat, pin.lng], pin.hasCritical ? { icon: getCriticalMarkerIcon() } : {}).addTo(mapInstance);
       marker.bindPopup(
         `<strong>${escapeHtml(pin.name)}</strong><br>${escapeHtml(pin.address)}<br>` +
+        (pin.hasCritical ? `<span style="color:#ef4444;font-weight:600;">⚠️ Alerte critique en cours</span><br>` : "") +
         `<a href="#/parc/node/${encodeURIComponent(pin.nodeId)}">Voir ce client</a>`
       );
       return marker;
