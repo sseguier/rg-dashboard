@@ -450,7 +450,7 @@
 <header>
   <div class="header-top">
     <button class="hamburger-btn" id="mainMenuBtn">☰</button>
-    <h1 id="homeLink">🛰️ RG System Suite <span class="app-version">v0.54</span></h1>
+    <h1 id="homeLink">🛰️ RG System Suite <span class="app-version">v0.55</span></h1>
     <div class="search-bar" id="searchBarWrap">
       <button type="button" class="search-toggle-btn" id="searchToggleBtn" title="Rechercher" aria-label="Rechercher">🔍</button>
       <div class="search-input-row" id="searchInputRow" hidden>
@@ -1689,6 +1689,7 @@ function buildLineChartSvg(interpreted, scale) {
 // ⚠️ À tenir à jour à chaque nouvelle version livrée (garder aussi
 // releaseNotes.md synchronisé, à la racine du dossier fourni à l'utilisateur).
 const RELEASE_NOTES = [
+  { version: "0.55", text: "Correction sur la Carte : zoomer avec deux doigts déclenchait par erreur une actualisation qui rechargeait tous les clients et remettait la carte au zoom par défaut. Le geste \"tirer pour actualiser\" ignore désormais tout ce qui se passe sur la carte." },
   { version: "0.54", text: "La carte se charge plus vite quand il y a beaucoup de clients : les fiches clients sont récupérées en parallèle au lieu d'une par une, et l'attente d'une seconde imposée par le service de géolocalisation n'est plus appliquée pour une adresse déjà connue (mise en cache)." },
   { version: "0.53", text: "Le bouton 🔍 revient à droite du titre en haut de page (même emplacement que la croix ✕ qui le remplace une fois ouvert), retiré des écrans individuels. La page Nouveautés n'affiche plus que les 5 dernières versions." },
   { version: "0.52", text: "Sur la carte, l'épingle d'un client passe en rouge s'il a au moins une alerte critique en cours, avec un message dans l'infobulle." },
@@ -2088,27 +2089,32 @@ let pullStartY = null;
 let pullActive = false;
 let pullRefreshing = false;
 
-function pullEligible() {
+function pullEligible(target) {
   // Uniquement quand la page est déjà tout en haut (sinon c'est un scroll
   // normal), pas pendant une actualisation déjà en cours, pas quand le tiroir
-  // ou la recherche sont ouverts (on ne veut pas interférer avec ces gestes).
+  // ou la recherche sont ouverts (on ne veut pas interférer avec ces gestes),
+  // et pas sur la carte (Leaflet gère déjà ses propres gestes de pan/zoom).
   return (
     window.scrollY <= 0 &&
     !pullRefreshing &&
     mainDrawer.hidden &&
-    searchInputRow.hidden
+    searchInputRow.hidden &&
+    !(target && target.closest && target.closest("#mapContainer"))
   );
 }
 
 document.addEventListener("touchstart", (e) => {
-  pullStartY = pullEligible() ? e.touches[0].clientY : null;
+  // Un pincement à deux doigts (zoom sur la carte) ne doit jamais être
+  // interprété comme un tirage vers le bas.
+  pullStartY = (e.touches.length === 1 && pullEligible(e.target)) ? e.touches[0].clientY : null;
   pullActive = false;
 }, { passive: true });
 
 document.addEventListener("touchmove", (e) => {
   if (pullStartY == null || pullRefreshing) return;
+  if (e.touches.length > 1) { pullStartY = null; pullActive = false; return; }
   const dy = e.touches[0].clientY - pullStartY;
-  if (dy <= 0 || !pullEligible()) { pullStartY = null; return; }
+  if (dy <= 0 || !pullEligible(e.target)) { pullStartY = null; return; }
   pullActive = true;
   e.preventDefault(); // évite le rebond natif du navigateur pendant le tirage
   const dist = Math.min(dy * 0.5, PULL_MAX); // résistance : suit le doigt à moitié vitesse
