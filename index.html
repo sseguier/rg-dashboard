@@ -450,7 +450,7 @@
 <header>
   <div class="header-top">
     <button class="hamburger-btn" id="mainMenuBtn">☰</button>
-    <h1 id="homeLink">🛰️ RG System Suite <span class="app-version">v0.55</span></h1>
+    <h1 id="homeLink">🛰️ RG System Suite <span class="app-version">v0.56</span></h1>
     <div class="search-bar" id="searchBarWrap">
       <button type="button" class="search-toggle-btn" id="searchToggleBtn" title="Rechercher" aria-label="Rechercher">🔍</button>
       <div class="search-input-row" id="searchInputRow" hidden>
@@ -1408,6 +1408,73 @@ async function renderAgentEventsSection(agentId) {
   }
 }
 
+// Résultats des scripts personnalisés ("Custom scripts") assignés à l'agent
+// via /api/agent/{agent}/customscriptresult — un script peut ne jamais avoir
+// encore été exécuté (lastResult est alors null). status 1 = succès de
+// l'exécution, 2 = échec (avec un message d'erreur), peu importe le résultat
+// métier du script lui-même (ex. ExitCode non nul reste un status 1 si le
+// script a bien tourné).
+function customScriptVarLabel(script, variable) {
+  const aliases = script.aliases;
+  if (aliases && typeof aliases === "object" && !Array.isArray(aliases) && aliases[variable]) {
+    return aliases[variable];
+  }
+  return variable;
+}
+
+function customScriptRowHtml(script, index) {
+  const last = script.lastResult;
+  const cls = !last ? "low" : last.status === 1 ? "success" : last.status === 2 ? "critical" : "low";
+  const label = !last ? "Jamais exécuté" : last.status === 1 ? "Succès" : last.status === 2 ? "Échec" : "Inconnu";
+  const uid = "csn-" + index;
+
+  const lines = [];
+  if (last) {
+    if (last.status === 2 && last.message) lines.push("Erreur d'exécution : " + last.message);
+    for (const v of script.variables || []) {
+      const value = last.data?.[v];
+      if (value === undefined || value === "") continue;
+      lines.push(customScriptVarLabel(script, v) + " : " + value);
+    }
+  }
+  const detail = lines.join("\n").trim();
+
+  return `
+    <div class="incident ${cls}" ${detail ? `data-uid="${uid}" style="cursor:pointer;"` : `style="cursor:default;"`}>
+      <div class="title">${escapeHtml(script.name || script.customScriptName || "Script")}</div>
+      <div class="meta">
+        <span class="badge ${cls}">${escapeHtml(label)}</span>
+        <span>${escapeHtml(script.customScriptName || "")}</span>
+        <span>${formatDate(last?.createdAt)}</span>
+      </div>
+    </div>
+    ${detail ? `<div class="chart-panel" id="panel-${uid}" hidden>${escapeHtml(detail).replace(/\n/g, "<br>")}</div>` : ""}
+  `;
+}
+
+async function renderCustomScriptsSection(agentId) {
+  try {
+    const data = await fetchJson(`/api/agent/${encodeURIComponent(agentId)}/customscriptresult`);
+    const scripts = data && !Array.isArray(data) ? Object.values(data) : [];
+    if (scripts.length === 0) return ""; // aucun script personnalisé assigné : section masquée
+
+    // Les scripts déjà exécutés en premier (plus récent d'abord), ceux jamais
+    // lancés à la fin (triés par nom, pas de date pour les départager).
+    scripts.sort((a, b) => {
+      const da = a.lastResult?.createdAt, db = b.lastResult?.createdAt;
+      if (da && db) return new Date(db) - new Date(da);
+      if (da) return -1;
+      if (db) return 1;
+      return (a.name || "").localeCompare(b.name || "");
+    });
+
+    const rows = scripts.map(customScriptRowHtml).join("");
+    return `<div class="chart-cat">Custom scripts</div><div class="list">${rows}</div>`;
+  } catch (err) {
+    return `<div class="chart-cat">Custom scripts</div><div class="error">Erreur : ${escapeHtml(err.message)}</div>`;
+  }
+}
+
 let currentAgentId = null;
 
 async function loadAgent(agentId) {
@@ -1439,11 +1506,14 @@ async function loadAgent(agentId) {
       ? renderBackupActivitySection(agentId)
       : Promise.resolve({ html: "", orgName: null });
     const eventsPromise = showSupervisionBlocks ? renderAgentEventsSection(agentId) : Promise.resolve("");
-    const [backupResult, eventsHtml] = await Promise.all([backupPromise, eventsPromise]);
+    const customScriptsPromise = ["S", "W"].includes(ped.type)
+      ? renderCustomScriptsSection(agentId)
+      : Promise.resolve("");
+    const [backupResult, eventsHtml, customScriptsHtml] = await Promise.all([backupPromise, eventsPromise, customScriptsPromise]);
     const { html: backupHtml, orgName } = backupResult;
 
     const incidentsHtml = showSupervisionBlocks ? renderAgentIncidents(agentId) : "";
-    agentBodyEl.innerHTML = renderAgentPedigree(agentId, ped, orgName) + backupHtml + chartsHtml + incidentsHtml + eventsHtml;
+    agentBodyEl.innerHTML = renderAgentPedigree(agentId, ped, orgName) + backupHtml + customScriptsHtml + chartsHtml + incidentsHtml + eventsHtml;
   } catch (err) {
     agentBodyEl.innerHTML = '<div class="error">Erreur de chargement : ' + escapeHtml(err.message) + '</div>';
     console.error(err);
@@ -1689,6 +1759,7 @@ function buildLineChartSvg(interpreted, scale) {
 // ⚠️ À tenir à jour à chaque nouvelle version livrée (garder aussi
 // releaseNotes.md synchronisé, à la racine du dossier fourni à l'utilisateur).
 const RELEASE_NOTES = [
+  { version: "0.56", text: "Nouvelle section \"Custom scripts\" sur la fiche des agents Serveur/Poste : affiche chaque script personnalisé RG System avec le résultat de sa dernière exécution (succès/échec/jamais exécuté), avec le détail au clic (sortie du script, erreur d'exécution)." },
   { version: "0.55", text: "Correction sur la Carte : zoomer avec deux doigts déclenchait par erreur une actualisation qui rechargeait tous les clients et remettait la carte au zoom par défaut. Le geste \"tirer pour actualiser\" ignore désormais tout ce qui se passe sur la carte." },
   { version: "0.54", text: "La carte se charge plus vite quand il y a beaucoup de clients : les fiches clients sont récupérées en parallèle au lieu d'une par une, et l'attente d'une seconde imposée par le service de géolocalisation n'est plus appliquée pour une adresse déjà connue (mise en cache)." },
   { version: "0.53", text: "Le bouton 🔍 revient à droite du titre en haut de page (même emplacement que la croix ✕ qui le remplace une fois ouvert), retiré des écrans individuels. La page Nouveautés n'affiche plus que les 5 dernières versions." },
