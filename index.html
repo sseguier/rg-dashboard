@@ -11,8 +11,8 @@
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="RG Dashboard">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="IT Solutions">
 <style>
   :root {
     color-scheme: light;
@@ -44,10 +44,7 @@
     top: 0;
     z-index: 5;
     background: var(--bg);
-    /* iOS (PWA installée, barre de statut "black-translucent") dessine le
-       contenu sous l'encoche/l'heure : on ajoute la zone sûre en plus du
-       padding habituel pour ne pas passer dessous. env(...) vaut 0 ailleurs. */
-    padding: calc(16px + env(safe-area-inset-top)) 16px 8px;
+    padding: 16px 16px 8px;
     border-bottom: 1px solid var(--card-border);
   }
   .header-top {
@@ -456,7 +453,7 @@
 <header>
   <div class="header-top">
     <button class="hamburger-btn" id="mainMenuBtn">☰</button>
-    <h1 id="homeLink">🛰️ RG System Suite <span class="app-version">v0.58</span></h1>
+    <h1 id="homeLink">🛰️ RG System Suite <span class="app-version">v0.59</span></h1>
     <div class="search-bar" id="searchBarWrap">
       <button type="button" class="search-toggle-btn" id="searchToggleBtn" title="Rechercher" aria-label="Rechercher">🔍</button>
       <div class="search-input-row" id="searchInputRow" hidden>
@@ -1799,6 +1796,7 @@ function buildLineChartSvg(interpreted, scale) {
 // ⚠️ À tenir à jour à chaque nouvelle version livrée (garder aussi
 // releaseNotes.md synchronisé, à la racine du dossier fourni à l'utilisateur).
 const RELEASE_NOTES = [
+  { version: "0.59", text: "L'icône ajoutée à l'écran d'accueil (Android et iPhone) affiche maintenant le logo Septeo, avec \"IT Solutions\" comme nom du raccourci." },
   { version: "0.58", text: "Nouvelle charte graphique Septeo sur toute l'application : fond blanc, police Poppins (celle du site septeo.com), orange Septeo comme couleur d'accent principale, et palette de gris/bleu clair pour les cartes et le texte secondaire." },
   { version: "0.57", text: "Sur la fiche agent, le bloc Custom scripts passe en dernière position (après le Journal d'événements). Les blocs Alertes, Journal d'événements et Custom scripts ont chacun un bouton \"Tout afficher/replier\" (comme les Courbes) pour ouvrir ou fermer tous leurs détails en un clic." },
   { version: "0.56", text: "Nouvelle section \"Custom scripts\" sur la fiche des agents Serveur/Poste : affiche chaque script personnalisé RG System avec le résultat de sa dernière exécution (succès/échec/jamais exécuté), avec le détail au clic (sortie du script, erreur d'exécution)." },
