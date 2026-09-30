@@ -453,7 +453,7 @@
 <header>
   <div class="header-top">
     <button class="hamburger-btn" id="mainMenuBtn">☰</button>
-    <h1 id="homeLink">🛰️ RG System Suite <span class="app-version">v0.60</span></h1>
+    <h1 id="homeLink">🛰️ RG System Suite <span class="app-version">v0.61</span></h1>
     <div class="search-bar" id="searchBarWrap">
       <button type="button" class="search-toggle-btn" id="searchToggleBtn" title="Rechercher" aria-label="Rechercher">🔍</button>
       <div class="search-input-row" id="searchInputRow" hidden>
@@ -1796,6 +1796,7 @@ function buildLineChartSvg(interpreted, scale) {
 // ⚠️ À tenir à jour à chaque nouvelle version livrée (garder aussi
 // releaseNotes.md synchronisé, à la racine du dossier fourni à l'utilisateur).
 const RELEASE_NOTES = [
+  { version: "0.61", text: "Correction de l'icône ajoutée à l'écran d'accueil : les angles transparents du logo Septeo, qui s'affichaient en noir sur iPhone, sont maintenant en fond blanc uni." },
   { version: "0.60", text: "Correction de l'affichage flou/étrange en haut d'écran quand l'app est ouverte en PWA sur iPhone : la barre de statut (heure, batterie) n'est plus transparente, ce qui ne convenait qu'à l'ancien thème sombre." },
   { version: "0.59", text: "L'icône ajoutée à l'écran d'accueil (Android et iPhone) affiche maintenant le logo Septeo, avec \"IT Solutions\" comme nom du raccourci." },
   { version: "0.58", text: "Nouvelle charte graphique Septeo sur toute l'application : fond blanc, police Poppins (celle du site septeo.com), orange Septeo comme couleur d'accent principale, et palette de gris/bleu clair pour les cartes et le texte secondaire." },
