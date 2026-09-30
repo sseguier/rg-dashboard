@@ -70,6 +70,7 @@
     white-space: nowrap;
     text-overflow: ellipsis;
   }
+  .brand-icon { width: 22px; height: 22px; border-radius: 50%; flex-shrink: 0; }
   .app-version { font-size: 0.65rem; font-weight: 400; color: var(--text-dim); }
 
   .status-line {
@@ -485,7 +486,7 @@
 <header>
   <div class="header-top">
     <button class="hamburger-btn" id="mainMenuBtn">☰</button>
-    <h1 id="homeLink">🛰️ RG System Suite <span class="app-version">v0.70</span></h1>
+    <h1 id="homeLink"><img src="icons/icon-192.png" alt="" class="brand-icon"> RG System Suite <span class="app-version">v0.72</span></h1>
     <div class="search-bar" id="searchBarWrap">
       <button type="button" class="search-toggle-btn" id="searchToggleBtn" title="Rechercher" aria-label="Rechercher">🔍</button>
       <div class="search-input-row" id="searchInputRow" hidden>
@@ -751,6 +752,10 @@ function renderSummary(incidents) {
   const counts = { critical: 0, medium: 0, low: 0 };
   for (const inc of incidents) {
     if (inc.acquitted) continue;
+    // Les compteurs suivent le client sélectionné, pas seulement le texte de
+    // la liste en dessous — sinon on garde les totaux "tous clients" même en
+    // ayant filtré sur un seul, ce qui n'a plus de sens.
+    if (activeClientFilter && String(inc.customerId) !== activeClientFilter) continue;
     if (counts[inc.criticality] !== undefined) counts[inc.criticality]++;
   }
   document.getElementById("countCritical").textContent = counts.critical;
@@ -771,6 +776,7 @@ function renderAlertList() {
     return true;
   });
 
+  renderSummary(lastIncidents);
   summaryEl.querySelectorAll(".tile").forEach((tile) => {
     tile.classList.toggle("active", tile.dataset.crit === activeCriticality);
   });
@@ -917,7 +923,6 @@ async function loadAlerts() {
       loadAllAgents().catch(() => []), // l'info client est secondaire : une erreur ici ne doit pas bloquer l'affichage des alertes
     ]);
     lastIncidents = extractIncidents(data, agents);
-    renderSummary(lastIncidents);
     populateClientFilterOptions();
     renderAlertList();
     statusText.textContent = "Mis à jour à " + new Date().toLocaleTimeString("fr-FR");
@@ -1890,6 +1895,8 @@ function buildLineChartSvg(interpreted, scale) {
 // ⚠️ À tenir à jour à chaque nouvelle version livrée (garder aussi
 // releaseNotes.md synchronisé, à la racine du dossier fourni à l'utilisateur).
 const RELEASE_NOTES = [
+  { version: "0.72", text: "Sur les Alertes, les compteurs Critique/Moyenne/Basse s'adaptent maintenant au client sélectionné dans le filtre, au lieu d'afficher systématiquement le total tous clients confondus." },
+  { version: "0.71", text: "Le picto satellite 🛰️ à côté du titre \"RG System Suite\" est remplacé par le logo Septeo." },
   { version: "0.70", text: "Sur la Carte, l'infobulle d'un client avec une alerte critique (épingle rouge) propose maintenant aussi un lien \"Voir les alertes\", qui ouvre l'écran Alertes déjà filtré sur ce client." },
   { version: "0.69", text: "Un point rouge apparaît sur \"Nouveautés\" dans le menu latéral quand une mise à jour n'a pas encore été consultée, et disparaît dès qu'on ouvre cette page." },
   { version: "0.68", text: "Ajout d'un filtre par client sur l'écran Alertes (liste déroulante sous les compteurs Critique/Moyenne/Basse), combinable avec le filtre de criticité et la recherche." },
