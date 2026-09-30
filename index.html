@@ -44,7 +44,11 @@
     top: 0;
     z-index: 5;
     background: var(--bg);
-    padding: 16px 16px 8px;
+    /* iOS (PWA installée) réserve un espace pour la barre de statut, mais pas
+       toujours en mode standalone même avec un style "default" — on ajoute la
+       zone sûre en plus du padding habituel pour ne jamais passer dessous.
+       env(...) vaut 0 dans le navigateur normal et sur Android. */
+    padding: calc(16px + env(safe-area-inset-top)) 16px 8px;
     border-bottom: 1px solid var(--card-border);
   }
   .header-top {
@@ -304,7 +308,7 @@
     z-index: 2001;
     display: flex;
     flex-direction: column;
-    padding: 16px 0;
+    padding: calc(16px + env(safe-area-inset-top)) 0 16px;
     overflow-y: auto;
   }
   .drawer-header {
@@ -453,7 +457,7 @@
 <header>
   <div class="header-top">
     <button class="hamburger-btn" id="mainMenuBtn">☰</button>
-    <h1 id="homeLink">🛰️ RG System Suite <span class="app-version">v0.61</span></h1>
+    <h1 id="homeLink">🛰️ RG System Suite <span class="app-version">v0.63</span></h1>
     <div class="search-bar" id="searchBarWrap">
       <button type="button" class="search-toggle-btn" id="searchToggleBtn" title="Rechercher" aria-label="Rechercher">🔍</button>
       <div class="search-input-row" id="searchInputRow" hidden>
@@ -949,6 +953,9 @@ async function updateClientStats(nodeId) {
       statHtml("W", workstations, "Poste(s)") +
       statHtml("devices", devices, "Device(s)");
     parcClientStats.hidden = false;
+    // Le bandeau était masqué (donc invisible pour le calcul des décalages
+    // sticky) jusqu'à cet instant : on recalcule maintenant qu'il a sa taille définitive.
+    updateStickyOffsets();
   } catch (err) {
     console.error(err);
   }
@@ -967,6 +974,9 @@ async function loadNode(nodeId) {
     if (!node) throw new Error("Node introuvable");
     lastLoadedNode = node;
     renderNodeList();
+    // Le titre du dossier vient de changer (texte potentiellement plus long/court
+    // que l'ancien) : le bandeau .parc-header peut avoir changé de hauteur.
+    updateStickyOffsets();
     // Les compteurs sont utiles sur n'importe quel dossier, pas seulement les
     // nodes clients (ex. un groupe de VMs qui n'est pas un client à proprement parler).
     updateClientStats(nodeId);
@@ -1796,6 +1806,8 @@ function buildLineChartSvg(interpreted, scale) {
 // ⚠️ À tenir à jour à chaque nouvelle version livrée (garder aussi
 // releaseNotes.md synchronisé, à la racine du dossier fourni à l'utilisateur).
 const RELEASE_NOTES = [
+  { version: "0.63", text: "Correction du chevauchement en haut d'écran quand l'app est ouverte en PWA sur iPhone : l'espace réservé à la barre de statut, retiré par erreur en v0.60, est rétabli." },
+  { version: "0.62", text: "Renforcement du calcul de position des bandeaux fixes (titre du dossier, filtres Serveur(s)/Poste(s)/Device(s)) pour éviter un chevauchement avec la liste, notamment sur iPhone." },
   { version: "0.61", text: "Correction de l'icône ajoutée à l'écran d'accueil : les angles transparents du logo Septeo, qui s'affichaient en noir sur iPhone, sont maintenant en fond blanc uni." },
   { version: "0.60", text: "Correction de l'affichage flou/étrange en haut d'écran quand l'app est ouverte en PWA sur iPhone : la barre de statut (heure, batterie) n'est plus transparente, ce qui ne convenait qu'à l'ancien thème sombre." },
   { version: "0.59", text: "L'icône ajoutée à l'écran d'accueil (Android et iPhone) affiche maintenant le logo Septeo, avec \"IT Solutions\" comme nom du raccourci." },
@@ -2176,7 +2188,7 @@ document.getElementById("homeLink").addEventListener("click", () => {
 // n'est pas fixe (recherche repliée/dépliée, zone sûre iOS variable selon
 // l'appareil) : on la mesure en JS plutôt que de la deviner en CSS.
 const appHeaderEl = document.querySelector("header");
-function updateStickyOffsets() {
+function applyStickyOffsets() {
   const headerH = appHeaderEl.offsetHeight;
   document.querySelectorAll(".parc-header").forEach((ph) => {
     ph.style.top = headerH + "px";
@@ -2186,6 +2198,15 @@ function updateStickyOffsets() {
     const phH = ph && ph.classList.contains("parc-header") ? ph.offsetHeight : 0;
     cs.style.top = (headerH + phH) + "px";
   });
+}
+function updateStickyOffsets() {
+  applyStickyOffsets();
+  // Filet de sécurité pour un bug connu de Safari iOS : un élément sticky ne
+  // reprend pas toujours sa bonne position (chevauchement avec le contenu
+  // suivant) quand la hauteur du contenu au-dessus change par script plutôt
+  // que par un vrai scroll utilisateur. On refait le calcul juste après le
+  // prochain repaint, une fois les hauteurs définitivement stables.
+  requestAnimationFrame(applyStickyOffsets);
 }
 window.addEventListener("resize", updateStickyOffsets);
 if (window.ResizeObserver) new ResizeObserver(updateStickyOffsets).observe(appHeaderEl);
