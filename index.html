@@ -486,7 +486,7 @@
 <header>
   <div class="header-top">
     <button class="hamburger-btn" id="mainMenuBtn">☰</button>
-    <h1 id="homeLink"><img src="icons/icon-192.png" alt="" class="brand-icon"> RG System Suite <span class="app-version">v0.72</span></h1>
+    <h1 id="homeLink"><img src="icons/icon-192.png" alt="" class="brand-icon"> RG System Suite <span class="app-version">v0.73</span></h1>
     <div class="search-bar" id="searchBarWrap">
       <button type="button" class="search-toggle-btn" id="searchToggleBtn" title="Rechercher" aria-label="Rechercher">🔍</button>
       <div class="search-input-row" id="searchInputRow" hidden>
@@ -770,7 +770,7 @@ function renderAlertList() {
     if (activeCriticality && inc.criticality !== activeCriticality) return false;
     if (activeClientFilter && String(inc.customerId) !== activeClientFilter) return false;
     if (q) {
-      const haystack = [inc.title, inc.agentName, inc.nodePath].filter(Boolean).join(" ").toLowerCase();
+      const haystack = [inc.title, inc.agentName, inc.nodePath, inc.customerName, inc.category, inc.displayId].filter(Boolean).join(" ").toLowerCase();
       if (!haystack.includes(q)) return false;
     }
     return true;
@@ -853,10 +853,11 @@ async function loadAllAgents() {
 
 function agentHaystack(a) {
   const fields = [
-    a.agentName, a.csName, a.dnsHostname, a.privateIp, a.publicIp, a.configuredIp,
+    a.agentId, a.agentName, a.csName, a.dnsHostname, a.privateIp, a.publicIp, a.configuredIp,
     a.osName, a.osVersion, a.comment, a.manufacturer, a.model, a.serialNumber,
     a.hardwareSerialNumber, a.installedBy, a.lastLoggedOnUser, a.domain, a.nodeName,
     a.cpuInfos, a.memoryInfos, a.diskInfos, a.networkInfos, a.agentVersion,
+    a.agentPlatform, a.backupStatus, a.windowsUpdateV2Status, a.customer?.name,
     Array.isArray(a.agentPath) ? a.agentPath.join(" ") : "",
     Array.isArray(a.tags) ? a.tags.join(" ") : "",
   ];
@@ -1895,6 +1896,7 @@ function buildLineChartSvg(interpreted, scale) {
 // ⚠️ À tenir à jour à chaque nouvelle version livrée (garder aussi
 // releaseNotes.md synchronisé, à la racine du dossier fourni à l'utilisateur).
 const RELEASE_NOTES = [
+  { version: "0.73", text: "La recherche couvre maintenant beaucoup plus de champs : nom du client, identifiant RG System de l'agent, plateforme, statut de sauvegarde et de Windows Update pour les agents ; nom du client et catégorie pour les alertes." },
   { version: "0.72", text: "Sur les Alertes, les compteurs Critique/Moyenne/Basse s'adaptent maintenant au client sélectionné dans le filtre, au lieu d'afficher systématiquement le total tous clients confondus." },
   { version: "0.71", text: "Le picto satellite 🛰️ à côté du titre \"RG System Suite\" est remplacé par le logo Septeo." },
   { version: "0.70", text: "Sur la Carte, l'infobulle d'un client avec une alerte critique (épingle rouge) propose maintenant aussi un lien \"Voir les alertes\", qui ouvre l'écran Alertes déjà filtré sur ce client." },
