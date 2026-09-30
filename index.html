@@ -205,6 +205,9 @@
     z-index: 4;
     background: var(--bg);
     border-bottom: 1px solid var(--card-border);
+    /* Même correctif que .client-stats : sans marge, le contenu qui suit
+       (coins arrondis) touche directement le trait de séparation. */
+    margin-bottom: 10px;
   }
   .back-btn {
     background: none;
@@ -461,7 +464,7 @@
 <header>
   <div class="header-top">
     <button class="hamburger-btn" id="mainMenuBtn">☰</button>
-    <h1 id="homeLink">🛰️ RG System Suite <span class="app-version">v0.65</span></h1>
+    <h1 id="homeLink">🛰️ RG System Suite <span class="app-version">v0.66</span></h1>
     <div class="search-bar" id="searchBarWrap">
       <button type="button" class="search-toggle-btn" id="searchToggleBtn" title="Rechercher" aria-label="Rechercher">🔍</button>
       <div class="search-input-row" id="searchInputRow" hidden>
@@ -1810,6 +1813,7 @@ function buildLineChartSvg(interpreted, scale) {
 // ⚠️ À tenir à jour à chaque nouvelle version livrée (garder aussi
 // releaseNotes.md synchronisé, à la racine du dossier fourni à l'utilisateur).
 const RELEASE_NOTES = [
+  { version: "0.66", text: "Même correctif d'espacement que la v0.65, appliqué cette fois à tous les titres de page (Nouveautés, Carte, fiche agent, résultats de recherche) qui touchaient directement le premier bloc en dessous." },
   { version: "0.65", text: "Ajout d'un espace entre les filtres Serveur(s)/Poste(s)/Device(s) et le premier dossier de la liste, qui les touchait directement et donnait une impression de chevauchement." },
   { version: "0.64", text: "Correction d'un léger chevauchement d'un pixel juste au-dessus de la liste (entre les filtres Serveur(s)/Poste(s)/Device(s) et le premier dossier), dû à un arrondi de décimales spécifique aux écrans haute densité comme l'iPhone." },
   { version: "0.63", text: "Correction du chevauchement en haut d'écran quand l'app est ouverte en PWA sur iPhone : l'espace réservé à la barre de statut, retiré par erreur en v0.60, est rétabli." },
