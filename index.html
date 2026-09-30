@@ -457,7 +457,7 @@
 <header>
   <div class="header-top">
     <button class="hamburger-btn" id="mainMenuBtn">☰</button>
-    <h1 id="homeLink">🛰️ RG System Suite <span class="app-version">v0.63</span></h1>
+    <h1 id="homeLink">🛰️ RG System Suite <span class="app-version">v0.64</span></h1>
     <div class="search-bar" id="searchBarWrap">
       <button type="button" class="search-toggle-btn" id="searchToggleBtn" title="Rechercher" aria-label="Rechercher">🔍</button>
       <div class="search-input-row" id="searchInputRow" hidden>
@@ -1806,6 +1806,7 @@ function buildLineChartSvg(interpreted, scale) {
 // ⚠️ À tenir à jour à chaque nouvelle version livrée (garder aussi
 // releaseNotes.md synchronisé, à la racine du dossier fourni à l'utilisateur).
 const RELEASE_NOTES = [
+  { version: "0.64", text: "Correction d'un léger chevauchement d'un pixel juste au-dessus de la liste (entre les filtres Serveur(s)/Poste(s)/Device(s) et le premier dossier), dû à un arrondi de décimales spécifique aux écrans haute densité comme l'iPhone." },
   { version: "0.63", text: "Correction du chevauchement en haut d'écran quand l'app est ouverte en PWA sur iPhone : l'espace réservé à la barre de statut, retiré par erreur en v0.60, est rétabli." },
   { version: "0.62", text: "Renforcement du calcul de position des bandeaux fixes (titre du dossier, filtres Serveur(s)/Poste(s)/Device(s)) pour éviter un chevauchement avec la liste, notamment sur iPhone." },
   { version: "0.61", text: "Correction de l'icône ajoutée à l'écran d'accueil : les angles transparents du logo Septeo, qui s'affichaient en noir sur iPhone, sont maintenant en fond blanc uni." },
@@ -2189,13 +2190,19 @@ document.getElementById("homeLink").addEventListener("click", () => {
 // l'appareil) : on la mesure en JS plutôt que de la deviner en CSS.
 const appHeaderEl = document.querySelector("header");
 function applyStickyOffsets() {
-  const headerH = appHeaderEl.offsetHeight;
+  // Arrondi vers le haut (jamais vers le bas) : sur les écrans haute densité
+  // (iPhone), une hauteur mesurée avec décimale (ex. 65.2px) peut être
+  // arrondie différemment par le moteur de rendu pour l'élément sticky que
+  // pour le contenu juste en dessous, créant un chevauchement d'1px. Arrondir
+  // systématiquement vers le haut garantit qu'on ne sous-estime jamais
+  // l'espace réservé (au pire un pixel de trop, jamais un chevauchement).
+  const headerH = Math.ceil(appHeaderEl.offsetHeight);
   document.querySelectorAll(".parc-header").forEach((ph) => {
     ph.style.top = headerH + "px";
   });
   document.querySelectorAll(".client-stats").forEach((cs) => {
     const ph = cs.previousElementSibling;
-    const phH = ph && ph.classList.contains("parc-header") ? ph.offsetHeight : 0;
+    const phH = ph && ph.classList.contains("parc-header") ? Math.ceil(ph.offsetHeight) : 0;
     cs.style.top = (headerH + phH) + "px";
   });
 }
