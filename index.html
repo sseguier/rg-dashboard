@@ -25,8 +25,8 @@
     --text: #101828;
     --text-dim: #475467;
     --crit-critical: #ef4444;
-    --crit-medium: #b45309;
-    --crit-low: #64748b;
+    --crit-medium: #ea580c;
+    --crit-low: #a16207;
     --accent: #ff6136;
     --ok: #027a48;
   }
@@ -168,8 +168,8 @@
     text-transform: uppercase;
   }
   .badge.critical { background: rgba(239,68,68,0.15); color: var(--crit-critical); }
-  .badge.medium { background: rgba(180,83,9,0.15); color: var(--crit-medium); }
-  .badge.low { background: rgba(100,116,139,0.15); color: var(--crit-low); }
+  .badge.medium { background: rgba(234,88,12,0.15); color: var(--crit-medium); }
+  .badge.low { background: rgba(161,98,7,0.15); color: var(--crit-low); }
   .badge.success { background: rgba(2,122,72,0.12); color: var(--ok); }
   .badge.offline { background: rgba(152,162,179,0.18); color: var(--text-dim); }
 
@@ -464,7 +464,7 @@
 <header>
   <div class="header-top">
     <button class="hamburger-btn" id="mainMenuBtn">☰</button>
-    <h1 id="homeLink">🛰️ RG System Suite <span class="app-version">v0.66</span></h1>
+    <h1 id="homeLink">🛰️ RG System Suite <span class="app-version">v0.67</span></h1>
     <div class="search-bar" id="searchBarWrap">
       <button type="button" class="search-toggle-btn" id="searchToggleBtn" title="Rechercher" aria-label="Rechercher">🔍</button>
       <div class="search-input-row" id="searchInputRow" hidden>
@@ -1397,7 +1397,10 @@ async function renderBackupActivitySection(agentId) {
 // l'agent. Seuls error/warning sont conservés côté API (pas de bruit
 // "information"), donc la criticité se calque directement sur le vocabulaire
 // déjà utilisé pour les alertes (critique/moyen/bas).
-const EVENT_TYPE_CLASS = { error: "critical", warning: "medium", information: "low" };
+// "warning" est associé à la classe "low" (jaune) et non "medium" (orange,
+// réservé au niveau "Moyenne" des alertes) : Erreur/Avertissement n'ont que 2
+// couleurs (rouge/jaune), alors que les alertes en ont 3 (rouge/orange/jaune).
+const EVENT_TYPE_CLASS = { error: "critical", warning: "low", information: "low" };
 const EVENT_TYPE_LABEL = { error: "Erreur", warning: "Avertissement", information: "Information" };
 
 function eventRowHtml(ev, index) {
@@ -1813,6 +1816,7 @@ function buildLineChartSvg(interpreted, scale) {
 // ⚠️ À tenir à jour à chaque nouvelle version livrée (garder aussi
 // releaseNotes.md synchronisé, à la racine du dossier fourni à l'utilisateur).
 const RELEASE_NOTES = [
+  { version: "0.67", text: "Couleurs des niveaux de criticité revues : pour les alertes, rouge = Critique, orange = Moyenne, jaune = Basse. Pour le journal d'événements, rouge = Erreur, jaune = Avertissement." },
   { version: "0.66", text: "Même correctif d'espacement que la v0.65, appliqué cette fois à tous les titres de page (Nouveautés, Carte, fiche agent, résultats de recherche) qui touchaient directement le premier bloc en dessous." },
   { version: "0.65", text: "Ajout d'un espace entre les filtres Serveur(s)/Poste(s)/Device(s) et le premier dossier de la liste, qui les touchait directement et donnait une impression de chevauchement." },
   { version: "0.64", text: "Correction d'un léger chevauchement d'un pixel juste au-dessus de la liste (entre les filtres Serveur(s)/Poste(s)/Device(s) et le premier dossier), dû à un arrondi de décimales spécifique aux écrans haute densité comme l'iPhone." },
