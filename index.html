@@ -112,6 +112,18 @@
   .summary .tile.low .n { color: var(--crit-low); }
   .summary .tile.active { border-color: var(--accent); background: rgba(255,97,54,0.12); }
 
+  .client-filter-row { padding: 0 16px 12px; }
+  .client-filter-row select {
+    width: 100%;
+    background: var(--card);
+    border: 1px solid var(--card-border);
+    color: var(--text);
+    border-radius: 10px;
+    padding: 8px 12px;
+    font-size: 0.85rem;
+    font-family: inherit;
+  }
+
   /* Ouverte depuis le bouton 🔍 de chaque écran (à la place de l'ancien ↻) ;
      se déploie à la place du titre dans l'en-tête, sans ajouter de hauteur. */
   .search-bar { display: flex; align-items: center; }
@@ -336,6 +348,15 @@
     font-size: 0.88rem;
   }
   .drawer-item.active { background: rgba(255,97,54,0.12); color: var(--accent); font-weight: 600; }
+  .update-dot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--crit-critical);
+    margin-left: 4px;
+    vertical-align: middle;
+  }
 
   .row {
     display: flex;
@@ -464,7 +485,7 @@
 <header>
   <div class="header-top">
     <button class="hamburger-btn" id="mainMenuBtn">☰</button>
-    <h1 id="homeLink">🛰️ RG System Suite <span class="app-version">v0.67</span></h1>
+    <h1 id="homeLink">🛰️ RG System Suite <span class="app-version">v0.69</span></h1>
     <div class="search-bar" id="searchBarWrap">
       <button type="button" class="search-toggle-btn" id="searchToggleBtn" title="Rechercher" aria-label="Rechercher">🔍</button>
       <div class="search-input-row" id="searchInputRow" hidden>
@@ -485,6 +506,12 @@
     <button type="button" class="tile critical" data-crit="critical"><span class="n" id="countCritical">–</span><span class="l">Critique</span></button>
     <button type="button" class="tile medium" data-crit="medium"><span class="n" id="countMedium">–</span><span class="l">Moyenne</span></button>
     <button type="button" class="tile low" data-crit="low"><span class="n" id="countLow">–</span><span class="l">Basse</span></button>
+  </div>
+
+  <div class="client-filter-row">
+    <select id="alertClientFilter">
+      <option value="">Tous les clients</option>
+    </select>
   </div>
 
   <div class="list" id="list">
@@ -555,7 +582,7 @@
   <button type="button" class="drawer-item" data-nav="parc">🗂️ Parc</button>
   <button type="button" class="drawer-item" data-nav="alerts">🔔 Alertes</button>
   <button type="button" class="drawer-item" data-nav="map">🗺️ Carte</button>
-  <button type="button" class="drawer-item" data-nav="whatsnew">🆕 Nouveautés</button>
+  <button type="button" class="drawer-item" data-nav="whatsnew">🆕 Nouveautés <span class="update-dot" id="whatsNewDot" hidden></span></button>
 </div>
 
 <script>
@@ -596,10 +623,41 @@ const searchToggleBtn = document.getElementById("searchToggleBtn");
 const searchInputRow = document.getElementById("searchInputRow");
 const searchCloseBtn = document.getElementById("searchCloseBtn");
 const homeLinkEl = document.getElementById("homeLink");
+const alertClientFilterEl = document.getElementById("alertClientFilter");
 let lastIncidents = [];
 let activeCriticality = null;
+let activeClientFilter = "";
 let currentPage = "parc";
 let searchQuery = "";
+
+// Reconstruit la liste déroulante à partir des clients réellement présents
+// dans les alertes en cours (pas tout le parc) — évite de proposer des
+// clients qui n'ont aucune alerte à filtrer.
+function populateClientFilterOptions() {
+  // La valeur d'un <option> est toujours une chaîne côté DOM : on normalise
+  // customerId (un nombre côté API) en chaîne partout ici pour que les
+  // comparaisons avec alertClientFilterEl.value restent cohérentes.
+  const seen = new Map();
+  for (const inc of lastIncidents) {
+    if (inc.customerId == null) continue;
+    const id = String(inc.customerId);
+    if (!seen.has(id)) seen.set(id, inc.customerName || id);
+  }
+  const clients = [...seen.entries()].sort((a, b) => a[1].localeCompare(b[1]));
+  const previousValue = alertClientFilterEl.value;
+  alertClientFilterEl.innerHTML =
+    '<option value="">Tous les clients</option>' +
+    clients.map(([id, name]) => `<option value="${escapeHtml(id)}">${escapeHtml(name)}</option>`).join("");
+  // Si le client sélectionné n'a plus d'alerte, on retombe sur "Tous les
+  // clients" plutôt que de garder une sélection invisible dans la liste.
+  alertClientFilterEl.value = clients.some(([id]) => id === previousValue) ? previousValue : "";
+  activeClientFilter = alertClientFilterEl.value;
+}
+
+alertClientFilterEl.addEventListener("change", () => {
+  activeClientFilter = alertClientFilterEl.value;
+  renderAlertList();
+});
 
 // Un seul bouton 🔍, à droite du titre (même emplacement que la croix ✕ qui
 // le remplace une fois ouvert). Elle se déploie à la place du titre, dans la
@@ -639,7 +697,15 @@ searchToggleBtn.addEventListener("click", () => {
 });
 searchCloseBtn.addEventListener("click", closeSearch);
 
-function extractIncidents(data) {
+function extractIncidents(data, agents) {
+  // Le résumé /api/sum/{node}/all ne porte pas d'info client structurée (juste
+  // un nodePath texte) — on la récupère via le pedigree (déjà utilisé pour la
+  // carte et les compteurs Parc), qui associe chaque agentId à son client.
+  const customerByAgentId = new Map();
+  for (const a of agents || []) {
+    if (a.customer?.id) customerByAgentId.set(a.agentId, a.customer);
+  }
+
   const incidents = [];
   const sections = [
     { key: "servers", groupKey: "plugins" },
@@ -651,6 +717,7 @@ function extractIncidents(data) {
     for (const entry of data[key] || []) {
       const agent = entry.agent || {};
       if (HIDDEN_AGENT_TYPES.has(agent.type)) continue;
+      const customer = customerByAgentId.get(agent.id) || null;
       const groups = entry[groupKey] || {};
       for (const [category, items] of Object.entries(groups)) {
         for (const item of items || []) {
@@ -661,6 +728,8 @@ function extractIncidents(data) {
             agentId: agent.id,
             nodePath: Array.isArray(agent.nodePath) ? agent.nodePath.join(" / ") : "",
             isOnline: agent.isOnline,
+            customerId: customer?.id ?? null,
+            customerName: customer?.name ?? null,
           });
         }
       }
@@ -694,6 +763,7 @@ function renderAlertList() {
   const items = lastIncidents.filter((inc) => {
     if (inc.acquitted) return false;
     if (activeCriticality && inc.criticality !== activeCriticality) return false;
+    if (activeClientFilter && String(inc.customerId) !== activeClientFilter) return false;
     if (q) {
       const haystack = [inc.title, inc.agentName, inc.nodePath].filter(Boolean).join(" ").toLowerCase();
       if (!haystack.includes(q)) return false;
@@ -842,9 +912,13 @@ searchInputEl.addEventListener("input", () => {
 async function loadAlerts() {
   statusText.textContent = "Actualisation…";
   try {
-    const data = await fetchJson(`/api/sum/${ROOT_NODE_ID}/all`);
-    lastIncidents = extractIncidents(data);
+    const [data, agents] = await Promise.all([
+      fetchJson(`/api/sum/${ROOT_NODE_ID}/all`),
+      loadAllAgents().catch(() => []), // l'info client est secondaire : une erreur ici ne doit pas bloquer l'affichage des alertes
+    ]);
+    lastIncidents = extractIncidents(data, agents);
     renderSummary(lastIncidents);
+    populateClientFilterOptions();
     renderAlertList();
     statusText.textContent = "Mis à jour à " + new Date().toLocaleTimeString("fr-FR");
   } catch (err) {
@@ -1816,6 +1890,8 @@ function buildLineChartSvg(interpreted, scale) {
 // ⚠️ À tenir à jour à chaque nouvelle version livrée (garder aussi
 // releaseNotes.md synchronisé, à la racine du dossier fourni à l'utilisateur).
 const RELEASE_NOTES = [
+  { version: "0.69", text: "Un point rouge apparaît sur \"Nouveautés\" dans le menu latéral quand une mise à jour n'a pas encore été consultée, et disparaît dès qu'on ouvre cette page." },
+  { version: "0.68", text: "Ajout d'un filtre par client sur l'écran Alertes (liste déroulante sous les compteurs Critique/Moyenne/Basse), combinable avec le filtre de criticité et la recherche." },
   { version: "0.67", text: "Couleurs des niveaux de criticité revues : pour les alertes, rouge = Critique, orange = Moyenne, jaune = Basse. Pour le journal d'événements, rouge = Erreur, jaune = Avertissement." },
   { version: "0.66", text: "Même correctif d'espacement que la v0.65, appliqué cette fois à tous les titres de page (Nouveautés, Carte, fiche agent, résultats de recherche) qui touchaient directement le premier bloc en dessous." },
   { version: "0.65", text: "Ajout d'un espace entre les filtres Serveur(s)/Poste(s)/Device(s) et le premier dossier de la liste, qui les touchait directement et donnait une impression de chevauchement." },
@@ -1873,6 +1949,33 @@ function renderWhatsNew() {
     </div>
   `).join("");
 }
+
+// Point rouge sur "Nouveautés" tant que la dernière version publiée n'a pas
+// été consultée. La version "vue" est mémorisée dans localStorage (pas de
+// compte utilisateur dans cette appli, donc pas d'autre endroit où la garder).
+const LAST_SEEN_VERSION_KEY = "rgdash-last-seen-version";
+const whatsNewDotEl = document.getElementById("whatsNewDot");
+
+function updateWhatsNewDot() {
+  let lastSeen = null;
+  try { lastSeen = localStorage.getItem(LAST_SEEN_VERSION_KEY); } catch (e) { /* stockage indisponible : pas de point rouge, pas bloquant */ }
+  whatsNewDotEl.hidden = lastSeen === null || lastSeen === RELEASE_NOTES[0].version;
+}
+
+function markWhatsNewSeen() {
+  try { localStorage.setItem(LAST_SEEN_VERSION_KEY, RELEASE_NOTES[0].version); } catch (e) { /* pas bloquant */ }
+  updateWhatsNewDot();
+}
+
+// Première utilisation de ce suivi (avant cette version, rien n'était
+// mémorisé) : on part du principe que la version actuelle est déjà "vue"
+// plutôt que d'afficher un point rouge dès l'installation de cette fonctionnalité.
+try {
+  if (localStorage.getItem(LAST_SEEN_VERSION_KEY) === null) {
+    localStorage.setItem(LAST_SEEN_VERSION_KEY, RELEASE_NOTES[0].version);
+  }
+} catch (e) { /* stockage indisponible : le point restera simplement toujours masqué */ }
+updateWhatsNewDot();
 
 /* =========================================================
    Page Carte (clients géolocalisés via OpenStreetMap/Leaflet)
@@ -2175,6 +2278,7 @@ function router() {
   }
   if (currentPage === "whatsnew") {
     renderWhatsNew();
+    markWhatsNewSeen();
     return;
   }
 
