@@ -486,7 +486,7 @@
 <header>
   <div class="header-top">
     <button class="hamburger-btn" id="mainMenuBtn">☰</button>
-    <h1 id="homeLink"><img src="icons/icon-192.png" alt="" class="brand-icon"> RG System Suite <span class="app-version">v0.75</span></h1>
+    <h1 id="homeLink"><img src="icons/icon-192.png" alt="" class="brand-icon"> RG System Suite <span class="app-version">v0.76</span></h1>
     <div class="search-bar" id="searchBarWrap">
       <button type="button" class="search-toggle-btn" id="searchToggleBtn" title="Rechercher" aria-label="Rechercher">🔍</button>
       <div class="search-input-row" id="searchInputRow" hidden>
@@ -1349,7 +1349,6 @@ let agentAlertFilter = null; // null (Toutes) | "critical" | "medium" | "low"
 function agentIncidentDetail(inc) {
   const parts = [];
   if (inc.category) parts.push("Catégorie : " + inc.category);
-  if (inc.eventType) parts.push("Type : " + inc.eventType);
   if (inc.displayId) parts.push("Identifiant : " + inc.displayId);
   return parts.join("\n");
 }
@@ -1903,6 +1902,7 @@ function buildLineChartSvg(interpreted, scale) {
 // ⚠️ À tenir à jour à chaque nouvelle version livrée (garder aussi
 // releaseNotes.md synchronisé, à la racine du dossier fourni à l'utilisateur).
 const RELEASE_NOTES = [
+  { version: "0.76", text: "Retrait de la ligne \"Type\" dans le détail d'une alerte : c'était un code numérique interne à RG System sans libellé officiel, qui faisait doublon avec la \"Catégorie\" déjà affichée en clair." },
   { version: "0.75", text: "Sur l'écran Alertes, un clic sur une alerte affiche maintenant son détail (catégorie, type, identifiant) avec un lien \"Accéder à l'agent\", au lieu de naviguer directement vers l'agent au premier clic." },
   { version: "0.74", text: "Le champ de recherche affiche simplement \"Rechercher...\" partout, au lieu d'un texte différent selon l'écran (agent/alerte) — cohérent avec le fait qu'elle couvre désormais beaucoup plus de champs qu'avant (v0.73)." },
   { version: "0.73", text: "La recherche couvre maintenant beaucoup plus de champs : nom du client, identifiant RG System de l'agent, plateforme, statut de sauvegarde et de Windows Update pour les agents ; nom du client et catégorie pour les alertes." },
