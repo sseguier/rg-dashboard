@@ -497,7 +497,7 @@
 <header>
   <div class="header-top">
     <button class="hamburger-btn" id="mainMenuBtn">☰</button>
-    <h1 id="homeLink"><img src="icons/icon-192.png" alt="" class="brand-icon"> RG System Suite <span class="app-version">v0.78</span></h1>
+    <h1 id="homeLink"><img src="icons/icon-192.png" alt="" class="brand-icon"> RG System Suite <span class="app-version">v0.79</span></h1>
     <div class="search-bar" id="searchBarWrap">
       <button type="button" class="search-toggle-btn" id="searchToggleBtn" title="Rechercher" aria-label="Rechercher">🔍</button>
       <div class="search-input-row" id="searchInputRow" hidden>
@@ -589,6 +589,32 @@
   <div id="mapUnlocated" hidden></div>
 </div>
 
+<!-- ===== Page Clients (annuaire, coordonnées) ===== -->
+<div id="page-clients" hidden>
+  <div id="clientsListView">
+    <div class="parc-header">
+      <div class="parc-header-row">
+        <span class="parc-title">Clients</span>
+      </div>
+    </div>
+    <div class="list" id="clientsList">
+      <div class="loading">Chargement…</div>
+    </div>
+  </div>
+
+  <div id="clientsDetailView" hidden>
+    <div class="parc-header">
+      <div class="parc-header-row">
+        <button class="back-btn" id="clientsBackBtn" title="Retour" aria-label="Retour">←</button>
+        <span class="parc-title" id="clientsDetailTitle">Client</span>
+      </div>
+    </div>
+    <div id="clientsDetailBody">
+      <div class="loading">Chargement…</div>
+    </div>
+  </div>
+</div>
+
 <!-- ===== Page Nouveautés (notes de version) ===== -->
 <div id="page-whatsnew" hidden>
   <div class="parc-header">
@@ -607,6 +633,7 @@
   <button type="button" class="drawer-item" data-nav="parc">🗂️ Parc</button>
   <button type="button" class="drawer-item" data-nav="alerts">🔔 Alertes</button>
   <button type="button" class="drawer-item" data-nav="map">🗺️ Carte</button>
+  <button type="button" class="drawer-item" data-nav="clients">🏢 Clients</button>
   <button type="button" class="drawer-item" data-nav="whatsnew">🆕 Nouveautés <span class="update-dot" id="whatsNewDot" hidden></span></button>
 </div>
 
@@ -1993,6 +2020,7 @@ function buildLineChartSvg(interpreted, scale) {
 // ⚠️ À tenir à jour à chaque nouvelle version livrée (garder aussi
 // releaseNotes.md synchronisé, à la racine du dossier fourni à l'utilisateur).
 const RELEASE_NOTES = [
+  { version: "0.79", text: "Nouveau menu \"Clients\" dans le tiroir latéral : liste de tous les clients par ordre alphabétique, et une fiche par client avec téléphone (appel direct), email (écrire directement) et adresse (ouverture dans Google Maps) cliquables." },
   { version: "0.78", text: "Ajout d'un bouton ↻ Actualiser à droite du titre \"Carte des clients\", en plus du tirer-vers-le-bas déjà existant." },
   { version: "0.77", text: "Ajout d'un fil d'Ariane (ex. \"MSP / Client A\") sous le titre quand on navigue dans les dossiers et les agents, avec des liens cliquables vers chaque niveau. Le titre de la page est aussi un peu plus petit." },
   { version: "0.76", text: "Retrait de la ligne \"Type\" dans le détail d'une alerte : c'était un code numérique interne à RG System sans libellé officiel, qui faisait doublon avec la \"Catégorie\" déjà affichée en clair." },
@@ -2342,12 +2370,100 @@ async function refreshCurrentPage() {
 }
 
 /* =========================================================
+   Page Clients (annuaire : téléphone, email, adresse cliquables)
+   ========================================================= */
+
+const clientsListEl = document.getElementById("clientsList");
+const clientsListView = document.getElementById("clientsListView");
+const clientsDetailView = document.getElementById("clientsDetailView");
+const clientsDetailTitleEl = document.getElementById("clientsDetailTitle");
+const clientsDetailBodyEl = document.getElementById("clientsDetailBody");
+document.getElementById("clientsBackBtn").addEventListener("click", () => history.back());
+
+// Pas de cache dédié : loadAllAgents() est déjà mise en cache, recalculer la
+// liste des clients à partir d'elle est quasi gratuit (pas de nouvel appel API).
+async function getClientsList() {
+  const agents = await loadAllAgents();
+  const byId = new Map();
+  for (const a of agents) {
+    if (a.customer?.id && !byId.has(a.customer.id)) {
+      byId.set(a.customer.id, { id: a.customer.id, name: a.customer.name || "Client sans nom" });
+    }
+  }
+  return [...byId.values()].sort((a, b) => a.name.localeCompare(b.name, "fr"));
+}
+
+async function loadClientsList() {
+  clientsListView.hidden = false;
+  clientsDetailView.hidden = true;
+  clientsListEl.innerHTML = '<div class="loading">Chargement…</div>';
+  try {
+    const clients = await getClientsList();
+    if (clients.length === 0) {
+      clientsListEl.innerHTML = '<div class="empty">Aucun client trouvé dans le parc.</div>';
+      return;
+    }
+    clientsListEl.innerHTML = clients.map((c) => `
+      <div class="incident" style="border-left-color: var(--card-border);" data-client-id="${escapeHtml(c.id)}">
+        <div class="title">🏢 ${escapeHtml(c.name)}</div>
+      </div>
+    `).join("");
+  } catch (err) {
+    clientsListEl.innerHTML = '<div class="error">Erreur de chargement : ' + escapeHtml(err.message) + '</div>';
+    console.error(err);
+  }
+}
+
+clientsListEl.addEventListener("click", (e) => {
+  const row = e.target.closest("[data-client-id]");
+  if (row) location.hash = "#/clients/" + encodeURIComponent(row.dataset.clientId);
+});
+
+// Lien Google Maps (fonctionne aussi bien sur iPhone qu'Android, avec ou sans
+// l'appli Google Maps installée — contrairement à un lien geo: non géré par Safari).
+function mapsSearchUrl(address) {
+  return "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent(address);
+}
+
+async function loadClientDetail(nodeId) {
+  clientsListView.hidden = true;
+  clientsDetailView.hidden = false;
+  clientsDetailTitleEl.textContent = "Client";
+  clientsDetailBodyEl.innerHTML = '<div class="loading">Chargement…</div>';
+  try {
+    const details = await fetchJson(`/api/node/${encodeURIComponent(nodeId)}/customer`);
+    const name = details.companyName || details.name || "Client";
+    clientsDetailTitleEl.textContent = name;
+
+    const rows = [
+      ["Téléphone", details.companyPhone, (v) => `<a href="tel:${escapeHtml(v.replace(/\s+/g, ""))}">${escapeHtml(v)}</a>`],
+      ["Email", details.companyEmail, (v) => `<a href="mailto:${escapeHtml(v)}">${escapeHtml(v)}</a>`],
+      ["Adresse", details.companyAddress, (v) => `<a href="${mapsSearchUrl(v)}" target="_blank" rel="noopener">${escapeHtml(v)}</a>`],
+    ].map(([label, value, link]) => `<dt>${label}</dt><dd>${value ? link(value) : "–"}</dd>`).join("");
+
+    clientsDetailBodyEl.innerHTML = `
+      <div class="agent-card">
+        <h2>🏢 ${escapeHtml(name)}</h2>
+        <dl class="kv">${rows}</dl>
+        <div style="margin-top: 10px;">
+          <a href="#/parc/node/${encodeURIComponent(nodeId)}">Voir dans le Parc</a>
+        </div>
+      </div>
+    `;
+  } catch (err) {
+    clientsDetailBodyEl.innerHTML = '<div class="error">Erreur de chargement : ' + escapeHtml(err.message) + '</div>';
+    console.error(err);
+  }
+}
+
+/* =========================================================
    Routeur (hash-based)
    ========================================================= */
 
 const pageAlerts = document.getElementById("page-alerts");
 const pageParc = document.getElementById("page-parc");
 const pageMap = document.getElementById("page-map");
+const pageClients = document.getElementById("page-clients");
 const pageWhatsNew = document.getElementById("page-whatsnew");
 const parcTreeView = document.getElementById("parcTreeView");
 const parcAgentView = document.getElementById("parcAgentView");
@@ -2360,6 +2476,8 @@ function parseHash() {
   if ((m = h.match(/^#\/parc\/node\/(.+)$/))) return { page: "parc", view: "tree", nodeId: decodeURIComponent(m[1]) };
   // Lien "Voir les alertes" depuis la carte : ouvre Alertes déjà filtré sur ce client.
   if ((m = h.match(/^#\/alerts\/client\/(.+)$/))) return { page: "alerts", clientId: decodeURIComponent(m[1]) };
+  if ((m = h.match(/^#\/clients\/(.+)$/))) return { page: "clients", clientId: decodeURIComponent(m[1]) };
+  if (h === "#/clients") return { page: "clients" };
   if (h === "#/alerts") return { page: "alerts" };
   if (h === "#/map") return { page: "map" };
   if (h === "#/whatsnew") return { page: "whatsnew" };
@@ -2373,6 +2491,7 @@ function router() {
   pageAlerts.hidden = currentPage !== "alerts";
   pageParc.hidden = currentPage !== "parc";
   pageMap.hidden = currentPage !== "map";
+  pageClients.hidden = currentPage !== "clients";
   pageWhatsNew.hidden = currentPage !== "whatsnew";
   // Le bouton 🔍 reste toujours visible (même sur Carte/Nouveautés) : cliquer
   // dessus bascule sur Parc avant d'ouvrir la recherche (cf. searchToggleBtn).
@@ -2391,6 +2510,11 @@ function router() {
   }
   if (currentPage === "map") {
     loadMapPage();
+    return;
+  }
+  if (currentPage === "clients") {
+    if (r.clientId !== undefined) loadClientDetail(r.clientId);
+    else loadClientsList();
     return;
   }
   if (currentPage === "whatsnew") {
