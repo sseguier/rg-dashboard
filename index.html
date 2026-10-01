@@ -486,7 +486,7 @@
 <header>
   <div class="header-top">
     <button class="hamburger-btn" id="mainMenuBtn">☰</button>
-    <h1 id="homeLink"><img src="icons/icon-192.png" alt="" class="brand-icon"> RG System Suite <span class="app-version">v0.74</span></h1>
+    <h1 id="homeLink"><img src="icons/icon-192.png" alt="" class="brand-icon"> RG System Suite <span class="app-version">v0.75</span></h1>
     <div class="search-bar" id="searchBarWrap">
       <button type="button" class="search-toggle-btn" id="searchToggleBtn" title="Rechercher" aria-label="Rechercher">🔍</button>
       <div class="search-input-row" id="searchInputRow" hidden>
@@ -786,11 +786,16 @@ function renderAlertList() {
     return;
   }
 
-  listEl.innerHTML = items.map((inc) => {
+  listEl.innerHTML = items.map((inc, index) => {
     const crit = CRITICALITY_ORDER[inc.criticality] !== undefined ? inc.criticality : "low";
     const label = CRITICALITY_LABEL[crit] || inc.criticality || "?";
+    const uid = "alert-" + index;
+    const info = agentIncidentDetail(inc);
+    const detail =
+      (info ? escapeHtml(info).replace(/\n/g, "<br>") + "<br>" : "") +
+      (inc.agentId ? `<a href="#/parc/agent/${encodeURIComponent(inc.agentId)}">Accéder à l'agent</a>` : "");
     return `
-      <div class="incident ${crit} ${inc.acquitted ? "acquitted" : ""}" data-agent-id="${escapeHtml(inc.agentId || "")}">
+      <div class="incident ${crit} ${inc.acquitted ? "acquitted" : ""}" ${detail ? `data-uid="${uid}" style="cursor:pointer;"` : `style="cursor:default;"`}>
         <div class="title">${escapeHtml(inc.title || "Incident sans titre")}</div>
         <div class="meta">
           <span class="badge ${crit}">${label}</span>
@@ -800,14 +805,16 @@ function renderAlertList() {
         </div>
         <div class="path">📍 ${escapeHtml(inc.nodePath || "Emplacement inconnu")}</div>
       </div>
+      ${detail ? `<div class="chart-panel" id="panel-${uid}" hidden>${detail}</div>` : ""}
     `;
   }).join("");
 }
 
 listEl.addEventListener("click", (e) => {
-  const incident = e.target.closest(".incident");
-  const agentId = incident?.dataset.agentId;
-  if (agentId) location.hash = "#/parc/agent/" + encodeURIComponent(agentId);
+  const incident = e.target.closest(".incident[data-uid]");
+  if (!incident) return;
+  const panel = document.getElementById("panel-" + incident.dataset.uid);
+  if (panel) panel.hidden = !panel.hidden;
 });
 
 summaryEl.addEventListener("click", (e) => {
@@ -1896,6 +1903,7 @@ function buildLineChartSvg(interpreted, scale) {
 // ⚠️ À tenir à jour à chaque nouvelle version livrée (garder aussi
 // releaseNotes.md synchronisé, à la racine du dossier fourni à l'utilisateur).
 const RELEASE_NOTES = [
+  { version: "0.75", text: "Sur l'écran Alertes, un clic sur une alerte affiche maintenant son détail (catégorie, type, identifiant) avec un lien \"Accéder à l'agent\", au lieu de naviguer directement vers l'agent au premier clic." },
   { version: "0.74", text: "Le champ de recherche affiche simplement \"Rechercher...\" partout, au lieu d'un texte différent selon l'écran (agent/alerte) — cohérent avec le fait qu'elle couvre désormais beaucoup plus de champs qu'avant (v0.73)." },
   { version: "0.73", text: "La recherche couvre maintenant beaucoup plus de champs : nom du client, identifiant RG System de l'agent, plateforme, statut de sauvegarde et de Windows Update pour les agents ; nom du client et catégorie pour les alertes." },
   { version: "0.72", text: "Sur les Alertes, les compteurs Critique/Moyenne/Basse s'adaptent maintenant au client sélectionné dans le filtre, au lieu d'afficher systématiquement le total tous clients confondus." },
