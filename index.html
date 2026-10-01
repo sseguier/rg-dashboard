@@ -369,6 +369,24 @@
     margin-left: 4px;
     vertical-align: middle;
   }
+  .drawer-lang-row {
+    display: flex;
+    gap: 8px;
+    padding: 16px;
+    margin-top: auto;
+    border-top: 1px solid var(--card-border);
+  }
+  .drawer-lang-btn {
+    flex: 1;
+    background: var(--card);
+    border: 1px solid var(--card-border);
+    border-radius: 10px;
+    padding: 8px;
+    font-size: 1.3rem;
+    line-height: 1;
+    opacity: 0.5;
+  }
+  .drawer-lang-btn.active { border-color: var(--accent); opacity: 1; }
 
   .row {
     display: flex;
@@ -497,7 +515,7 @@
 <header>
   <div class="header-top">
     <button class="hamburger-btn" id="mainMenuBtn">☰</button>
-    <h1 id="homeLink"><img src="icons/icon-192.png" alt="" class="brand-icon"> RG System Suite <span class="app-version">v0.79</span></h1>
+    <h1 id="homeLink"><img src="icons/icon-192.png" alt="" class="brand-icon"> RG System Suite <span class="app-version">v0.80</span></h1>
     <div class="search-bar" id="searchBarWrap">
       <button type="button" class="search-toggle-btn" id="searchToggleBtn" title="Rechercher" aria-label="Rechercher">🔍</button>
       <div class="search-input-row" id="searchInputRow" hidden>
@@ -537,7 +555,7 @@
   <div id="parcSearchView" hidden>
     <div class="parc-header">
       <div class="parc-header-row">
-        <span class="parc-title">Résultats de recherche</span>
+        <span class="parc-title" id="searchResultsTitle">Résultats de recherche</span>
       </div>
     </div>
     <div class="list" id="parcSearchList"></div>
@@ -580,7 +598,7 @@
 <div id="page-map" hidden>
   <div class="parc-header">
     <div class="parc-header-row">
-      <span class="parc-title">Carte des clients</span>
+      <span class="parc-title" id="mapTitle">Carte des clients</span>
       <button type="button" class="back-btn" id="mapRefreshBtn" title="Actualiser" aria-label="Actualiser">↻</button>
     </div>
   </div>
@@ -594,7 +612,7 @@
   <div id="clientsListView">
     <div class="parc-header">
       <div class="parc-header-row">
-        <span class="parc-title">Clients</span>
+        <span class="parc-title" id="clientsListTitle">Clients</span>
       </div>
     </div>
     <div class="list" id="clientsList">
@@ -619,7 +637,7 @@
 <div id="page-whatsnew" hidden>
   <div class="parc-header">
     <div class="parc-header-row">
-      <span class="parc-title">Nouveautés</span>
+      <span class="parc-title" id="whatsNewTitle">Nouveautés</span>
     </div>
   </div>
   <div class="list" id="whatsNewList"></div>
@@ -629,12 +647,16 @@
 
 <div class="drawer-overlay" id="drawerOverlay" hidden></div>
 <div class="drawer" id="mainDrawer" hidden>
-  <div class="drawer-header">Navigation</div>
-  <button type="button" class="drawer-item" data-nav="parc">🗂️ Parc</button>
-  <button type="button" class="drawer-item" data-nav="alerts">🔔 Alertes</button>
-  <button type="button" class="drawer-item" data-nav="map">🗺️ Carte</button>
-  <button type="button" class="drawer-item" data-nav="clients">🏢 Clients</button>
-  <button type="button" class="drawer-item" data-nav="whatsnew">🆕 Nouveautés <span class="update-dot" id="whatsNewDot" hidden></span></button>
+  <div class="drawer-header" id="drawerNavHeader">Navigation</div>
+  <button type="button" class="drawer-item" data-nav="parc">🗂️ <span data-nav-label="parc">Parc</span></button>
+  <button type="button" class="drawer-item" data-nav="alerts">🔔 <span data-nav-label="alerts">Alertes</span></button>
+  <button type="button" class="drawer-item" data-nav="map">🗺️ <span data-nav-label="map">Carte</span></button>
+  <button type="button" class="drawer-item" data-nav="clients">🏢 <span data-nav-label="clients">Clients</span></button>
+  <button type="button" class="drawer-item" data-nav="whatsnew">🆕 <span data-nav-label="whatsnew">Nouveautés</span> <span class="update-dot" id="whatsNewDot" hidden></span></button>
+  <div class="drawer-lang-row">
+    <button type="button" class="drawer-lang-btn" id="langBtnFr" title="Français" aria-label="Français">🇫🇷</button>
+    <button type="button" class="drawer-lang-btn" id="langBtnEn" title="English" aria-label="English">🇬🇧</button>
+  </div>
 </div>
 
 <script>
@@ -648,6 +670,170 @@ function escapeHtml(str) {
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;");
+}
+
+/* =========================================================
+   Traduction (FR/EN)
+   — Ne couvre que le texte de l'application elle-même, jamais les données
+   qui viennent de RG System (noms d'agents, titres d'alertes, commentaires,
+   journaux, sortie des scripts personnalisés...), qui restent telles quelles.
+   — "Custom scripts" reste volontairement en anglais dans les deux langues
+   (nom de section imposé explicitement, cf. demande d'origine).
+   — Les notes de version (RELEASE_NOTES) ne sont pas traduites : seul le
+   texte français d'origine est conservé, par souci de volume (des dizaines
+   d'entrées historiques).
+   ========================================================= */
+const TRANSLATIONS = {
+  fr: {
+    nav_header: "Navigation", nav_parc: "Parc", nav_alerts: "Alertes", nav_map: "Carte",
+    nav_clients: "Clients", nav_whatsnew: "Nouveautés",
+    search_placeholder: "Rechercher...", search_open: "Rechercher", search_close: "Fermer la recherche",
+    loading: "Chargement…", loading_data: "Chargement des données…", error_prefix: "Erreur de chargement : ",
+    generic_error_prefix: "Erreur : ",
+    back: "Retour", refresh: "Actualiser",
+    alerts_updated_at: "Mis à jour à {time}", alerts_updating: "Actualisation…",
+    alerts_update_failed: "Échec de la dernière actualisation",
+    crit_critical: "Critique", crit_medium: "Moyenne", crit_low: "Basse",
+    all_clients: "Tous les clients", no_alerts: "✅ Aucune alerte à afficher",
+    offline_badge: "Hors ligne", acquitted_badge: "acquittée", unknown_location: "Emplacement inconnu",
+    access_agent: "Accéder à l'agent", category_label: "Catégorie : ", id_label: "Identifiant : ",
+    incident_no_title: "Incident sans titre", agent_unknown: "Agent inconnu",
+    parc_default_title: "Parc", agent_default_title: "Agent",
+    no_filter_results: "Aucun résultat pour ce filtre", filter_prefix: "Filtre : ",
+    node_not_found: "Dossier introuvable",
+    filter_servers_only: "Serveurs uniquement", filter_workstations_only: "Postes uniquement",
+    filter_devices_only: "Devices uniquement",
+    stat_servers: "Serveur(s)", stat_workstations: "Poste(s)", stat_devices: "Device(s)",
+    search_results_title: "Résultats de recherche", search_min_chars: "Tapez au moins 2 caractères pour rechercher",
+    searching: "Recherche…", no_agent_found: "Aucun agent trouvé", search_error: "Erreur de recherche : ",
+    f_hostname: "Nom d'hôte", f_domain: "Domaine", f_system: "Système", f_cpu: "CPU", f_memory: "Mémoire",
+    f_disk: "Disque", f_manufacturer: "Fabricant", f_serial: "N° de série", f_private_ip: "IP privée",
+    f_public_ip: "IP publique", f_last_user: "Dernier utilisateur", f_last_boot: "Dernier démarrage",
+    f_availability: "Disponibilité", f_windows_update: "Windows Update", f_security: "Sécurité",
+    f_rg_agent: "Agent RG System",
+    online: "En ligne", offline: "Hors ligne", in_maintenance: " · en maintenance",
+    security_ok: "OK", security_check: "À vérifier", show_comment: "🔒 Afficher le commentaire",
+    no_charts: "Aucune courbe disponible pour cet agent", charts_title: "Courbes",
+    show_all: "Tout afficher", collapse_all: "Tout replier",
+    day_short: "(24h)", week_short: "(7j)", month_short: "(30j)",
+    scale_day: "24 h", scale_week: "7 jours", scale_month: "30 jours", scale_year: "12 mois",
+    chart_no_data: "Pas de données sur cette période",
+    chart_active_pct: "Actif <strong>{pct}%</strong> du temps · période : {scale}",
+    chart_latest_value: "Dernière valeur : <strong>{value}</strong> · période : {scale}",
+    series_usage: "Utilisation",
+    wu_critical: "critique(s)", wu_optional: "optionnelle(s)", wu_reboot_needed: "redémarrage requis",
+    no_domain: "Hors domaine", agent_version_line: "v{version} · installé le {date}",
+    backup_title: "Sauvegarde",
+    backup_success: "Succès", backup_error: "Erreur", backup_warning: "Avertissement",
+    backup_running: "En cours", backup_waiting: "Première sauvegarde en attente", backup_unknown: "Inconnu",
+    plugin_file: "Fichiers", plugin_mssql: "SQL Server", plugin_oracle: "Oracle", plugin_hyperV: "Hyper-V",
+    plugin_bareMetal: "Bare Metal", plugin_vCenter: "vCenter", plugin_replication: "Réplication",
+    plugin_exchange: "Exchange", duration_min: " min",
+    objects_summary: "Objets : {succ} réussi(s), {fail} échoué(s)",
+    journal_title: "Journal d'événements", event_error: "Erreur", event_warning: "Avertissement",
+    event_info: "Information", filter_all: "Toutes", no_events: "Aucun événement pour ce filtre",
+    event_source_unknown: "Source inconnue",
+    alerts_title: "Alertes", no_alerts_filter: "Aucune alerte pour ce filtre",
+    no_alerts_agent: "✅ Aucune alerte pour cet agent",
+    cs_never_run: "Jamais exécuté", cs_success: "Succès", cs_failure: "Échec", cs_unknown: "Inconnu",
+    cs_exec_error: "Erreur d'exécution : ",
+    map_title: "Carte des clients", map_loading_clients: "Chargement des clients…",
+    map_fetching_details: "Récupération des fiches clients… ({i}/{n})",
+    map_locating: "Localisation des clients… ({i}/{n})",
+    map_no_clients: "Aucun client trouvé dans le parc.", map_unlocated: "Non localisés ({n})",
+    map_none_located: "Aucun client n'a pu être localisé (adresse manquante ou introuvable).",
+    map_reason_no_address: "Adresse non renseignée dans RG System",
+    geocoding_unavailable: "Géocodage indisponible (HTTP {status})",
+    map_reason_bad_address: "Adresse non reconnue ({addr})",
+    map_error_prefix: "Erreur : ", map_critical_popup: "⚠️ Alerte critique en cours",
+    map_link_parc: "Parc", map_link_alerts: "Alertes", map_link_client_sheet: "Fiche client",
+    map_see_client: "Voir ce client",
+    clients_title: "Clients", client_no_name: "Client sans nom", client_phone: "Téléphone",
+    client_email: "Email", client_address: "Adresse", client_see_in_parc: "Voir dans le Parc",
+    client_default_title: "Client", no_clients_found: "Aucun client trouvé dans le parc.",
+    whatsnew_title: "Nouveautés",
+  },
+  en: {
+    nav_header: "Navigation", nav_parc: "Fleet", nav_alerts: "Alerts", nav_map: "Map",
+    nav_clients: "Clients", nav_whatsnew: "What's new",
+    search_placeholder: "Search...", search_open: "Search", search_close: "Close search",
+    loading: "Loading…", loading_data: "Loading data…", error_prefix: "Loading error: ",
+    generic_error_prefix: "Error: ",
+    back: "Back", refresh: "Refresh",
+    alerts_updated_at: "Updated at {time}", alerts_updating: "Refreshing…",
+    alerts_update_failed: "Last refresh failed",
+    crit_critical: "Critical", crit_medium: "Medium", crit_low: "Low",
+    all_clients: "All clients", no_alerts: "✅ No alerts to show",
+    offline_badge: "Offline", acquitted_badge: "acknowledged", unknown_location: "Unknown location",
+    access_agent: "Open agent", category_label: "Category: ", id_label: "ID: ",
+    incident_no_title: "Untitled incident", agent_unknown: "Unknown agent",
+    parc_default_title: "Fleet", agent_default_title: "Agent",
+    no_filter_results: "No results for this filter", filter_prefix: "Filter: ",
+    node_not_found: "Folder not found",
+    filter_servers_only: "Servers only", filter_workstations_only: "Workstations only",
+    filter_devices_only: "Devices only",
+    stat_servers: "Server(s)", stat_workstations: "Workstation(s)", stat_devices: "Device(s)",
+    search_results_title: "Search results", search_min_chars: "Type at least 2 characters to search",
+    searching: "Searching…", no_agent_found: "No agent found", search_error: "Search error: ",
+    f_hostname: "Hostname", f_domain: "Domain", f_system: "System", f_cpu: "CPU", f_memory: "Memory",
+    f_disk: "Disk", f_manufacturer: "Manufacturer", f_serial: "Serial number", f_private_ip: "Private IP",
+    f_public_ip: "Public IP", f_last_user: "Last user", f_last_boot: "Last boot",
+    f_availability: "Availability", f_windows_update: "Windows Update", f_security: "Security",
+    f_rg_agent: "RG System agent",
+    online: "Online", offline: "Offline", in_maintenance: " · in maintenance",
+    security_ok: "OK", security_check: "Needs review", show_comment: "🔒 Show comment",
+    no_charts: "No chart available for this agent", charts_title: "Charts",
+    show_all: "Expand all", collapse_all: "Collapse all",
+    day_short: "(24h)", week_short: "(7d)", month_short: "(30d)",
+    scale_day: "24 h", scale_week: "7 days", scale_month: "30 days", scale_year: "12 months",
+    chart_no_data: "No data for this period",
+    chart_active_pct: "Active <strong>{pct}%</strong> of the time · period: {scale}",
+    chart_latest_value: "Latest value: <strong>{value}</strong> · period: {scale}",
+    series_usage: "Usage",
+    wu_critical: "critical", wu_optional: "optional", wu_reboot_needed: "reboot required",
+    no_domain: "Not domain-joined", agent_version_line: "v{version} · installed on {date}",
+    backup_title: "Backup",
+    backup_success: "Success", backup_error: "Error", backup_warning: "Warning",
+    backup_running: "Running", backup_waiting: "Waiting for first backup", backup_unknown: "Unknown",
+    plugin_file: "Files", plugin_mssql: "SQL Server", plugin_oracle: "Oracle", plugin_hyperV: "Hyper-V",
+    plugin_bareMetal: "Bare Metal", plugin_vCenter: "vCenter", plugin_replication: "Replication",
+    plugin_exchange: "Exchange", duration_min: " min",
+    objects_summary: "Objects: {succ} succeeded, {fail} failed",
+    journal_title: "Event log", event_error: "Error", event_warning: "Warning",
+    event_info: "Information", filter_all: "All", no_events: "No events for this filter",
+    event_source_unknown: "Unknown source",
+    alerts_title: "Alerts", no_alerts_filter: "No alerts for this filter",
+    no_alerts_agent: "✅ No alerts for this agent",
+    cs_never_run: "Never run", cs_success: "Success", cs_failure: "Failed", cs_unknown: "Unknown",
+    cs_exec_error: "Execution error: ",
+    map_title: "Client map", map_loading_clients: "Loading clients…",
+    map_fetching_details: "Fetching client records… ({i}/{n})",
+    map_locating: "Locating clients… ({i}/{n})",
+    map_no_clients: "No clients found in the fleet.", map_unlocated: "Not located ({n})",
+    map_none_located: "No client could be located (missing or unrecognized address).",
+    map_reason_no_address: "No address set in RG System",
+    geocoding_unavailable: "Geocoding unavailable (HTTP {status})",
+    map_reason_bad_address: "Address not recognized ({addr})",
+    map_error_prefix: "Error: ", map_critical_popup: "⚠️ Critical alert ongoing",
+    map_link_parc: "Fleet", map_link_alerts: "Alerts", map_link_client_sheet: "Client sheet",
+    map_see_client: "View this client",
+    clients_title: "Clients", client_no_name: "Unnamed client", client_phone: "Phone",
+    client_email: "Email", client_address: "Address", client_see_in_parc: "View in Fleet",
+    client_default_title: "Client", no_clients_found: "No clients found in the fleet.",
+    whatsnew_title: "What's new",
+  },
+};
+
+const LANG_KEY = "rgdash-lang";
+let currentLang = "fr";
+try {
+  currentLang = localStorage.getItem(LANG_KEY) || (navigator.language && navigator.language.toLowerCase().startsWith("en") ? "en" : "fr");
+} catch (e) { /* stockage indisponible : reste sur le français par défaut */ }
+
+function t(key, vars) {
+  let str = (TRANSLATIONS[currentLang] && TRANSLATIONS[currentLang][key]) ?? TRANSLATIONS.fr[key] ?? key;
+  if (vars) for (const [k, v] of Object.entries(vars)) str = str.replace("{" + k + "}", v);
+  return str;
 }
 
 async function fetchJson(path) {
@@ -665,7 +851,11 @@ async function fetchJson(path) {
    ========================================================= */
 
 const CRITICALITY_ORDER = { critical: 0, medium: 1, low: 2 };
-const CRITICALITY_LABEL = { critical: "Critique", medium: "Moyenne", low: "Basse" };
+// Fonction plutôt qu'un simple objet : doit refléter la langue en cours au
+// moment de l'appel, pas seulement celle active au chargement de la page.
+function criticalityLabel(crit) {
+  return { critical: t("crit_critical"), medium: t("crit_medium"), low: t("crit_low") }[crit];
+}
 
 const listEl = document.getElementById("list");
 const statusText = document.getElementById("statusText");
@@ -698,7 +888,7 @@ function populateClientFilterOptions() {
   const clients = [...seen.entries()].sort((a, b) => a[1].localeCompare(b[1]));
   const previousValue = alertClientFilterEl.value;
   alertClientFilterEl.innerHTML =
-    '<option value="">Tous les clients</option>' +
+    `<option value="">${t("all_clients")}</option>` +
     clients.map(([id, name]) => `<option value="${escapeHtml(id)}">${escapeHtml(name)}</option>`).join("");
   // Si le client sélectionné n'a plus d'alerte, on retombe sur "Tous les
   // clients" plutôt que de garder une sélection invisible dans la liste.
@@ -776,7 +966,7 @@ function extractIncidents(data, agents) {
           incidents.push({
             ...item,
             category,
-            agentName: agent.name || agent.id || "Agent inconnu",
+            agentName: agent.name || agent.id || null, // "Agent inconnu"/"Unknown agent" géré à l'affichage (t()), pas ici — la langue peut changer sans recharger les données
             agentId: agent.id,
             nodePath: Array.isArray(agent.nodePath) ? agent.nodePath.join(" / ") : "",
             isOnline: agent.isOnline,
@@ -833,28 +1023,28 @@ function renderAlertList() {
   });
 
   if (items.length === 0) {
-    listEl.innerHTML = '<div class="empty">✅ Aucune alerte à afficher</div>';
+    listEl.innerHTML = `<div class="empty">${t("no_alerts")}</div>`;
     return;
   }
 
   listEl.innerHTML = items.map((inc, index) => {
     const crit = CRITICALITY_ORDER[inc.criticality] !== undefined ? inc.criticality : "low";
-    const label = CRITICALITY_LABEL[crit] || inc.criticality || "?";
+    const label = criticalityLabel(crit) || inc.criticality || "?";
     const uid = "alert-" + index;
     const info = agentIncidentDetail(inc);
     const detail =
       (info ? escapeHtml(info).replace(/\n/g, "<br>") + "<br>" : "") +
-      (inc.agentId ? `<a href="#/parc/agent/${encodeURIComponent(inc.agentId)}">Accéder à l'agent</a>` : "");
+      (inc.agentId ? `<a href="#/parc/agent/${encodeURIComponent(inc.agentId)}">${t("access_agent")}</a>` : "");
     return `
       <div class="incident ${crit} ${inc.acquitted ? "acquitted" : ""}" ${detail ? `data-uid="${uid}" style="cursor:pointer;"` : `style="cursor:default;"`}>
-        <div class="title">${escapeHtml(inc.title || "Incident sans titre")}</div>
+        <div class="title">${escapeHtml(inc.title || t("incident_no_title"))}</div>
         <div class="meta">
           <span class="badge ${crit}">${label}</span>
-          ${inc.isOnline === false ? '<span class="badge offline">Hors ligne</span>' : ""}
-          <span>${escapeHtml(inc.agentName)}</span>
-          ${inc.acquitted ? "<span>· acquittée</span>" : ""}
+          ${inc.isOnline === false ? `<span class="badge offline">${t("offline_badge")}</span>` : ""}
+          <span>${escapeHtml(inc.agentName || t("agent_unknown"))}</span>
+          ${inc.acquitted ? `<span>· ${t("acquitted_badge")}</span>` : ""}
         </div>
-        <div class="path">📍 ${escapeHtml(inc.nodePath || "Emplacement inconnu")}</div>
+        <div class="path">📍 ${escapeHtml(inc.nodePath || t("unknown_location"))}</div>
       </div>
       ${detail ? `<div class="chart-panel" id="panel-${uid}" hidden>${detail}</div>` : ""}
     `;
@@ -885,7 +1075,7 @@ function agentSearchRowHtml(a) {
       <span class="row-icon">${icon}</span>
       <div style="flex:1; min-width:0;">
         <div class="row-name">${escapeHtml(a.agentName)}</div>
-        <div class="path">📍 ${escapeHtml(path || "Emplacement inconnu")}</div>
+        <div class="path">📍 ${escapeHtml(path || t("unknown_location"))}</div>
       </div>
       <span class="dot ${a.isConnected === 2 ? "online" : "offline-dot"}"></span>
     </div>`;
@@ -927,12 +1117,12 @@ let parcSearchRequestId = 0;
 async function renderParcSearch() {
   const q = searchQuery.trim().toLowerCase();
   if (q.length < 2) {
-    parcSearchList.innerHTML = '<div class="empty">Tapez au moins 2 caractères pour rechercher</div>';
+    parcSearchList.innerHTML = `<div class="empty">${t("search_min_chars")}</div>`;
     return;
   }
 
   const requestId = ++parcSearchRequestId;
-  parcSearchList.innerHTML = '<div class="loading">Recherche…</div>';
+  parcSearchList.innerHTML = `<div class="loading">${t("searching")}</div>`;
   try {
     const agents = await loadAllAgents();
     if (requestId !== parcSearchRequestId) return; // une frappe plus récente a pris le dessus
@@ -941,10 +1131,10 @@ async function renderParcSearch() {
       .slice(0, 30);
     parcSearchList.innerHTML = matches.length
       ? matches.map(agentSearchRowHtml).join("")
-      : '<div class="empty">Aucun agent trouvé</div>';
+      : `<div class="empty">${t("no_agent_found")}</div>`;
   } catch (err) {
     if (requestId !== parcSearchRequestId) return;
-    parcSearchList.innerHTML = '<div class="error">Erreur de recherche : ' + escapeHtml(err.message) + '</div>';
+    parcSearchList.innerHTML = '<div class="error">' + t("search_error") + escapeHtml(err.message) + '</div>';
   }
 }
 
@@ -975,7 +1165,7 @@ searchInputEl.addEventListener("input", () => {
 });
 
 async function loadAlerts() {
-  statusText.textContent = "Actualisation…";
+  statusText.textContent = t("alerts_updating");
   try {
     const [data, agents] = await Promise.all([
       fetchJson(`/api/sum/${ROOT_NODE_ID}/all`),
@@ -984,10 +1174,11 @@ async function loadAlerts() {
     lastIncidents = extractIncidents(data, agents);
     populateClientFilterOptions();
     renderAlertList();
-    statusText.textContent = "Mis à jour à " + new Date().toLocaleTimeString("fr-FR");
+    const time = new Date().toLocaleTimeString(currentLang === "en" ? "en-US" : "fr-FR");
+    statusText.textContent = t("alerts_updated_at", { time });
   } catch (err) {
-    listEl.innerHTML = '<div class="error">Erreur de chargement : ' + escapeHtml(err.message) + '</div>';
-    statusText.textContent = "Échec de la dernière actualisation";
+    listEl.innerHTML = `<div class="error">${t("error_prefix")}${escapeHtml(err.message)}</div>`;
+    statusText.textContent = t("alerts_update_failed");
     console.error(err);
   }
 }
@@ -1057,11 +1248,9 @@ let parcTypeFilter = "all"; // all | S | W | devices
 let lastLoadedNode = null;
 let currentTreeNodeId = null;
 
-const FILTER_LABEL = {
-  S: "Serveurs uniquement",
-  W: "Postes uniquement",
-  devices: "Devices uniquement",
-};
+function filterLabel(key) {
+  return { S: t("filter_servers_only"), W: t("filter_workstations_only"), devices: t("filter_devices_only") }[key];
+}
 
 function agentVisible(c) {
   if (parcTypeFilter === "all") return true;
@@ -1087,17 +1276,17 @@ async function updateClientStats(nodeId) {
     const underNode = agents.filter((a) => Array.isArray(a.path) && a.path.some((p) => String(p) === nodeIdStr));
     let servers = 0, workstations = 0, devices = 0;
     for (const a of underNode) {
-      const t = agentEffectiveType(a);
-      if (t === "S") servers++;
-      else if (t === "W") workstations++;
-      else if (t === "D" || t === "E") devices++;
+      const effType = agentEffectiveType(a);
+      if (effType === "S") servers++;
+      else if (effType === "W") workstations++;
+      else if (effType === "D" || effType === "E") devices++;
     }
     const statHtml = (type, count, label) =>
       `<div class="stat ${parcTypeFilter === type ? "active" : ""}" data-filter="${type}"><span class="n">${count}</span> ${label}</div>`;
     parcClientStats.innerHTML =
-      statHtml("S", servers, "Serveur(s)") +
-      statHtml("W", workstations, "Poste(s)") +
-      statHtml("devices", devices, "Device(s)");
+      statHtml("S", servers, t("stat_servers")) +
+      statHtml("W", workstations, t("stat_workstations")) +
+      statHtml("devices", devices, t("stat_devices"));
     parcClientStats.hidden = false;
     // Le bandeau était masqué (donc invisible pour le calcul des décalages
     // sticky) jusqu'à cet instant : on recalcule maintenant qu'il a sa taille définitive.
@@ -1169,16 +1358,16 @@ async function renderBreadcrumb(containerEl, nodeId, { includeSelf }) {
 
 async function loadNode(nodeId) {
   currentTreeNodeId = nodeId;
-  parcTitleEl.textContent = "Parc";
+  parcTitleEl.textContent = t("parc_default_title");
   parcBackBtn.hidden = String(nodeId) === String(ROOT_NODE_ID);
-  parcListEl.innerHTML = '<div class="loading">Chargement…</div>';
+  parcListEl.innerHTML = `<div class="loading">${t("loading")}</div>`;
   parcClientStats.hidden = true;
   parcBreadcrumbEl.hidden = true;
   clientStatsRequestId++; // annule toute stat en cours de calcul pour l'ancien dossier
   try {
     const data = await fetchJson(`/api/node/${encodeURIComponent(nodeId)}/children`);
     const node = data[nodeId] || Object.values(data)[0];
-    if (!node) throw new Error("Node introuvable");
+    if (!node) throw new Error(t("node_not_found"));
     lastLoadedNode = node;
     nodeInfoCache.set(String(nodeId), { name: node.name, parentNodeId: node.parentNodeId ?? null });
     renderNodeList();
@@ -1190,7 +1379,7 @@ async function loadNode(nodeId) {
     updateClientStats(nodeId);
     renderBreadcrumb(parcBreadcrumbEl, nodeId, { includeSelf: false });
   } catch (err) {
-    parcListEl.innerHTML = '<div class="error">Erreur de chargement : ' + escapeHtml(err.message) + '</div>';
+    parcListEl.innerHTML = '<div class="error">' + t("error_prefix") + escapeHtml(err.message) + '</div>';
     console.error(err);
   }
 }
@@ -1198,13 +1387,13 @@ async function loadNode(nodeId) {
 function renderNodeList() {
   const node = lastLoadedNode;
   if (!node) return;
-  parcTitleEl.textContent = node.name || "Parc";
+  parcTitleEl.textContent = node.name || t("parc_default_title");
 
   if (parcTypeFilter === "all") {
     parcFilterChip.hidden = true;
   } else {
     parcFilterChip.hidden = false;
-    parcFilterChip.querySelector(".label").textContent = "Filtre : " + FILTER_LABEL[parcTypeFilter];
+    parcFilterChip.querySelector(".label").textContent = t("filter_prefix") + filterLabel(parcTypeFilter);
   }
   parcClientStats.querySelectorAll(".stat[data-filter]").forEach((el) => {
     el.classList.toggle("active", el.dataset.filter === parcTypeFilter);
@@ -1219,7 +1408,7 @@ function renderNodeList() {
     .sort((a, b) => a[1].name.localeCompare(b[1].name));
 
   if (folders.length === 0 && agents.length === 0) {
-    parcListEl.innerHTML = '<div class="empty">Aucun résultat pour ce filtre</div>';
+    parcListEl.innerHTML = `<div class="empty">${t("no_filter_results")}</div>`;
     return;
   }
 
@@ -1254,6 +1443,58 @@ function closeDrawer() {
   drawerOverlay.hidden = true;
 }
 
+// Applique la langue courante à tout le texte qui n'est PAS régénéré par une
+// fonction de rendu (donc pas déjà couvert par un prochain appel à router()) :
+// libellés statiques du HTML d'origine, titres de page par défaut, etc.
+function applyStaticTranslations() {
+  document.getElementById("drawerNavHeader").textContent = t("nav_header");
+  document.querySelectorAll("[data-nav-label]").forEach((el) => {
+    el.textContent = t("nav_" + el.dataset.navLabel);
+  });
+  searchInputEl.placeholder = t("search_placeholder");
+  searchToggleBtn.title = t("search_open");
+  searchToggleBtn.setAttribute("aria-label", t("search_open"));
+  searchCloseBtn.title = t("search_close");
+  searchCloseBtn.setAttribute("aria-label", t("search_close"));
+  ["parcBackBtn", "agentBackBtn", "clientsBackBtn"].forEach((id) => {
+    const el = document.getElementById(id);
+    el.title = t("back");
+    el.setAttribute("aria-label", t("back"));
+  });
+  const mapRefreshBtnEl = document.getElementById("mapRefreshBtn");
+  mapRefreshBtnEl.title = t("refresh");
+  mapRefreshBtnEl.setAttribute("aria-label", t("refresh"));
+  document.getElementById("searchResultsTitle").textContent = t("search_results_title");
+  document.getElementById("mapTitle").textContent = t("map_title");
+  document.getElementById("clientsListTitle").textContent = t("clients_title");
+  document.getElementById("whatsNewTitle").textContent = t("whatsnew_title");
+  const critLabel = document.querySelector(".tile.critical .l");
+  const medLabel = document.querySelector(".tile.medium .l");
+  const lowLabel = document.querySelector(".tile.low .l");
+  if (critLabel) critLabel.textContent = t("crit_critical");
+  if (medLabel) medLabel.textContent = t("crit_medium");
+  if (lowLabel) lowLabel.textContent = t("crit_low");
+  const allClientsOption = document.querySelector('#alertClientFilter option[value=""]');
+  if (allClientsOption) allClientsOption.textContent = t("all_clients");
+  document.getElementById("langBtnFr").classList.toggle("active", currentLang === "fr");
+  document.getElementById("langBtnEn").classList.toggle("active", currentLang === "en");
+}
+
+function setLang(lang) {
+  if (lang !== "fr" && lang !== "en") return;
+  currentLang = lang;
+  try { localStorage.setItem(LANG_KEY, lang); } catch (e) { /* pas bloquant */ }
+  applyStaticTranslations();
+  // La Carte ne se recharge pas tant que mapLoaded est vrai (évite de
+  // re-géocoder à chaque retour sur l'onglet) — on force une reconstruction
+  // complète uniquement ici, pour que ses textes changent bien de langue.
+  if (currentPage === "map") mapLoaded = false;
+  router(); // reconstruit le contenu de la page actuelle dans la nouvelle langue
+}
+
+document.getElementById("langBtnFr").addEventListener("click", () => setLang("fr"));
+document.getElementById("langBtnEn").addEventListener("click", () => setLang("en"));
+
 mainMenuBtn.addEventListener("click", openDrawer);
 drawerOverlay.addEventListener("click", closeDrawer);
 mainDrawer.addEventListener("click", (e) => {
@@ -1284,7 +1525,9 @@ const agentBreadcrumbEl = document.getElementById("agentBreadcrumb");
 const agentBodyEl = document.getElementById("agentBody");
 document.getElementById("agentBackBtn").addEventListener("click", () => history.back());
 
-const SCALE_LABEL = { day: "24 h", week: "7 jours", month: "30 jours", year: "12 mois" };
+function scaleLabel(scale) {
+  return { day: t("scale_day"), week: t("scale_week"), month: t("scale_month"), year: t("scale_year") }[scale];
+}
 
 function formatDate(iso) {
   if (!iso) return "–";
@@ -1293,15 +1536,15 @@ function formatDate(iso) {
 
 function uptimeSummary(uptime) {
   const fmt = (v) => (typeof v === "number" ? v.toFixed(1) + " %" : "–");
-  return `${fmt(uptime.day)} (24h) · ${fmt(uptime.week)} (7j) · ${fmt(uptime.month)} (30j)`;
+  return `${fmt(uptime.day)} ${t("day_short")} · ${fmt(uptime.week)} ${t("week_short")} · ${fmt(uptime.month)} ${t("month_short")}`;
 }
 
 function windowsUpdateSummary(p) {
   if (!p.WindowsUpdateStatus) return "–";
   const details = [];
-  if (p.WindowsUpdateCriticalCount) details.push(p.WindowsUpdateCriticalCount + " critique(s)");
-  if (p.WindowsUpdateOptionalCount) details.push(p.WindowsUpdateOptionalCount + " optionnelle(s)");
-  if (p.WindowsUpdateIsRebootNeeded) details.push("redémarrage requis");
+  if (p.WindowsUpdateCriticalCount) details.push(p.WindowsUpdateCriticalCount + " " + t("wu_critical"));
+  if (p.WindowsUpdateOptionalCount) details.push(p.WindowsUpdateOptionalCount + " " + t("wu_optional"));
+  if (p.WindowsUpdateIsRebootNeeded) details.push(t("wu_reboot_needed"));
   return p.WindowsUpdateStatus + (details.length ? " (" + details.join(", ") + ")" : "");
 }
 
@@ -1315,7 +1558,7 @@ function serialSummary(p) {
 
 function domainSummary(p) {
   if (p.PartOfDomain === "1" && p.Domain) return p.Domain;
-  if (p.PartOfDomain === "0") return "Hors domaine";
+  if (p.PartOfDomain === "0") return t("no_domain");
   return p.Domain || "–";
 }
 
@@ -1332,8 +1575,8 @@ function renderAgentPedigree(agentId, ped, orgName) {
       <h2>${escapeHtml(ped.name || agentId)}</h2>
       <div class="agent-sub">
         <span class="dot ${ped.isOnline ? "online" : "offline-dot"}"></span>
-        ${ped.isOnline ? "En ligne" : "Hors ligne"}
-        ${ped.isInMaintenance ? " · en maintenance" : ""}
+        ${ped.isOnline ? t("online") : t("offline")}
+        ${ped.isInMaintenance ? t("in_maintenance") : ""}
       </div>
       ${orgName ? `<div class="agent-sub">🌐 ${escapeHtml(orgName)}</div>` : ""}`;
 
@@ -1348,25 +1591,25 @@ function renderAgentPedigree(agentId, ped, orgName) {
     <div class="agent-card">
       ${header}
       <dl class="kv">
-        <dt>Nom d'hôte</dt><dd>${escapeHtml(hostname)}</dd>
-        <dt>Domaine</dt><dd>${escapeHtml(domainSummary(p))}</dd>
-        <dt>Système</dt><dd>${escapeHtml([p.OSName, p.OSVersion].filter(Boolean).join(" — ") || "–")}</dd>
-        <dt>CPU</dt><dd>${escapeHtml(p.CpuInfos || "–")}</dd>
-        <dt>Mémoire</dt><dd>${escapeHtml(p.MemoryInfos || "–")}</dd>
-        <dt>Disque</dt><dd>${escapeHtml(p.DiskInfos || "–")}</dd>
-        <dt>Fabricant</dt><dd>${escapeHtml([p.Manufacturer, p.Model].filter(Boolean).join(" ") || "–")}</dd>
-        <dt>N° de série</dt><dd>${escapeHtml(serialSummary(p))}</dd>
-        <dt>IP privée</dt><dd>${escapeHtml(ped.privateIp || "–")}</dd>
-        <dt>IP publique</dt><dd>${escapeHtml(ped.publicIp || "–")}</dd>
-        <dt>Dernier utilisateur</dt><dd>${escapeHtml(p.LastLoggedOnUser || "–")}</dd>
-        <dt>Dernier démarrage</dt><dd>${formatDate(p.LastBootTime)}</dd>
-        <dt>Disponibilité</dt><dd>${escapeHtml(uptimeSummary(uptime))}</dd>
-        <dt>Windows Update</dt><dd>${escapeHtml(windowsUpdateSummary(p))}</dd>
-        <dt>Sécurité</dt><dd>${ped.security?.status === 0 ? "OK" : "À vérifier"}</dd>
-        <dt>Agent RG System</dt><dd>v${escapeHtml(ped.version || "–")} · installé le ${formatDate(ped.installDate)}</dd>
+        <dt>${t("f_hostname")}</dt><dd>${escapeHtml(hostname)}</dd>
+        <dt>${t("f_domain")}</dt><dd>${escapeHtml(domainSummary(p))}</dd>
+        <dt>${t("f_system")}</dt><dd>${escapeHtml([p.OSName, p.OSVersion].filter(Boolean).join(" — ") || "–")}</dd>
+        <dt>${t("f_cpu")}</dt><dd>${escapeHtml(p.CpuInfos || "–")}</dd>
+        <dt>${t("f_memory")}</dt><dd>${escapeHtml(p.MemoryInfos || "–")}</dd>
+        <dt>${t("f_disk")}</dt><dd>${escapeHtml(p.DiskInfos || "–")}</dd>
+        <dt>${t("f_manufacturer")}</dt><dd>${escapeHtml([p.Manufacturer, p.Model].filter(Boolean).join(" ") || "–")}</dd>
+        <dt>${t("f_serial")}</dt><dd>${escapeHtml(serialSummary(p))}</dd>
+        <dt>${t("f_private_ip")}</dt><dd>${escapeHtml(ped.privateIp || "–")}</dd>
+        <dt>${t("f_public_ip")}</dt><dd>${escapeHtml(ped.publicIp || "–")}</dd>
+        <dt>${t("f_last_user")}</dt><dd>${escapeHtml(p.LastLoggedOnUser || "–")}</dd>
+        <dt>${t("f_last_boot")}</dt><dd>${formatDate(p.LastBootTime)}</dd>
+        <dt>${t("f_availability")}</dt><dd>${escapeHtml(uptimeSummary(uptime))}</dd>
+        <dt>${t("f_windows_update")}</dt><dd>${escapeHtml(windowsUpdateSummary(p))}</dd>
+        <dt>${t("f_security")}</dt><dd>${ped.security?.status === 0 ? t("security_ok") : t("security_check")}</dd>
+        <dt>${t("f_rg_agent")}</dt><dd>${t("agent_version_line", { version: escapeHtml(ped.version || "–"), date: formatDate(ped.installDate) })}</dd>
       </dl>
       ${comment ? `
-        <button type="button" class="chart-toggle" data-uid="agent-comment" style="margin-top:10px;">🔒 Afficher le commentaire</button>
+        <button type="button" class="chart-toggle" data-uid="agent-comment" style="margin-top:10px;">${t("show_comment")}</button>
         <div class="chart-panel" id="panel-agent-comment" hidden>${escapeHtml(comment).replace(/\n/g, "<br>")}</div>
       ` : ""}
     </div>
@@ -1464,8 +1707,8 @@ let agentAlertFilter = null; // null (Toutes) | "critical" | "medium" | "low"
 
 function agentIncidentDetail(inc) {
   const parts = [];
-  if (inc.category) parts.push("Catégorie : " + inc.category);
-  if (inc.displayId) parts.push("Identifiant : " + inc.displayId);
+  if (inc.category) parts.push(t("category_label") + inc.category);
+  if (inc.displayId) parts.push(t("id_label") + inc.displayId);
   return parts.join("\n");
 }
 
@@ -1473,40 +1716,42 @@ function renderAgentIncidents(agentId) {
   const all = lastIncidents.filter((inc) => inc.agentId === agentId && !inc.acquitted);
   const items = agentAlertFilter ? all.filter((inc) => incidentCriticality(inc) === agentAlertFilter) : all;
   const filterBar = all.length
-    ? miniFilterBarHtml([["", "Toutes"], ["critical", "Critique"], ["medium", "Moyenne"], ["low", "Basse"]], agentAlertFilter, "agent-alert-filter")
+    ? miniFilterBarHtml([["", t("filter_all")], ["critical", t("crit_critical")], ["medium", t("crit_medium")], ["low", t("crit_low")]], agentAlertFilter, "agent-alert-filter")
     : "";
   const toggleBar = items.length
-    ? `<div class="mini-filter"><button type="button" class="mini-filter-btn" data-toggle-all-panels="agentAlertsSection">Tout afficher</button></div>`
+    ? `<div class="mini-filter"><button type="button" class="mini-filter-btn" data-toggle-all-panels="agentAlertsSection">${t("show_all")}</button></div>`
     : "";
   const body = items.length
     ? items.map((inc, index) => {
         const crit = incidentCriticality(inc);
-        const label = CRITICALITY_LABEL[crit] || inc.criticality || "?";
+        const label = criticalityLabel(crit) || inc.criticality || "?";
         const detail = agentIncidentDetail(inc);
         const uid = "agent-alert-" + index;
         return `
           <div class="incident ${crit}" ${detail ? `data-uid="${uid}" style="cursor:pointer;"` : `style="cursor:default;"`}>
-            <div class="title">${escapeHtml(inc.title || "Incident sans titre")}</div>
+            <div class="title">${escapeHtml(inc.title || t("incident_no_title"))}</div>
             <div class="meta"><span class="badge ${crit}">${label}</span></div>
           </div>
           ${detail ? `<div class="chart-panel" id="panel-${uid}" hidden>${escapeHtml(detail).replace(/\n/g, "<br>")}</div>` : ""}`;
       }).join("")
-    : `<div class="empty">${all.length ? "Aucune alerte pour ce filtre" : "✅ Aucune alerte pour cet agent"}</div>`;
-  return `<div id="agentAlertsSection"><div class="chart-cat">Alertes</div>${filterBar}${toggleBar}<div class="list">${body}</div></div>`;
+    : `<div class="empty">${all.length ? t("no_alerts_filter") : t("no_alerts_agent")}</div>`;
+  return `<div id="agentAlertsSection"><div class="chart-cat">${t("alerts_title")}</div>${filterBar}${toggleBar}<div class="list">${body}</div></div>`;
 }
 
 // Historique unifié des jobs de sauvegarde (Files & Data pour S/W, Microsoft
 // 365 pour O) via /api/target/{agent}/backup/activity. Un seul endpoint pour
 // les deux familles de produits, avec un vrai statut de job (pas juste
 // "installé ou pas").
-const BACKUP_STATUS_LABEL = {
-  success: "Succès",
-  error: "Erreur",
-  warning: "Avertissement",
-  running: "En cours",
-  waiting_first_backup: "Première sauvegarde en attente",
-  unknown: "Inconnu",
-};
+function backupStatusLabel(status) {
+  return {
+    success: t("backup_success"),
+    error: t("backup_error"),
+    warning: t("backup_warning"),
+    running: t("backup_running"),
+    waiting_first_backup: t("backup_waiting"),
+    unknown: t("backup_unknown"),
+  }[status];
+}
 
 function backupActivityClass(status) {
   if (status === "success") return "success";
@@ -1515,14 +1760,17 @@ function backupActivityClass(status) {
   return "low"; // running, waiting_first_backup, unknown
 }
 
-const PLUGIN_LABEL = {
-  file: "Fichiers", mssql: "SQL Server", oracle: "Oracle", hyperV: "Hyper-V",
-  bareMetal: "Bare Metal", vCenter: "vCenter", replication: "Réplication", exchange: "Exchange",
-};
+function pluginLabel(plugin) {
+  return {
+    file: t("plugin_file"), mssql: t("plugin_mssql"), oracle: t("plugin_oracle"), hyperV: t("plugin_hyperV"),
+    bareMetal: t("plugin_bareMetal"), vCenter: t("plugin_vCenter"), replication: t("plugin_replication"),
+    exchange: t("plugin_exchange"),
+  }[plugin];
+}
 
 function backupActivityMeta(a) {
   const parts = [];
-  if (Number.isFinite(a.duration)) parts.push(Math.round(a.duration / 60) + " min");
+  if (Number.isFinite(a.duration)) parts.push(Math.round(a.duration / 60) + t("duration_min"));
   if (Number.isFinite(a.size) && a.size > 0) parts.push(formatBytes(a.size));
   return parts.join(" · ");
 }
@@ -1539,7 +1787,7 @@ function backupActivityDetail(a) {
 
   const succ = a.objectSuccess, fail = a.objectFailure;
   if ((Number.isFinite(succ) && succ > 0) || (Number.isFinite(fail) && fail > 0)) {
-    parts.push(`Objets : ${succ ?? 0} réussi(s), ${fail ?? 0} échoué(s)`);
+    parts.push(t("objects_summary", { succ: succ ?? 0, fail: fail ?? 0 }));
   }
 
   return parts.join("\n\n").trim();
@@ -1547,11 +1795,11 @@ function backupActivityDetail(a) {
 
 function backupActivityRowHtml(a, index) {
   const cls = backupActivityClass(a.status);
-  const label = BACKUP_STATUS_LABEL[a.status] || a.status || "?";
+  const label = backupStatusLabel(a.status) || a.status || "?";
   const meta = backupActivityMeta(a);
   const detail = backupActivityDetail(a);
   const uid = "backup-" + index;
-  const title = PLUGIN_LABEL[a.plugin] || a.plugin || a.product || "Sauvegarde";
+  const title = pluginLabel(a.plugin) || a.plugin || a.product || t("backup_title");
 
   return `
     <div class="incident ${cls}" ${detail ? `data-uid="${uid}" style="cursor:pointer;"` : `style="cursor:default;"`}>
@@ -1589,9 +1837,9 @@ async function renderBackupActivitySection(agentId) {
     if (latestByKey.size === 0) return { html: "", orgName }; // aucune sauvegarde détectée : section masquée
 
     const rows = [...latestByKey.values()].map(backupActivityRowHtml).join("");
-    return { html: `<div class="chart-cat">Sauvegarde</div><div class="list">${rows}</div>`, orgName };
+    return { html: `<div class="chart-cat">${t("backup_title")}</div><div class="list">${rows}</div>`, orgName };
   } catch (err) {
-    return { html: `<div class="chart-cat">Sauvegarde</div><div class="error">Erreur : ${escapeHtml(err.message)}</div>`, orgName: null };
+    return { html: `<div class="chart-cat">${t("backup_title")}</div><div class="error">${t("generic_error_prefix")}${escapeHtml(err.message)}</div>`, orgName: null };
   }
 }
 
@@ -1603,15 +1851,17 @@ async function renderBackupActivitySection(agentId) {
 // réservé au niveau "Moyenne" des alertes) : Erreur/Avertissement n'ont que 2
 // couleurs (rouge/jaune), alors que les alertes en ont 3 (rouge/orange/jaune).
 const EVENT_TYPE_CLASS = { error: "critical", warning: "low", information: "low" };
-const EVENT_TYPE_LABEL = { error: "Erreur", warning: "Avertissement", information: "Information" };
+function eventTypeLabel(type) {
+  return { error: t("event_error"), warning: t("event_warning"), information: t("event_info") }[type];
+}
 
 function eventRowHtml(ev, index) {
   const cls = EVENT_TYPE_CLASS[ev.type] || "low";
-  const label = EVENT_TYPE_LABEL[ev.type] || ev.type || "?";
+  const label = eventTypeLabel(ev.type) || ev.type || "?";
   const uid = "event-" + index;
   return `
     <div class="incident ${cls}" data-uid="${uid}" style="cursor:pointer;">
-      <div class="title">${escapeHtml(ev.source || "Source inconnue")}</div>
+      <div class="title">${escapeHtml(ev.source || t("event_source_unknown"))}</div>
       <div class="meta">
         <span class="badge ${cls}">${escapeHtml(label)}</span>
         <span>${escapeHtml(ev.logName || "")}</span>
@@ -1630,12 +1880,12 @@ let agentEventFilter = null; // null (Toutes) | "error" | "warning"
 function renderAgentEventsBlock() {
   if (lastAgentEvents.length === 0) return ""; // pas d'erreur/avertissement récent : section masquée
   const items = agentEventFilter ? lastAgentEvents.filter((ev) => ev.type === agentEventFilter) : lastAgentEvents;
-  const filterBar = miniFilterBarHtml([["", "Toutes"], ["error", "Erreur"], ["warning", "Avertissement"]], agentEventFilter, "agent-event-filter");
+  const filterBar = miniFilterBarHtml([["", t("filter_all")], ["error", t("event_error")], ["warning", t("event_warning")]], agentEventFilter, "agent-event-filter");
   const toggleBar = items.length
-    ? `<div class="mini-filter"><button type="button" class="mini-filter-btn" data-toggle-all-panels="agentEventsSection">Tout afficher</button></div>`
+    ? `<div class="mini-filter"><button type="button" class="mini-filter-btn" data-toggle-all-panels="agentEventsSection">${t("show_all")}</button></div>`
     : "";
-  const body = items.length ? items.map(eventRowHtml).join("") : '<div class="empty">Aucun événement pour ce filtre</div>';
-  return `<div id="agentEventsSection"><div class="chart-cat">Journal d'événements</div>${filterBar}${toggleBar}<div class="list">${body}</div></div>`;
+  const body = items.length ? items.map(eventRowHtml).join("") : `<div class="empty">${t("no_events")}</div>`;
+  return `<div id="agentEventsSection"><div class="chart-cat">${t("journal_title")}</div>${filterBar}${toggleBar}<div class="list">${body}</div></div>`;
 }
 
 async function renderAgentEventsSection(agentId) {
@@ -1646,7 +1896,7 @@ async function renderAgentEventsSection(agentId) {
     return renderAgentEventsBlock();
   } catch (err) {
     lastAgentEvents = [];
-    return `<div id="agentEventsSection"><div class="chart-cat">Journal d'événements</div><div class="error">Erreur : ${escapeHtml(err.message)}</div></div>`;
+    return `<div id="agentEventsSection"><div class="chart-cat">${t("journal_title")}</div><div class="error">${t("generic_error_prefix")}${escapeHtml(err.message)}</div></div>`;
   }
 }
 
@@ -1667,12 +1917,12 @@ function customScriptVarLabel(script, variable) {
 function customScriptRowHtml(script, index) {
   const last = script.lastResult;
   const cls = !last ? "low" : last.status === 1 ? "success" : last.status === 2 ? "critical" : "low";
-  const label = !last ? "Jamais exécuté" : last.status === 1 ? "Succès" : last.status === 2 ? "Échec" : "Inconnu";
+  const label = !last ? t("cs_never_run") : last.status === 1 ? t("cs_success") : last.status === 2 ? t("cs_failure") : t("cs_unknown");
   const uid = "csn-" + index;
 
   const lines = [];
   if (last) {
-    if (last.status === 2 && last.message) lines.push("Erreur d'exécution : " + last.message);
+    if (last.status === 2 && last.message) lines.push(t("cs_exec_error") + last.message);
     for (const v of script.variables || []) {
       const value = last.data?.[v];
       if (value === undefined || value === "") continue;
@@ -1711,10 +1961,10 @@ async function renderCustomScriptsSection(agentId) {
     });
 
     const rows = scripts.map(customScriptRowHtml).join("");
-    const toggleBar = `<div class="mini-filter"><button type="button" class="mini-filter-btn" data-toggle-all-panels="agentCustomScriptsSection">Tout afficher</button></div>`;
+    const toggleBar = `<div class="mini-filter"><button type="button" class="mini-filter-btn" data-toggle-all-panels="agentCustomScriptsSection">${t("show_all")}</button></div>`;
     return `<div id="agentCustomScriptsSection"><div class="chart-cat">Custom scripts</div>${toggleBar}<div class="list">${rows}</div></div>`;
   } catch (err) {
-    return `<div id="agentCustomScriptsSection"><div class="chart-cat">Custom scripts</div><div class="error">Erreur : ${escapeHtml(err.message)}</div></div>`;
+    return `<div id="agentCustomScriptsSection"><div class="chart-cat">Custom scripts</div><div class="error">${t("generic_error_prefix")}${escapeHtml(err.message)}</div></div>`;
   }
 }
 
@@ -1725,9 +1975,9 @@ async function loadAgent(agentId) {
   agentAlertFilter = null;
   agentEventFilter = null;
   lastAgentEvents = [];
-  agentTitleEl.textContent = "Agent";
+  agentTitleEl.textContent = t("agent_default_title");
   agentBreadcrumbEl.hidden = true;
-  agentBodyEl.innerHTML = '<div class="loading">Chargement…</div>';
+  agentBodyEl.innerHTML = `<div class="loading">${t("loading")}</div>`;
   try {
     const [ped, objects] = await Promise.all([
       fetchJson(`/api/agent/${encodeURIComponent(agentId)}`),
@@ -1742,10 +1992,10 @@ async function loadAgent(agentId) {
 
     const categories = showSupervisionBlocks ? collectChartables(objects) : [];
     const chartsHtml = !showSupervisionBlocks ? "" : categories.length
-      ? `<div class="chart-cat">Courbes</div>` +
-        `<div class="mini-filter"><button type="button" class="mini-filter-btn" data-charts-toggle-all>Tout afficher</button></div>` +
+      ? `<div class="chart-cat">${t("charts_title")}</div>` +
+        `<div class="mini-filter"><button type="button" class="mini-filter-btn" data-charts-toggle-all>${t("show_all")}</button></div>` +
         `<div id="agentChartsList">${categories.map((cat) => cat.items.map((item) => chartItemHtml(item, cat.name)).join("")).join("")}</div>`
-      : '<div class="empty">Aucune courbe disponible pour cet agent</div>';
+      : `<div class="empty">${t("no_charts")}</div>`;
 
     const backupPromise = ["S", "W", "O"].includes(ped.type)
       ? renderBackupActivitySection(agentId)
@@ -1760,7 +2010,7 @@ async function loadAgent(agentId) {
     const incidentsHtml = showSupervisionBlocks ? renderAgentIncidents(agentId) : "";
     agentBodyEl.innerHTML = renderAgentPedigree(agentId, ped, orgName) + backupHtml + chartsHtml + incidentsHtml + eventsHtml + customScriptsHtml;
   } catch (err) {
-    agentBodyEl.innerHTML = '<div class="error">Erreur de chargement : ' + escapeHtml(err.message) + '</div>';
+    agentBodyEl.innerHTML = '<div class="error">' + t("error_prefix") + escapeHtml(err.message) + '</div>';
     console.error(err);
   }
 }
@@ -1783,7 +2033,7 @@ agentBodyEl.addEventListener("click", (e) => {
         panel.hidden = true;
       }
     });
-    expandAllBtn.textContent = anyCollapsed ? "Tout replier" : "Tout afficher";
+    expandAllBtn.textContent = anyCollapsed ? t("collapse_all") : t("show_all");
     return;
   }
 
@@ -1799,7 +2049,7 @@ agentBodyEl.addEventListener("click", (e) => {
       : [];
     const anyCollapsed = panels.some((p) => p.hidden);
     panels.forEach((p) => { p.hidden = !anyCollapsed; });
-    toggleAllPanelsBtn.textContent = anyCollapsed ? "Tout replier" : "Tout afficher";
+    toggleAllPanelsBtn.textContent = anyCollapsed ? t("collapse_all") : t("show_all");
     return;
   }
 
@@ -1840,9 +2090,9 @@ agentBodyEl.addEventListener("click", (e) => {
 function scaleSelectorHtml(scale) {
   return `
     <div class="scale-selector">
-      ${Object.keys(SCALE_LABEL).map((s) => `<button data-scale="${s}" class="${s === scale ? "active" : ""}">${SCALE_LABEL[s]}</button>`).join("")}
+      ${["day", "week", "month", "year"].map((s) => `<button data-scale="${s}" class="${s === scale ? "active" : ""}">${scaleLabel(s)}</button>`).join("")}
     </div>
-    <div class="chart-host"><div class="loading">Chargement…</div></div>
+    <div class="chart-host"><div class="loading">${t("loading")}</div></div>
   `;
 }
 
@@ -1866,12 +2116,12 @@ async function loadChart(panel, objId, chartId, counters, scale) {
       host.innerHTML = buildLineChartSvg(interpreted, scale);
     }
   } catch (err) {
-    host.innerHTML = '<div class="error">Erreur : ' + escapeHtml(err.message) + '</div>';
+    host.innerHTML = '<div class="error">' + t("generic_error_prefix") + escapeHtml(err.message) + '</div>';
   }
 }
 
 function buildStatusBarSvg(values, scale) {
-  if (!values.length) return '<div class="empty">Pas de données sur cette période</div>';
+  if (!values.length) return `<div class="empty">${t("chart_no_data")}</div>`;
 
   const W = 300, H = 50, padL = 2, padR = 2, padT = 2, padB = 2;
   const n = values.length;
@@ -1885,7 +2135,7 @@ function buildStatusBarSvg(values, scale) {
   const pct = ((activeCount / n) * 100).toFixed(1);
 
   return `
-    <div class="chart-meta">Actif <strong>${pct}%</strong> du temps · période : ${SCALE_LABEL[scale] || scale}</div>
+    <div class="chart-meta">${t("chart_active_pct", { pct, scale: scaleLabel(scale) || scale })}</div>
     <svg viewBox="0 0 ${W} ${H}" width="100%" height="${H}">${bars}</svg>
   `;
 }
@@ -1903,7 +2153,7 @@ function interpretChartData(counters, data) {
       });
       // Tendance affichée uniquement pour Disque/Mémoire (branche "utilisation
       // sur capacité"), pas pour les compteurs bruts (CPU, réseau...).
-      return { unit: "%", series: [{ name: "Utilisation", values }], showTrend: true };
+      return { unit: "%", series: [{ name: t("series_usage"), values }], showTrend: true };
     }
   }
 
@@ -1954,7 +2204,7 @@ function computeTrend(values) {
 function buildLineChartSvg(interpreted, scale) {
   const { unit, series, showTrend } = interpreted;
   if (!series.length || series.every((s) => s.values.length === 0)) {
-    return '<div class="empty">Pas de données sur cette période</div>';
+    return `<div class="empty">${t("chart_no_data")}</div>`;
   }
 
   const W = 300, H = 140, padL = 38, padR = 10, padT = 10, padB = 10;
@@ -2007,7 +2257,7 @@ function buildLineChartSvg(interpreted, scale) {
   const latest = series[0].values[series[0].values.length - 1];
 
   return `
-    <div class="chart-meta">Dernière valeur : <strong>${formatValue(latest, unit)}</strong> · période : ${SCALE_LABEL[scale] || scale}</div>
+    <div class="chart-meta">${t("chart_latest_value", { value: formatValue(latest, unit), scale: scaleLabel(scale) || scale })}</div>
     <svg viewBox="0 0 ${W} ${H}" width="100%" height="${H}">${gridLines}${trendLine}${paths}</svg>
     ${legend}
   `;
@@ -2020,6 +2270,7 @@ function buildLineChartSvg(interpreted, scale) {
 // ⚠️ À tenir à jour à chaque nouvelle version livrée (garder aussi
 // releaseNotes.md synchronisé, à la racine du dossier fourni à l'utilisateur).
 const RELEASE_NOTES = [
+  { version: "0.80", text: "Ajout de la traduction anglaise : deux drapeaux (🇫🇷/🇬🇧) tout en bas du menu latéral permettent de basculer toute l'application en anglais. La langue par défaut suit celle du téléphone et reste mémorisée ensuite. Sur la carte, les 3 liens de l'infobulle d'un client sont aussi renommés : \"voir ce client\" devient \"Parc\", \"voir les alertes\" devient \"Alertes\", et un nouveau lien \"Fiche client\" est ajouté." },
   { version: "0.79", text: "Nouveau menu \"Clients\" dans le tiroir latéral : liste de tous les clients par ordre alphabétique, et une fiche par client avec téléphone (appel direct), email (écrire directement) et adresse (ouverture dans Google Maps) cliquables." },
   { version: "0.78", text: "Ajout d'un bouton ↻ Actualiser à droite du titre \"Carte des clients\", en plus du tirer-vers-le-bas déjà existant." },
   { version: "0.77", text: "Ajout d'un fil d'Ariane (ex. \"MSP / Client A\") sous le titre quand on navigue dans les dossiers et les agents, avec des liens cliquables vers chaque niveau. Le titre de la page est aussi un peu plus petit." },
@@ -2158,7 +2409,7 @@ async function geocodeAddress(address) {
 
   const url = "https://nominatim.openstreetmap.org/search?format=json&limit=1&q=" + encodeURIComponent(address);
   const res = await fetch(url);
-  if (!res.ok) throw new Error("Géocodage indisponible (HTTP " + res.status + ")");
+  if (!res.ok) throw new Error(t("geocoding_unavailable", { status: res.status }));
   const results = await res.json();
   if (!results.length) return { point: null, cached: false };
   const point = { lat: parseFloat(results[0].lat), lng: parseFloat(results[0].lon) };
@@ -2189,10 +2440,10 @@ function renderUnlocatedClients(unlocated) {
   const rows = unlocated.map((c) => `
     <div class="note-item">
       <div class="version">${escapeHtml(c.name)}</div>
-      <div class="text">${escapeHtml(c.reason)} — <a href="#/parc/node/${encodeURIComponent(c.id)}">Voir ce client</a></div>
+      <div class="text">${escapeHtml(c.reason)} — <a href="#/parc/node/${encodeURIComponent(c.id)}">${t("map_see_client")}</a></div>
     </div>
   `).join("");
-  el.innerHTML = `<div class="chart-cat">Non localisés (${unlocated.length})</div><div class="list">${rows}</div>`;
+  el.innerHTML = `<div class="chart-cat">${t("map_unlocated", { n: unlocated.length })}</div><div class="list">${rows}</div>`;
   el.hidden = false;
 }
 
@@ -2209,7 +2460,7 @@ async function loadMapPage() {
   }
 
   statusEl.hidden = false;
-  statusEl.textContent = "Chargement des clients…";
+  statusEl.textContent = t("map_loading_clients");
   containerEl.style.display = "none";
   unlocatedEl.hidden = true;
 
@@ -2234,7 +2485,7 @@ async function loadMapPage() {
     }
 
     if (customers.size === 0) {
-      statusEl.textContent = "Aucun client trouvé dans le parc.";
+      statusEl.textContent = t("map_no_clients");
       return;
     }
 
@@ -2247,14 +2498,14 @@ async function loadMapPage() {
     // Étape 1 : récupérer les fiches client (nom, adresse) en parallèle — ces
     // appels passent par notre propre relais et ne sont pas soumis à la limite
     // de Nominatim, inutile de les faire un par un.
-    statusEl.textContent = `Récupération des fiches clients… (0/${customers.size})`;
+    statusEl.textContent = t("map_fetching_details", { i: 0, n: customers.size });
     let fetched = 0;
     const customerList = Array.from(customers.values());
     const detailsList = await mapLimit(customerList, 5, async (customer) => {
       try {
         const details = await fetchJson(`/api/node/${encodeURIComponent(customer.id)}/customer`);
         fetched++;
-        statusEl.textContent = `Récupération des fiches clients… (${fetched}/${customers.size})`;
+        statusEl.textContent = t("map_fetching_details", { i: fetched, n: customers.size });
         return { customer, details, error: null };
       } catch (err) {
         fetched++;
@@ -2270,25 +2521,25 @@ async function loadMapPage() {
     for (const { customer, details, error } of detailsList) {
       i++;
       if (error) {
-        unlocated.push({ id: customer.id, name: customer.name, reason: "Erreur : " + error.message });
+        unlocated.push({ id: customer.id, name: customer.name, reason: t("map_error_prefix") + error.message });
         continue;
       }
       const name = details.companyName || customer.name;
       if (!details.companyAddress) {
-        unlocated.push({ id: customer.id, name, reason: "Adresse non renseignée dans RG System" });
+        unlocated.push({ id: customer.id, name, reason: t("map_reason_no_address") });
         continue;
       }
-      statusEl.textContent = `Localisation des clients… (${i}/${detailsList.length})`;
+      statusEl.textContent = t("map_locating", { i, n: detailsList.length });
       try {
         const { point, cached } = await geocodeAddress(details.companyAddress);
         if (point) {
           pins.push({ ...point, name, address: details.companyAddress, nodeId: customer.id, hasCritical: customer.hasCritical });
         } else {
-          unlocated.push({ id: customer.id, name, reason: "Adresse non reconnue (" + details.companyAddress + ")" });
+          unlocated.push({ id: customer.id, name, reason: t("map_reason_bad_address", { addr: details.companyAddress }) });
         }
         if (!cached) await sleep(1000); // politique d'usage Nominatim : 1 requête/seconde max
       } catch (err) {
-        unlocated.push({ id: customer.id, name, reason: "Erreur : " + err.message });
+        unlocated.push({ id: customer.id, name, reason: t("map_error_prefix") + err.message });
         console.error("Client " + customer.id + " :", err);
       }
     }
@@ -2296,7 +2547,7 @@ async function loadMapPage() {
     renderUnlocatedClients(unlocated);
 
     if (pins.length === 0) {
-      statusEl.textContent = "Aucun client n'a pu être localisé (adresse manquante ou introuvable).";
+      statusEl.textContent = t("map_none_located");
       return;
     }
 
@@ -2313,9 +2564,10 @@ async function loadMapPage() {
       const marker = L.marker([pin.lat, pin.lng], pin.hasCritical ? { icon: getCriticalMarkerIcon() } : {}).addTo(mapInstance);
       marker.bindPopup(
         `<strong>${escapeHtml(pin.name)}</strong><br>${escapeHtml(pin.address)}<br>` +
-        (pin.hasCritical ? `<span style="color:#ef4444;font-weight:600;">⚠️ Alerte critique en cours</span><br>` : "") +
-        `<a href="#/parc/node/${encodeURIComponent(pin.nodeId)}">Voir ce client</a>` +
-        (pin.hasCritical ? ` · <a href="#/alerts/client/${encodeURIComponent(pin.nodeId)}">Voir les alertes</a>` : "")
+        (pin.hasCritical ? `<span style="color:#ef4444;font-weight:600;">${t("map_critical_popup")}</span><br>` : "") +
+        `<a href="#/parc/node/${encodeURIComponent(pin.nodeId)}">${t("map_link_parc")}</a>` +
+        (pin.hasCritical ? ` · <a href="#/alerts/client/${encodeURIComponent(pin.nodeId)}">${t("map_link_alerts")}</a>` : "") +
+        ` · <a href="#/clients/${encodeURIComponent(pin.nodeId)}">${t("map_link_client_sheet")}</a>`
       );
       return marker;
     });
@@ -2329,7 +2581,7 @@ async function loadMapPage() {
     mapLoaded = true;
   } catch (err) {
     statusEl.hidden = false;
-    statusEl.textContent = "Erreur : " + err.message;
+    statusEl.textContent = t("generic_error_prefix") + err.message;
     console.error(err);
   }
 }
@@ -2387,7 +2639,7 @@ async function getClientsList() {
   const byId = new Map();
   for (const a of agents) {
     if (a.customer?.id && !byId.has(a.customer.id)) {
-      byId.set(a.customer.id, { id: a.customer.id, name: a.customer.name || "Client sans nom" });
+      byId.set(a.customer.id, { id: a.customer.id, name: a.customer.name || t("client_no_name") });
     }
   }
   return [...byId.values()].sort((a, b) => a.name.localeCompare(b.name, "fr"));
@@ -2396,11 +2648,11 @@ async function getClientsList() {
 async function loadClientsList() {
   clientsListView.hidden = false;
   clientsDetailView.hidden = true;
-  clientsListEl.innerHTML = '<div class="loading">Chargement…</div>';
+  clientsListEl.innerHTML = `<div class="loading">${t("loading")}</div>`;
   try {
     const clients = await getClientsList();
     if (clients.length === 0) {
-      clientsListEl.innerHTML = '<div class="empty">Aucun client trouvé dans le parc.</div>';
+      clientsListEl.innerHTML = `<div class="empty">${t("no_clients_found")}</div>`;
       return;
     }
     clientsListEl.innerHTML = clients.map((c) => `
@@ -2409,7 +2661,7 @@ async function loadClientsList() {
       </div>
     `).join("");
   } catch (err) {
-    clientsListEl.innerHTML = '<div class="error">Erreur de chargement : ' + escapeHtml(err.message) + '</div>';
+    clientsListEl.innerHTML = '<div class="error">' + t("error_prefix") + escapeHtml(err.message) + '</div>';
     console.error(err);
   }
 }
@@ -2428,17 +2680,17 @@ function mapsSearchUrl(address) {
 async function loadClientDetail(nodeId) {
   clientsListView.hidden = true;
   clientsDetailView.hidden = false;
-  clientsDetailTitleEl.textContent = "Client";
-  clientsDetailBodyEl.innerHTML = '<div class="loading">Chargement…</div>';
+  clientsDetailTitleEl.textContent = t("client_default_title");
+  clientsDetailBodyEl.innerHTML = `<div class="loading">${t("loading")}</div>`;
   try {
     const details = await fetchJson(`/api/node/${encodeURIComponent(nodeId)}/customer`);
-    const name = details.companyName || details.name || "Client";
+    const name = details.companyName || details.name || t("client_default_title");
     clientsDetailTitleEl.textContent = name;
 
     const rows = [
-      ["Téléphone", details.companyPhone, (v) => `<a href="tel:${escapeHtml(v.replace(/\s+/g, ""))}">${escapeHtml(v)}</a>`],
-      ["Email", details.companyEmail, (v) => `<a href="mailto:${escapeHtml(v)}">${escapeHtml(v)}</a>`],
-      ["Adresse", details.companyAddress, (v) => `<a href="${mapsSearchUrl(v)}" target="_blank" rel="noopener">${escapeHtml(v)}</a>`],
+      [t("client_phone"), details.companyPhone, (v) => `<a href="tel:${escapeHtml(v.replace(/\s+/g, ""))}">${escapeHtml(v)}</a>`],
+      [t("client_email"), details.companyEmail, (v) => `<a href="mailto:${escapeHtml(v)}">${escapeHtml(v)}</a>`],
+      [t("client_address"), details.companyAddress, (v) => `<a href="${mapsSearchUrl(v)}" target="_blank" rel="noopener">${escapeHtml(v)}</a>`],
     ].map(([label, value, link]) => `<dt>${label}</dt><dd>${value ? link(value) : "–"}</dd>`).join("");
 
     clientsDetailBodyEl.innerHTML = `
@@ -2446,12 +2698,12 @@ async function loadClientDetail(nodeId) {
         <h2>🏢 ${escapeHtml(name)}</h2>
         <dl class="kv">${rows}</dl>
         <div style="margin-top: 10px;">
-          <a href="#/parc/node/${encodeURIComponent(nodeId)}">Voir dans le Parc</a>
+          <a href="#/parc/node/${encodeURIComponent(nodeId)}">${t("client_see_in_parc")}</a>
         </div>
       </div>
     `;
   } catch (err) {
-    clientsDetailBodyEl.innerHTML = '<div class="error">Erreur de chargement : ' + escapeHtml(err.message) + '</div>';
+    clientsDetailBodyEl.innerHTML = '<div class="error">' + t("error_prefix") + escapeHtml(err.message) + '</div>';
     console.error(err);
   }
 }
@@ -2642,6 +2894,7 @@ document.addEventListener("touchend", () => {
   });
 });
 
+applyStaticTranslations();
 loadAlerts();
 router();
 
