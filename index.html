@@ -497,7 +497,7 @@
 <header>
   <div class="header-top">
     <button class="hamburger-btn" id="mainMenuBtn">☰</button>
-    <h1 id="homeLink"><img src="icons/icon-192.png" alt="" class="brand-icon"> RG System Suite <span class="app-version">v0.77</span></h1>
+    <h1 id="homeLink"><img src="icons/icon-192.png" alt="" class="brand-icon"> RG System Suite <span class="app-version">v0.78</span></h1>
     <div class="search-bar" id="searchBarWrap">
       <button type="button" class="search-toggle-btn" id="searchToggleBtn" title="Rechercher" aria-label="Rechercher">🔍</button>
       <div class="search-input-row" id="searchInputRow" hidden>
@@ -581,6 +581,7 @@
   <div class="parc-header">
     <div class="parc-header-row">
       <span class="parc-title">Carte des clients</span>
+      <button type="button" class="back-btn" id="mapRefreshBtn" title="Actualiser" aria-label="Actualiser">↻</button>
     </div>
   </div>
   <div id="mapStatus" class="loading">Chargement…</div>
@@ -1992,6 +1993,7 @@ function buildLineChartSvg(interpreted, scale) {
 // ⚠️ À tenir à jour à chaque nouvelle version livrée (garder aussi
 // releaseNotes.md synchronisé, à la racine du dossier fourni à l'utilisateur).
 const RELEASE_NOTES = [
+  { version: "0.78", text: "Ajout d'un bouton ↻ Actualiser à droite du titre \"Carte des clients\", en plus du tirer-vers-le-bas déjà existant." },
   { version: "0.77", text: "Ajout d'un fil d'Ariane (ex. \"MSP / Client A\") sous le titre quand on navigue dans les dossiers et les agents, avec des liens cliquables vers chaque niveau. Le titre de la page est aussi un peu plus petit." },
   { version: "0.76", text: "Retrait de la ligne \"Type\" dans le détail d'une alerte : c'était un code numérique interne à RG System sans libellé officiel, qui faisait doublon avec la \"Catégorie\" déjà affichée en clair." },
   { version: "0.75", text: "Sur l'écran Alertes, un clic sur une alerte affiche maintenant son détail (catégorie, type, identifiant) avec un lien \"Accéder à l'agent\", au lieu de naviguer directement vers l'agent au premier clic." },
@@ -2314,6 +2316,8 @@ async function refreshMap() {
   allAgentsPromise = null;
   await loadMapPage();
 }
+document.getElementById("mapRefreshBtn").addEventListener("click", () => refreshMap());
+
 // Un seul point d'entrée pour "actualiser la page actuelle", utilisé par les
 // boutons ↻ de chaque écran ET par le geste de tirage tactile (pull-to-refresh)
 // plus bas — les deux déclenchent toujours exactement la même action.
