@@ -208,12 +208,13 @@
   /* --- Parc (navigation nodes/agents) --- */
   .parc-header {
     display: flex;
-    align-items: center;
-    gap: 8px;
+    flex-direction: column;
+    gap: 4px;
     padding: 12px 16px;
     /* Reste visible pendant le défilement de la liste, juste sous l'en-tête
        global — le décalage "top" exact est recalculé en JS (updateStickyOffsets)
-       car la hauteur de l'en-tête varie (recherche repliée/dépliée, zone sûre iOS). */
+       car la hauteur de l'en-tête varie (recherche repliée/dépliée, zone sûre iOS,
+       fil d'Ariane présent ou non). */
     position: sticky;
     z-index: 4;
     background: var(--bg);
@@ -222,6 +223,7 @@
        (coins arrondis) touche directement le trait de séparation. */
     margin-bottom: 10px;
   }
+  .parc-header-row { display: flex; align-items: center; gap: 8px; }
   .back-btn {
     background: none;
     border: 1px solid var(--card-border);
@@ -232,7 +234,16 @@
     font-size: 1rem;
     line-height: 1;
   }
-  .parc-title { font-weight: 600; font-size: 0.95rem; flex: 1; }
+  .parc-title { font-weight: 600; font-size: 0.88rem; flex: 1; }
+  .breadcrumb {
+    font-size: 0.72rem;
+    color: var(--text-dim);
+    white-space: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .breadcrumb a { color: var(--text-dim); }
+  .breadcrumb .crumb-sep { margin: 0 4px; opacity: 0.6; }
 
   .hamburger-btn {
     background: none;
@@ -486,7 +497,7 @@
 <header>
   <div class="header-top">
     <button class="hamburger-btn" id="mainMenuBtn">☰</button>
-    <h1 id="homeLink"><img src="icons/icon-192.png" alt="" class="brand-icon"> RG System Suite <span class="app-version">v0.76</span></h1>
+    <h1 id="homeLink"><img src="icons/icon-192.png" alt="" class="brand-icon"> RG System Suite <span class="app-version">v0.77</span></h1>
     <div class="search-bar" id="searchBarWrap">
       <button type="button" class="search-toggle-btn" id="searchToggleBtn" title="Rechercher" aria-label="Rechercher">🔍</button>
       <div class="search-input-row" id="searchInputRow" hidden>
@@ -525,15 +536,20 @@
 
   <div id="parcSearchView" hidden>
     <div class="parc-header">
-      <span class="parc-title">Résultats de recherche</span>
+      <div class="parc-header-row">
+        <span class="parc-title">Résultats de recherche</span>
+      </div>
     </div>
     <div class="list" id="parcSearchList"></div>
   </div>
 
   <div id="parcTreeView">
     <div class="parc-header">
-      <button class="back-btn" id="parcBackBtn" hidden title="Retour" aria-label="Retour">←</button>
-      <span class="parc-title" id="parcTitle">Parc</span>
+      <div class="parc-header-row">
+        <button class="back-btn" id="parcBackBtn" hidden title="Retour" aria-label="Retour">←</button>
+        <span class="parc-title" id="parcTitle">Parc</span>
+      </div>
+      <div class="breadcrumb" id="parcBreadcrumb" hidden></div>
     </div>
     <div class="client-stats" id="parcClientStats" hidden></div>
     <div class="filter-chip" id="parcFilterChip" hidden>
@@ -547,8 +563,11 @@
 
   <div id="parcAgentView" hidden>
     <div class="parc-header">
-      <button class="back-btn" id="agentBackBtn" title="Retour" aria-label="Retour">←</button>
-      <span class="parc-title" id="agentTitle">Agent</span>
+      <div class="parc-header-row">
+        <button class="back-btn" id="agentBackBtn" title="Retour" aria-label="Retour">←</button>
+        <span class="parc-title" id="agentTitle">Agent</span>
+      </div>
+      <div class="breadcrumb" id="agentBreadcrumb" hidden></div>
     </div>
     <div id="agentBody">
       <div class="loading">Chargement…</div>
@@ -560,7 +579,9 @@
 <!-- ===== Page Carte (clients géolocalisés) ===== -->
 <div id="page-map" hidden>
   <div class="parc-header">
-    <span class="parc-title">Carte des clients</span>
+    <div class="parc-header-row">
+      <span class="parc-title">Carte des clients</span>
+    </div>
   </div>
   <div id="mapStatus" class="loading">Chargement…</div>
   <div id="mapContainer" class="map-container" style="display:none;"></div>
@@ -570,7 +591,9 @@
 <!-- ===== Page Nouveautés (notes de version) ===== -->
 <div id="page-whatsnew" hidden>
   <div class="parc-header">
-    <span class="parc-title">Nouveautés</span>
+    <div class="parc-header-row">
+      <span class="parc-title">Nouveautés</span>
+    </div>
   </div>
   <div class="list" id="whatsNewList"></div>
 </div>
@@ -954,6 +977,7 @@ const HIDDEN_AGENT_TYPES = new Set(["G", "A"]);
 const parcListEl = document.getElementById("parcList");
 const parcTitleEl = document.getElementById("parcTitle");
 const parcBackBtn = document.getElementById("parcBackBtn");
+const parcBreadcrumbEl = document.getElementById("parcBreadcrumb");
 const parcSearchView = document.getElementById("parcSearchView");
 const parcSearchList = document.getElementById("parcSearchList");
 const parcClientStats = document.getElementById("parcClientStats");
@@ -1055,18 +1079,80 @@ async function updateClientStats(nodeId) {
   }
 }
 
+// Fil d'Ariane (dossiers parents) : l'API ne renvoie jamais la chaîne complète
+// des ancêtres, seulement l'identifiant du parent direct (parentNodeId) — on
+// la reconstruit nous-mêmes en remontant node par node. Un cache évite de
+// refaire cet aller-retour plus d'une fois par dossier au cours de la session
+// (le nom/parent d'un dossier ne change pas pendant qu'on navigue dedans).
+const nodeInfoCache = new Map();
+
+async function getNodeInfo(id) {
+  const key = String(id);
+  if (nodeInfoCache.has(key)) return nodeInfoCache.get(key);
+  const data = await fetchJson(`/api/node/${encodeURIComponent(id)}/children`);
+  const node = data[id] || Object.values(data)[0];
+  const info = { name: node?.name || "?", parentNodeId: node?.parentNodeId ?? null };
+  nodeInfoCache.set(key, info);
+  return info;
+}
+
+async function getBreadcrumbTrail(nodeId) {
+  const trail = [];
+  let currentId = nodeId;
+  let guard = 0; // garde-fou si jamais une boucle de parents mal formée existait côté API
+  while (currentId != null && guard++ < 12) {
+    const info = await getNodeInfo(currentId);
+    trail.unshift({ id: currentId, name: info.name });
+    if (String(currentId) === String(ROOT_NODE_ID)) break;
+    currentId = info.parentNodeId;
+  }
+  return trail;
+}
+
+function breadcrumbLinksHtml(trail) {
+  return trail
+    .map((seg) => `<a href="#/parc/node/${encodeURIComponent(seg.id)}">${escapeHtml(seg.name)}</a>`)
+    .join(' <span class="crumb-sep">/</span> ');
+}
+
+let breadcrumbRequestId = 0;
+
+// includeSelf=false : n'affiche que les ANCÊTRES (le dossier courant est déjà
+// dans le titre juste au-dessus, pas besoin de le répéter dans le fil).
+// includeSelf=true : affiche aussi le dossier direct de l'agent (utile ici
+// car le titre, lui, montre le nom de l'AGENT, pas celui de son dossier).
+async function renderBreadcrumb(containerEl, nodeId, { includeSelf }) {
+  const requestId = ++breadcrumbRequestId;
+  try {
+    let trail = await getBreadcrumbTrail(nodeId);
+    if (requestId !== breadcrumbRequestId) return; // une navigation plus récente a pris le dessus
+    if (!includeSelf) trail = trail.slice(0, -1);
+    containerEl.hidden = trail.length === 0;
+    if (trail.length) containerEl.innerHTML = breadcrumbLinksHtml(trail);
+  } catch (err) {
+    // Le fil d'Ariane est un plus, pas un pré-requis : une erreur ici ne doit
+    // jamais empêcher le reste de la page de s'afficher.
+    if (requestId === breadcrumbRequestId) containerEl.hidden = true;
+    console.error("Fil d'Ariane :", err);
+  } finally {
+    if (requestId === breadcrumbRequestId) updateStickyOffsets();
+  }
+}
+
 async function loadNode(nodeId) {
   currentTreeNodeId = nodeId;
   parcTitleEl.textContent = "Parc";
   parcBackBtn.hidden = String(nodeId) === String(ROOT_NODE_ID);
   parcListEl.innerHTML = '<div class="loading">Chargement…</div>';
   parcClientStats.hidden = true;
+  parcBreadcrumbEl.hidden = true;
   clientStatsRequestId++; // annule toute stat en cours de calcul pour l'ancien dossier
   try {
     const data = await fetchJson(`/api/node/${encodeURIComponent(nodeId)}/children`);
     const node = data[nodeId] || Object.values(data)[0];
     if (!node) throw new Error("Node introuvable");
     lastLoadedNode = node;
+    nodeInfoCache.set(String(nodeId), { name: node.name, parentNodeId: node.parentNodeId ?? null });
     renderNodeList();
     // Le titre du dossier vient de changer (texte potentiellement plus long/court
     // que l'ancien) : le bandeau .parc-header peut avoir changé de hauteur.
@@ -1074,6 +1160,7 @@ async function loadNode(nodeId) {
     // Les compteurs sont utiles sur n'importe quel dossier, pas seulement les
     // nodes clients (ex. un groupe de VMs qui n'est pas un client à proprement parler).
     updateClientStats(nodeId);
+    renderBreadcrumb(parcBreadcrumbEl, nodeId, { includeSelf: false });
   } catch (err) {
     parcListEl.innerHTML = '<div class="error">Erreur de chargement : ' + escapeHtml(err.message) + '</div>';
     console.error(err);
@@ -1165,6 +1252,7 @@ parcClientStats.addEventListener("click", (e) => {
    ========================================================= */
 
 const agentTitleEl = document.getElementById("agentTitle");
+const agentBreadcrumbEl = document.getElementById("agentBreadcrumb");
 const agentBodyEl = document.getElementById("agentBody");
 document.getElementById("agentBackBtn").addEventListener("click", () => history.back());
 
@@ -1610,12 +1698,14 @@ async function loadAgent(agentId) {
   agentEventFilter = null;
   lastAgentEvents = [];
   agentTitleEl.textContent = "Agent";
+  agentBreadcrumbEl.hidden = true;
   agentBodyEl.innerHTML = '<div class="loading">Chargement…</div>';
   try {
     const [ped, objects] = await Promise.all([
       fetchJson(`/api/agent/${encodeURIComponent(agentId)}`),
       fetchJson(`/api/agent/${encodeURIComponent(agentId)}/objects`).catch(() => ({})),
     ]);
+    if (ped.nodeId != null) renderBreadcrumb(agentBreadcrumbEl, ped.nodeId, { includeSelf: true });
 
     // Type "L" (lien/agent léger) n'a ni courbes de supervision exploitables,
     // ni journal d'événements Windows, ni alertes pertinentes : on masque ces
@@ -1902,6 +1992,7 @@ function buildLineChartSvg(interpreted, scale) {
 // ⚠️ À tenir à jour à chaque nouvelle version livrée (garder aussi
 // releaseNotes.md synchronisé, à la racine du dossier fourni à l'utilisateur).
 const RELEASE_NOTES = [
+  { version: "0.77", text: "Ajout d'un fil d'Ariane (ex. \"MSP / Client A\") sous le titre quand on navigue dans les dossiers et les agents, avec des liens cliquables vers chaque niveau. Le titre de la page est aussi un peu plus petit." },
   { version: "0.76", text: "Retrait de la ligne \"Type\" dans le détail d'une alerte : c'était un code numérique interne à RG System sans libellé officiel, qui faisait doublon avec la \"Catégorie\" déjà affichée en clair." },
   { version: "0.75", text: "Sur l'écran Alertes, un clic sur une alerte affiche maintenant son détail (catégorie, type, identifiant) avec un lien \"Accéder à l'agent\", au lieu de naviguer directement vers l'agent au premier clic." },
   { version: "0.74", text: "Le champ de recherche affiche simplement \"Rechercher...\" partout, au lieu d'un texte différent selon l'écran (agent/alerte) — cohérent avec le fait qu'elle couvre désormais beaucoup plus de champs qu'avant (v0.73)." },
