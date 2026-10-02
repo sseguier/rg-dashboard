@@ -30,6 +30,23 @@
     --accent: #ff6136;
     --ok: #027a48;
   }
+  /* Thème sombre : mêmes rôles de couleur, valeurs réajustées pour un fond
+     foncé. --crit-low et --ok redeviennent plus lumineux que sur fond blanc
+     (ils avaient justement été assombris en v0.58/v0.67 pour rester lisibles
+     en texte sur fond blanc — ce problème s'inverse sur fond sombre). */
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --bg: #0b1220;
+    --card: #16213a;
+    --card-border: #2a3752;
+    --text: #e8edf5;
+    --text-dim: #94a3b8;
+    --crit-critical: #ef4444;
+    --crit-medium: #ea580c;
+    --crit-low: #eab308;
+    --accent: #ff6136;
+    --ok: #34d399;
+  }
   * { box-sizing: border-box; }
   body {
     margin: 0;
@@ -369,13 +386,32 @@
     margin-left: 4px;
     vertical-align: middle;
   }
+  .drawer-theme-row {
+    display: flex;
+    gap: 6px;
+    padding: 16px 16px 8px;
+    margin-top: auto;
+    border-top: 1px solid var(--card-border);
+  }
+  .drawer-theme-btn {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--card);
+    border: 1px solid var(--card-border);
+    border-radius: 6px;
+    padding: 7px;
+    color: var(--text-dim);
+    opacity: 0.6;
+  }
+  .drawer-theme-btn svg { display: block; width: 16px; height: 16px; }
+  .drawer-theme-btn.active { border-color: var(--accent); color: var(--accent); opacity: 1; }
   .drawer-lang-row {
     display: flex;
     flex-wrap: wrap;
     gap: 6px;
-    padding: 16px;
-    margin-top: auto;
-    border-top: 1px solid var(--card-border);
+    padding: 0 16px 16px;
   }
   .drawer-lang-btn {
     flex: 1 1 26%;
@@ -507,6 +543,19 @@
   .pull-indicator.spinning { color: var(--accent); animation: pull-spin 0.7s linear infinite; }
   @keyframes pull-spin { to { transform: rotate(360deg); } }
 </style>
+<script>
+  // Pose l'attribut de thème AVANT le premier rendu visible (sinon flash du
+  // thème clair par défaut le temps que le script principal, en bas de page,
+  // s'exécute). Garde volontairement minimal ici : le reste de la logique
+  // (bascule au clic, mémorisation) vit dans le script principal.
+  (function () {
+    try {
+      var stored = localStorage.getItem("rgdash-theme");
+      var theme = stored || (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+      document.documentElement.dataset.theme = theme;
+    } catch (e) { /* stockage indisponible : reste sur le thème clair par défaut */ }
+  })();
+</script>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 </head>
 <body>
@@ -518,7 +567,7 @@
 <header>
   <div class="header-top">
     <button class="hamburger-btn" id="mainMenuBtn">☰</button>
-    <h1 id="homeLink"><img src="icons/icon-192.png" alt="" class="brand-icon"> RG System Suite <span class="app-version">v0.87</span></h1>
+    <h1 id="homeLink"><img src="icons/icon-192.png" alt="" class="brand-icon"> RG System Suite <span class="app-version">v0.88</span></h1>
     <div class="search-bar" id="searchBarWrap">
       <button type="button" class="search-toggle-btn" id="searchToggleBtn" title="Rechercher" aria-label="Rechercher">🔍</button>
       <div class="search-input-row" id="searchInputRow" hidden>
@@ -656,6 +705,26 @@
   <button type="button" class="drawer-item" data-nav="map">🗺️ <span data-nav-label="map">Carte</span></button>
   <button type="button" class="drawer-item" data-nav="clients">🏢 <span data-nav-label="clients">Clients</span></button>
   <button type="button" class="drawer-item" data-nav="whatsnew">🆕 <span data-nav-label="whatsnew">Nouveautés</span> <span class="update-dot" id="whatsNewDot" hidden></span></button>
+  <div class="drawer-theme-row">
+    <button type="button" class="drawer-theme-btn" id="themeBtnLight" title="Clair" aria-label="Clair">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+        <circle cx="12" cy="12" r="4" fill="currentColor" stroke="none"/>
+        <line x1="12" y1="1" x2="12" y2="3"/>
+        <line x1="12" y1="21" x2="12" y2="23"/>
+        <line x1="4.2" y1="4.2" x2="5.6" y2="5.6"/>
+        <line x1="18.4" y1="18.4" x2="19.8" y2="19.8"/>
+        <line x1="1" y1="12" x2="3" y2="12"/>
+        <line x1="21" y1="12" x2="23" y2="12"/>
+        <line x1="4.2" y1="19.8" x2="5.6" y2="18.4"/>
+        <line x1="18.4" y1="5.6" x2="19.8" y2="4.2"/>
+      </svg>
+    </button>
+    <button type="button" class="drawer-theme-btn" id="themeBtnDark" title="Sombre" aria-label="Sombre">
+      <svg viewBox="0 0 24 24" fill="currentColor">
+        <path d="M20 14.5A8.5 8.5 0 0 1 9.5 4 8.5 8.5 0 1 0 20 14.5z"/>
+      </svg>
+    </button>
+  </div>
   <div class="drawer-lang-row">
     <button type="button" class="drawer-lang-btn" id="langBtnFr" title="Français" aria-label="Français">
       <svg viewBox="0 0 30 20" xmlns="http://www.w3.org/2000/svg">
@@ -798,6 +867,7 @@ const TRANSLATIONS = {
     client_email: "Email", client_address: "Adresse", client_see_in_parc: "Voir dans le Parc",
     client_default_title: "Client", no_clients_found: "Aucun client trouvé dans le parc.",
     whatsnew_title: "Nouveautés",
+    theme_light: "Clair", theme_dark: "Sombre",
   },
   en: {
     nav_header: "Navigation", nav_parc: "Fleet", nav_alerts: "Alerts", nav_map: "Map",
@@ -867,6 +937,7 @@ const TRANSLATIONS = {
     client_email: "Email", client_address: "Address", client_see_in_parc: "View in Fleet",
     client_default_title: "Client", no_clients_found: "No clients found in the fleet.",
     whatsnew_title: "What's new",
+    theme_light: "Light", theme_dark: "Dark",
   },
   de: {
     nav_header: "Navigation", nav_parc: "Geräte", nav_alerts: "Warnungen", nav_map: "Karte",
@@ -936,6 +1007,7 @@ const TRANSLATIONS = {
     client_email: "E-Mail", client_address: "Adresse", client_see_in_parc: "In den Geräten anzeigen",
     client_default_title: "Kunde", no_clients_found: "Keine Kunden im Bestand gefunden.",
     whatsnew_title: "Neuigkeiten",
+    theme_light: "Hell", theme_dark: "Dunkel",
   },
   it: {
     nav_header: "Navigazione", nav_parc: "Parco", nav_alerts: "Avvisi", nav_map: "Mappa",
@@ -1005,6 +1077,7 @@ const TRANSLATIONS = {
     client_email: "Email", client_address: "Indirizzo", client_see_in_parc: "Vedi nel Parco",
     client_default_title: "Cliente", no_clients_found: "Nessun cliente trovato nel parco.",
     whatsnew_title: "Novità",
+    theme_light: "Chiaro", theme_dark: "Scuro",
   },
   es: {
     nav_header: "Navegación", nav_parc: "Parque", nav_alerts: "Alertas", nav_map: "Mapa",
@@ -1074,6 +1147,7 @@ const TRANSLATIONS = {
     client_email: "Email", client_address: "Dirección", client_see_in_parc: "Ver en el Parque",
     client_default_title: "Cliente", no_clients_found: "No se encontraron clientes en el parque.",
     whatsnew_title: "Novedades",
+    theme_light: "Claro", theme_dark: "Oscuro",
   },
   pt: {
     nav_header: "Navegação", nav_parc: "Parque", nav_alerts: "Alertas", nav_map: "Mapa",
@@ -1143,6 +1217,7 @@ const TRANSLATIONS = {
     client_email: "Email", client_address: "Morada", client_see_in_parc: "Ver no Parque",
     client_default_title: "Cliente", no_clients_found: "Nenhum cliente encontrado no parque.",
     whatsnew_title: "Novidades",
+    theme_light: "Claro", theme_dark: "Escuro",
   },
 };
 
@@ -1974,6 +2049,12 @@ function applyStaticTranslations() {
   document.getElementById("langBtnIt").classList.toggle("active", currentLang === "it");
   document.getElementById("langBtnEs").classList.toggle("active", currentLang === "es");
   document.getElementById("langBtnPt").classList.toggle("active", currentLang === "pt");
+  const themeBtnLightEl = document.getElementById("themeBtnLight");
+  themeBtnLightEl.title = t("theme_light");
+  themeBtnLightEl.setAttribute("aria-label", t("theme_light"));
+  const themeBtnDarkEl = document.getElementById("themeBtnDark");
+  themeBtnDarkEl.title = t("theme_dark");
+  themeBtnDarkEl.setAttribute("aria-label", t("theme_dark"));
 }
 
 function setLang(lang) {
@@ -1994,6 +2075,33 @@ document.getElementById("langBtnDe").addEventListener("click", () => setLang("de
 document.getElementById("langBtnIt").addEventListener("click", () => setLang("it"));
 document.getElementById("langBtnEs").addEventListener("click", () => setLang("es"));
 document.getElementById("langBtnPt").addEventListener("click", () => setLang("pt"));
+
+const THEME_KEY = "rgdash-theme";
+// Reflète l'attribut déjà posé par le petit script anti-flash du <head>
+// (lui-même déjà basé sur localStorage ou, à défaut, la préférence système).
+let currentTheme = document.documentElement.dataset.theme === "dark" ? "dark" : "light";
+
+function setTheme(theme) {
+  if (theme !== "light" && theme !== "dark") return;
+  currentTheme = theme;
+  document.documentElement.dataset.theme = theme;
+  try { localStorage.setItem(THEME_KEY, theme); } catch (e) { /* pas bloquant */ }
+  // Couleur de la barre d'adresse (Android/Chrome) assortie au thème — sans
+  // effet sur iOS, où cette teinte est gérée séparément par
+  // apple-mobile-web-app-status-bar-style (volontairement non touché ici,
+  // cf. historique des soucis de barre de statut iOS).
+  const metaThemeColor = document.querySelector('meta[name="theme-color"]');
+  if (metaThemeColor) metaThemeColor.setAttribute("content", theme === "dark" ? "#0b1220" : "#ffffff");
+  document.getElementById("themeBtnLight").classList.toggle("active", theme === "light");
+  document.getElementById("themeBtnDark").classList.toggle("active", theme === "dark");
+  // Les courbes (SVG construit en JS) lisent les couleurs du thème au moment
+  // du rendu plutôt que de les coder en dur — il suffit de les redessiner
+  // pour qu'elles suivent le nouveau thème, pas de logique supplémentaire ici.
+  if (currentPage === "parc" && !parcAgentView.hidden && currentAgentId != null) loadAgent(currentAgentId);
+}
+
+document.getElementById("themeBtnLight").addEventListener("click", () => setTheme("light"));
+document.getElementById("themeBtnDark").addEventListener("click", () => setTheme("dark"));
 
 mainMenuBtn.addEventListener("click", openDrawer);
 drawerOverlay.addEventListener("click", closeDrawer);
@@ -2743,11 +2851,15 @@ function buildLineChartSvg(interpreted, scale) {
     }
   }
 
+  // Lues au moment du rendu (pas codées en dur) pour que les courbes suivent
+  // le thème clair/sombre courant sans logique supplémentaire ici.
+  const gridColor = getComputedStyle(document.documentElement).getPropertyValue("--card-border").trim();
+  const axisTextColor = getComputedStyle(document.documentElement).getPropertyValue("--text-dim").trim();
   const gridLines = [0, 0.5, 1].map((f) => {
     const y = padT + f * (H - padT - padB);
     const val = max - f * (max - min);
-    return `<line x1="${padL}" y1="${y.toFixed(1)}" x2="${W - padR}" y2="${y.toFixed(1)}" stroke="#eaecf0" stroke-width="1" />
-      <text x="${(padL - 4).toFixed(1)}" y="${(y + 3).toFixed(1)}" text-anchor="end" font-size="9" fill="#475467">${formatValue(val, unit)}</text>`;
+    return `<line x1="${padL}" y1="${y.toFixed(1)}" x2="${W - padR}" y2="${y.toFixed(1)}" stroke="${gridColor}" stroke-width="1" />
+      <text x="${(padL - 4).toFixed(1)}" y="${(y + 3).toFixed(1)}" text-anchor="end" font-size="9" fill="${axisTextColor}">${formatValue(val, unit)}</text>`;
   }).join("");
 
   const legend = series.length > 1
@@ -2770,6 +2882,7 @@ function buildLineChartSvg(interpreted, scale) {
 // ⚠️ À tenir à jour à chaque nouvelle version livrée (garder aussi
 // releaseNotes.md synchronisé, à la racine du dossier fourni à l'utilisateur).
 const RELEASE_NOTES = [
+  { version: "0.88", text: "Ajout d'un mode sombre, accessible via deux nouvelles icônes (☀️/🌙) en bas du tiroir latéral, au-dessus des drapeaux de langue. Suit automatiquement les réglages du téléphone au premier lancement, puis le choix est mémorisé. Les courbes s'adaptent aussi au thème choisi." },
   { version: "0.87", text: "Ajout de l'italien, de l'espagnol et du portugais comme 4ᵉ, 5ᵉ et 6ᵉ langues de l'app (drapeaux 🇮🇹🇪🇸🇵🇹 dans le tiroir latéral, sur 2 lignes désormais). Toute l'interface est traduite dans ces 3 langues, y compris les titres d'alerte reformulés automatiquement (comme pour le français et l'allemand)." },
   { version: "0.86", text: "Les titres d'alerte reformulés automatiquement (v0.83/v0.84) sont maintenant aussi disponibles en allemand, avec les mêmes formulations qu'en français (ex. \"Disk full...\" → \"Festplatte voll...\", \"Disconnected\" → \"Getrennt\")." },
   { version: "0.85", text: "Ajout de l'allemand comme 3ᵉ langue de l'app (drapeau 🇩🇪 dans le tiroir latéral). Les 3 drapeaux FR/EN/DE sont aussi redessinés en plus petit et en style plat (aplats de couleur simples), au lieu des émojis drapeaux précédents." },
@@ -3402,6 +3515,7 @@ document.addEventListener("touchend", () => {
 });
 
 applyStaticTranslations();
+setTheme(currentTheme); // synchronise les boutons actifs + la couleur de barre d'adresse avec le thème déjà posé par le script anti-flash
 loadAlerts();
 router();
 
