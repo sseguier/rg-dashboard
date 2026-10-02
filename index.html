@@ -515,7 +515,7 @@
 <header>
   <div class="header-top">
     <button class="hamburger-btn" id="mainMenuBtn">☰</button>
-    <h1 id="homeLink"><img src="icons/icon-192.png" alt="" class="brand-icon"> RG System Suite <span class="app-version">v0.80</span></h1>
+    <h1 id="homeLink"><img src="icons/icon-192.png" alt="" class="brand-icon"> RG System Suite <span class="app-version">v0.82</span></h1>
     <div class="search-bar" id="searchBarWrap">
       <button type="button" class="search-toggle-btn" id="searchToggleBtn" title="Rechercher" aria-label="Rechercher">🔍</button>
       <div class="search-input-row" id="searchInputRow" hidden>
@@ -705,7 +705,7 @@ const TRANSLATIONS = {
     filter_devices_only: "Devices uniquement",
     stat_servers: "Serveur(s)", stat_workstations: "Poste(s)", stat_devices: "Device(s)",
     search_results_title: "Résultats de recherche", search_min_chars: "Tapez au moins 2 caractères pour rechercher",
-    searching: "Recherche…", no_agent_found: "Aucun agent trouvé", search_error: "Erreur de recherche : ",
+    searching: "Recherche…", no_agent_found: "Aucun résultat trouvé", search_error: "Erreur de recherche : ",
     f_hostname: "Nom d'hôte", f_domain: "Domaine", f_system: "Système", f_cpu: "CPU", f_memory: "Mémoire",
     f_disk: "Disque", f_manufacturer: "Fabricant", f_serial: "N° de série", f_private_ip: "IP privée",
     f_public_ip: "IP publique", f_last_user: "Dernier utilisateur", f_last_boot: "Dernier démarrage",
@@ -774,7 +774,7 @@ const TRANSLATIONS = {
     filter_devices_only: "Devices only",
     stat_servers: "Server(s)", stat_workstations: "Workstation(s)", stat_devices: "Device(s)",
     search_results_title: "Search results", search_min_chars: "Type at least 2 characters to search",
-    searching: "Searching…", no_agent_found: "No agent found", search_error: "Search error: ",
+    searching: "Searching…", no_agent_found: "No results found", search_error: "Search error: ",
     f_hostname: "Hostname", f_domain: "Domain", f_system: "System", f_cpu: "CPU", f_memory: "Memory",
     f_disk: "Disk", f_manufacturer: "Manufacturer", f_serial: "Serial number", f_private_ip: "Private IP",
     f_public_ip: "Public IP", f_last_user: "Last user", f_last_boot: "Last boot",
@@ -1099,6 +1099,60 @@ async function loadAllAgents() {
   return allAgentsPromise;
 }
 
+// /api/node/{node}/customers liste en un ou quelques appels (paginé par
+// curseur) tous les dossiers marqués "client" dans RG System — y compris
+// ceux sans aucun appareil dedans — avec en prime le vrai nom commercial de
+// l'entreprise (companyName), souvent différent du nom technique du dossier
+// dans l'arborescence (ex. dossier "CLIENT.1.RMM.Assist" pour l'entreprise
+// "TechNova Solutions"). Remplace un ancien parcours récursif de /children
+// (un appel par dossier) par ce seul endpoint dédié, plus rapide et qui
+// connaît en plus le nom commercial.
+let allCustomersCache = null;
+let allCustomersPromise = null;
+
+async function loadAllCustomers() {
+  if (allCustomersCache) return allCustomersCache;
+  if (!allCustomersPromise) {
+    allCustomersPromise = (async () => {
+      const result = [];
+      let cursor = null;
+      do {
+        const qs = new URLSearchParams({ maxResults: "1000" });
+        if (cursor) qs.set("cursor", cursor);
+        const page = await fetchJson(`/api/node/${ROOT_NODE_ID}/customers?${qs}`);
+        for (const c of page.data || []) {
+          result.push({
+            id: c.node?.id,
+            name: c.node?.name,
+            path: Array.isArray(c.node?.path) ? c.node.path : [],
+            companyName: c.companyName,
+            companyPhone: c.companyPhone,
+            companyEmail: c.companyEmail,
+            companyAddress: c.companyAddress,
+          });
+        }
+        cursor = page.cursors?.next || null;
+      } while (cursor);
+      allCustomersCache = result;
+      return result;
+    })().catch((err) => { allCustomersPromise = null; throw err; });
+  }
+  return allCustomersPromise;
+}
+
+function customerSearchRowHtml(c) {
+  const pathStr = c.path && c.path.length ? c.path.join(" / ") : "";
+  return `
+    <div class="row folder" data-node="${escapeHtml(c.id)}">
+      <span class="row-icon">🏢</span>
+      <div style="flex:1; min-width:0;">
+        <div class="row-name">${escapeHtml(c.companyName || c.name)}</div>
+        ${pathStr ? `<div class="path">📍 ${escapeHtml(pathStr)}</div>` : ""}
+      </div>
+      <span class="chev">›</span>
+    </div>`;
+}
+
 function agentHaystack(a) {
   const fields = [
     a.agentId, a.agentName, a.csName, a.dnsHostname, a.privateIp, a.publicIp, a.configuredIp,
@@ -1124,13 +1178,19 @@ async function renderParcSearch() {
   const requestId = ++parcSearchRequestId;
   parcSearchList.innerHTML = `<div class="loading">${t("searching")}</div>`;
   try {
-    const agents = await loadAllAgents();
+    const [agents, customers] = await Promise.all([
+      loadAllAgents(),
+      loadAllCustomers().catch(() => []), // la recherche de clients est un bonus : une erreur ici ne doit pas bloquer la recherche d'appareils
+    ]);
     if (requestId !== parcSearchRequestId) return; // une frappe plus récente a pris le dessus
-    const matches = agents
+    const customerMatches = customers
+      .filter((c) => (c.companyName && c.companyName.toLowerCase().includes(q)) || (c.name && c.name.toLowerCase().includes(q)))
+      .slice(0, 10);
+    const agentMatches = agents
       .filter((a) => !HIDDEN_AGENT_TYPES.has(a.agentType) && agentHaystack(a).includes(q))
       .slice(0, 30);
-    parcSearchList.innerHTML = matches.length
-      ? matches.map(agentSearchRowHtml).join("")
+    parcSearchList.innerHTML = customerMatches.length || agentMatches.length
+      ? customerMatches.map(customerSearchRowHtml).join("") + agentMatches.map(agentSearchRowHtml).join("")
       : `<div class="empty">${t("no_agent_found")}</div>`;
   } catch (err) {
     if (requestId !== parcSearchRequestId) return;
@@ -1207,10 +1267,18 @@ const mainDrawer = document.getElementById("mainDrawer");
 const drawerOverlay = document.getElementById("drawerOverlay");
 
 parcSearchList.addEventListener("click", (e) => {
+  // On quitte le mode recherche dans les deux cas : sinon le routeur
+  // re-affiche les résultats au lieu de la destination, puisque le champ
+  // contiendrait encore du texte.
+  const nodeRow = e.target.closest("[data-node]");
+  if (nodeRow) {
+    searchQuery = "";
+    searchInputEl.value = "";
+    location.hash = "#/parc/node/" + encodeURIComponent(nodeRow.dataset.node);
+    return;
+  }
   const agentRow = e.target.closest("[data-agent]");
   if (!agentRow) return;
-  // On quitte le mode recherche : sinon le routeur re-affiche les résultats
-  // au lieu de la fiche agent, puisque le champ contiendrait encore du texte.
   searchQuery = "";
   searchInputEl.value = "";
   location.hash = "#/parc/agent/" + encodeURIComponent(agentRow.dataset.agent);
@@ -2270,6 +2338,8 @@ function buildLineChartSvg(interpreted, scale) {
 // ⚠️ À tenir à jour à chaque nouvelle version livrée (garder aussi
 // releaseNotes.md synchronisé, à la racine du dossier fourni à l'utilisateur).
 const RELEASE_NOTES = [
+  { version: "0.82", text: "La recherche de dossiers (v0.81) connaît maintenant le vrai nom commercial du client (ex. \"TechNova Solutions\"), pas seulement le nom technique du dossier dans l'arborescence (ex. \"CLIENT.1.RMM.Assist\") — ces deux noms peuvent être très différents dans RG System. Affichage avec une icône 🏢. Recherche aussi plus rapide : un seul appel au lieu de parcourir tout l'arbre des dossiers." },
+  { version: "0.81", text: "La recherche (Parc) trouve maintenant aussi les dossiers par leur nom, y compris les dossiers vides sans aucun appareil dedans — jusqu'ici, un dossier sans appareil n'apparaissait nulle part. Un dossier trouvé s'affiche avec une icône 📁 et ouvre directement ce dossier au clic." },
   { version: "0.80", text: "Ajout de la traduction anglaise : deux drapeaux (🇫🇷/🇬🇧) tout en bas du menu latéral permettent de basculer toute l'application en anglais. La langue par défaut suit celle du téléphone et reste mémorisée ensuite. Sur la carte, les 3 liens de l'infobulle d'un client sont aussi renommés : \"voir ce client\" devient \"Parc\", \"voir les alertes\" devient \"Alertes\", et un nouveau lien \"Fiche client\" est ajouté." },
   { version: "0.79", text: "Nouveau menu \"Clients\" dans le tiroir latéral : liste de tous les clients par ordre alphabétique, et une fiche par client avec téléphone (appel direct), email (écrire directement) et adresse (ouverture dans Google Maps) cliquables." },
   { version: "0.78", text: "Ajout d'un bouton ↻ Actualiser à droite du titre \"Carte des clients\", en plus du tirer-vers-le-bas déjà existant." },
