@@ -515,7 +515,7 @@
 <header>
   <div class="header-top">
     <button class="hamburger-btn" id="mainMenuBtn">☰</button>
-    <h1 id="homeLink"><img src="icons/icon-192.png" alt="" class="brand-icon"> RG System Suite <span class="app-version">v0.82</span></h1>
+    <h1 id="homeLink"><img src="icons/icon-192.png" alt="" class="brand-icon"> RG System Suite <span class="app-version">v0.83</span></h1>
     <div class="search-bar" id="searchBarWrap">
       <button type="button" class="search-toggle-btn" id="searchToggleBtn" title="Rechercher" aria-label="Rechercher">🔍</button>
       <div class="search-input-row" id="searchInputRow" hidden>
@@ -836,6 +836,29 @@ function t(key, vars) {
   return str;
 }
 
+// Les titres d'alerte (inc.title) viennent de RG System déjà rédigés, et
+// toujours en anglais — confirmé en direct : même avec le compte réglé sur
+// "locale":"fr", l'API ne renvoie que ce texte anglais, sans aucun champ
+// alternatif. Le vrai dashboard RG System les affiche pourtant en français :
+// il doit les reconstruire lui-même à partir d'un gabarit fixe par type
+// d'alerte. On reproduit ici ce qu'on a pu observer sur de vraies alertes ;
+// toute formulation pas encore vue ici retombe sur le texte anglais original
+// (jamais d'erreur, jamais de texte à moitié traduit).
+function translateAlertTitle(title) {
+  if (currentLang !== "fr" || !title) return title;
+  const trDuration = (s) => (s === "less than a minute" ? "moins d'une minute" : s);
+  let m;
+  if ((m = title.match(/^Disk full - (.+) - ([\d.]+)%$/))) return `Disque plein - ${trDuration(m[1])} - ${m[2]}%`;
+  if ((m = title.match(/^Disk almost full - (.+) - ([\d.]+)%$/))) return `Disque presque plein - ${trDuration(m[1])} - ${m[2]}%`;
+  if ((m = title.match(/^Stopped service\(s\): (.+) - (.+)$/))) return `Service(s) arrêté(s) : ${m[1]} - ${trDuration(m[2])}`;
+  if ((m = title.match(/^Reboot: (.+)$/))) return `Redémarrage : ${m[1]}`;
+  if ((m = title.match(/^Custom script triggered: (.+)$/))) return `Script personnalisé déclenché : ${m[1]}`;
+  if (title === "Snmp value - Error") return "Valeur SNMP - Erreur";
+  if ((m = title.match(/^Snmp value - Update available - (.+)$/))) return `Valeur SNMP - Mise à jour disponible - ${trDuration(m[1])}`;
+  if ((m = title.match(/^Snmp value - (.+)$/))) return `Valeur SNMP - ${trDuration(m[1])}`;
+  return title;
+}
+
 async function fetchJson(path) {
   const res = await fetch(WORKER_URL + path, { cache: "no-store" });
   if (!res.ok) throw new Error("HTTP " + res.status);
@@ -1037,7 +1060,7 @@ function renderAlertList() {
       (inc.agentId ? `<a href="#/parc/agent/${encodeURIComponent(inc.agentId)}">${t("access_agent")}</a>` : "");
     return `
       <div class="incident ${crit} ${inc.acquitted ? "acquitted" : ""}" ${detail ? `data-uid="${uid}" style="cursor:pointer;"` : `style="cursor:default;"`}>
-        <div class="title">${escapeHtml(inc.title || t("incident_no_title"))}</div>
+        <div class="title">${escapeHtml(translateAlertTitle(inc.title) || t("incident_no_title"))}</div>
         <div class="meta">
           <span class="badge ${crit}">${label}</span>
           ${inc.isOnline === false ? `<span class="badge offline">${t("offline_badge")}</span>` : ""}
@@ -1797,7 +1820,7 @@ function renderAgentIncidents(agentId) {
         const uid = "agent-alert-" + index;
         return `
           <div class="incident ${crit}" ${detail ? `data-uid="${uid}" style="cursor:pointer;"` : `style="cursor:default;"`}>
-            <div class="title">${escapeHtml(inc.title || t("incident_no_title"))}</div>
+            <div class="title">${escapeHtml(translateAlertTitle(inc.title) || t("incident_no_title"))}</div>
             <div class="meta"><span class="badge ${crit}">${label}</span></div>
           </div>
           ${detail ? `<div class="chart-panel" id="panel-${uid}" hidden>${escapeHtml(detail).replace(/\n/g, "<br>")}</div>` : ""}`;
@@ -2338,6 +2361,7 @@ function buildLineChartSvg(interpreted, scale) {
 // ⚠️ À tenir à jour à chaque nouvelle version livrée (garder aussi
 // releaseNotes.md synchronisé, à la racine du dossier fourni à l'utilisateur).
 const RELEASE_NOTES = [
+  { version: "0.83", text: "En français, les titres d'alerte (ex. \"Disk full - 10 minutes - 35%\") sont maintenant reformulés en français (\"Disque plein - 10 minutes - 35%\") quand RG System envoie une formulation reconnue — RG System ne traduit jamais ce texte via l'API, même avec le compte réglé en français. Les formulations pas encore reconnues restent affichées telles quelles en anglais, sans erreur ; signalez-les si vous en croisez pour qu'elles soient ajoutées." },
   { version: "0.82", text: "La recherche de dossiers (v0.81) connaît maintenant le vrai nom commercial du client (ex. \"TechNova Solutions\"), pas seulement le nom technique du dossier dans l'arborescence (ex. \"CLIENT.1.RMM.Assist\") — ces deux noms peuvent être très différents dans RG System. Affichage avec une icône 🏢. Recherche aussi plus rapide : un seul appel au lieu de parcourir tout l'arbre des dossiers." },
   { version: "0.81", text: "La recherche (Parc) trouve maintenant aussi les dossiers par leur nom, y compris les dossiers vides sans aucun appareil dedans — jusqu'ici, un dossier sans appareil n'apparaissait nulle part. Un dossier trouvé s'affiche avec une icône 📁 et ouvre directement ce dossier au clic." },
   { version: "0.80", text: "Ajout de la traduction anglaise : deux drapeaux (🇫🇷/🇬🇧) tout en bas du menu latéral permettent de basculer toute l'application en anglais. La langue par défaut suit celle du téléphone et reste mémorisée ensuite. Sur la carte, les 3 liens de l'infobulle d'un client sont aussi renommés : \"voir ce client\" devient \"Parc\", \"voir les alertes\" devient \"Alertes\", et un nouveau lien \"Fiche client\" est ajouté." },
