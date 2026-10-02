@@ -462,7 +462,16 @@
     letter-spacing: 0.04em;
     color: var(--text-dim);
   }
-  .deploy-summary { margin: 0 16px 16px; font-size: 0.85rem; color: var(--text-dim); }
+  .deploy-summary {
+    display: block;
+    width: calc(100% - 32px);
+    margin: 0 16px 16px;
+    background: none;
+    border: none;
+    text-align: left;
+    font-size: 0.85rem;
+    color: var(--text-dim);
+  }
   .chart-item { margin: 0 16px 8px; }
   .chart-toggle {
     width: 100%;
@@ -565,7 +574,7 @@
 <header>
   <div class="header-top">
     <button class="hamburger-btn" id="mainMenuBtn">☰</button>
-    <h1 id="homeLink"><img src="icons/icon-192.png" alt="" class="brand-icon"> RG System Suite <span class="app-version">v0.91</span></h1>
+    <h1 id="homeLink"><img src="icons/icon-192.png" alt="" class="brand-icon"> RG System Suite <span class="app-version">v0.92</span></h1>
     <div class="search-bar" id="searchBarWrap">
       <button type="button" class="search-toggle-btn" id="searchToggleBtn" title="Rechercher" aria-label="Rechercher">🔍</button>
       <div class="search-input-row" id="searchInputRow" hidden>
@@ -870,6 +879,11 @@ const TRANSLATIONS = {
     theme_light: "Clair", theme_dark: "Sombre",
     deploy_title: "Déploiements", deploy_total: "{total} paquet(s)",
     deploy_watch: "{count} à surveiller", deploy_up_to_date: "à jour",
+    deploy_status_InstallPending: "Installation en attente", deploy_status_Installed: "Installé",
+    deploy_status_InstalledRequired: "Installé (requis)", deploy_status_OutOfPolicy: "Hors politique",
+    deploy_status_WrongVersion: "Mauvaise version", deploy_status_ErrorInstallRetrying: "Erreur (nouvelle tentative)",
+    deploy_status_ErrorInstallStopped: "Erreur (arrêtée)", deploy_status_UninstallPending: "Désinstallation en attente",
+    deploy_status_UpdateScheduledIfPresent: "Mise à jour planifiée",
   },
   en: {
     nav_header: "Navigation", nav_parc: "Fleet", nav_alerts: "Alerts", nav_map: "Map",
@@ -942,6 +956,11 @@ const TRANSLATIONS = {
     theme_light: "Light", theme_dark: "Dark",
     deploy_title: "Deployments", deploy_total: "{total} package(s)",
     deploy_watch: "{count} to watch", deploy_up_to_date: "up to date",
+    deploy_status_InstallPending: "Install pending", deploy_status_Installed: "Installed",
+    deploy_status_InstalledRequired: "Installed (required)", deploy_status_OutOfPolicy: "Out of policy",
+    deploy_status_WrongVersion: "Wrong version", deploy_status_ErrorInstallRetrying: "Error (retrying)",
+    deploy_status_ErrorInstallStopped: "Error (stopped)", deploy_status_UninstallPending: "Uninstall pending",
+    deploy_status_UpdateScheduledIfPresent: "Update scheduled",
   },
   de: {
     nav_header: "Navigation", nav_parc: "Geräte", nav_alerts: "Warnungen", nav_map: "Karte",
@@ -1014,6 +1033,11 @@ const TRANSLATIONS = {
     theme_light: "Hell", theme_dark: "Dunkel",
     deploy_title: "Bereitstellungen", deploy_total: "{total} Paket(e)",
     deploy_watch: "{count} zu prüfen", deploy_up_to_date: "aktuell",
+    deploy_status_InstallPending: "Installation ausstehend", deploy_status_Installed: "Installiert",
+    deploy_status_InstalledRequired: "Installiert (erforderlich)", deploy_status_OutOfPolicy: "Außerhalb der Richtlinie",
+    deploy_status_WrongVersion: "Falsche Version", deploy_status_ErrorInstallRetrying: "Fehler (erneuter Versuch)",
+    deploy_status_ErrorInstallStopped: "Fehler (gestoppt)", deploy_status_UninstallPending: "Deinstallation ausstehend",
+    deploy_status_UpdateScheduledIfPresent: "Update geplant",
   },
   it: {
     nav_header: "Navigazione", nav_parc: "Parco", nav_alerts: "Avvisi", nav_map: "Mappa",
@@ -1086,6 +1110,11 @@ const TRANSLATIONS = {
     theme_light: "Chiaro", theme_dark: "Scuro",
     deploy_title: "Distribuzioni", deploy_total: "{total} pacchetto/i",
     deploy_watch: "{count} da verificare", deploy_up_to_date: "aggiornato",
+    deploy_status_InstallPending: "Installazione in attesa", deploy_status_Installed: "Installato",
+    deploy_status_InstalledRequired: "Installato (richiesto)", deploy_status_OutOfPolicy: "Fuori policy",
+    deploy_status_WrongVersion: "Versione errata", deploy_status_ErrorInstallRetrying: "Errore (nuovo tentativo)",
+    deploy_status_ErrorInstallStopped: "Errore (interrotto)", deploy_status_UninstallPending: "Disinstallazione in attesa",
+    deploy_status_UpdateScheduledIfPresent: "Aggiornamento pianificato",
   },
   es: {
     nav_header: "Navegación", nav_parc: "Parque", nav_alerts: "Alertas", nav_map: "Mapa",
@@ -1158,6 +1187,11 @@ const TRANSLATIONS = {
     theme_light: "Claro", theme_dark: "Oscuro",
     deploy_title: "Implementaciones", deploy_total: "{total} paquete(s)",
     deploy_watch: "{count} por revisar", deploy_up_to_date: "al día",
+    deploy_status_InstallPending: "Instalación pendiente", deploy_status_Installed: "Instalado",
+    deploy_status_InstalledRequired: "Instalado (requerido)", deploy_status_OutOfPolicy: "Fuera de política",
+    deploy_status_WrongVersion: "Versión incorrecta", deploy_status_ErrorInstallRetrying: "Error (reintentando)",
+    deploy_status_ErrorInstallStopped: "Error (detenido)", deploy_status_UninstallPending: "Desinstalación pendiente",
+    deploy_status_UpdateScheduledIfPresent: "Actualización programada",
   },
   pt: {
     nav_header: "Navegação", nav_parc: "Parque", nav_alerts: "Alertas", nav_map: "Mapa",
@@ -1230,6 +1264,11 @@ const TRANSLATIONS = {
     theme_light: "Claro", theme_dark: "Escuro",
     deploy_title: "Implementações", deploy_total: "{total} pacote(s)",
     deploy_watch: "{count} a verificar", deploy_up_to_date: "atualizado",
+    deploy_status_InstallPending: "Instalação pendente", deploy_status_Installed: "Instalado",
+    deploy_status_InstalledRequired: "Instalado (necessário)", deploy_status_OutOfPolicy: "Fora da política",
+    deploy_status_WrongVersion: "Versão incorreta", deploy_status_ErrorInstallRetrying: "Erro (a repetir)",
+    deploy_status_ErrorInstallStopped: "Erro (parado)", deploy_status_UninstallPending: "Desinstalação pendente",
+    deploy_status_UpdateScheduledIfPresent: "Atualização agendada",
   },
 };
 
@@ -2588,14 +2627,31 @@ async function renderCustomScriptsSection(agentId) {
   }
 }
 
-// Résumé ultra-compact (une seule ligne) du module "Disquette" de RG System
-// (déploiement de logiciels tiers/correctifs) — volontairement PAS une liste
-// détaillée par paquet : /disquette/status renvoie pour chaque paquet un
-// `processResult.stdOut` qui peut faire plusieurs centaines de Ko (journal
-// d'installation Chocolatey ligne par ligne), bien trop volumineux à afficher
-// ou même à stocker dans le DOM pour chaque agent. /status/overview donne
-// directement les totaux par statut, en un seul appel léger.
+// Résumé compact du module "Disquette" de RG System (déploiement de
+// logiciels tiers/correctifs). La ligne de résumé vient de /status/overview
+// (un seul appel léger, totaux par statut) ; la liste détaillée par paquet
+// (/disquette/status) n'est chargée qu'au clic — jamais au chargement de la
+// fiche — car chaque paquet y porte un `processResult.stdOut` pouvant faire
+// plusieurs centaines de Ko (journal d'installation Chocolatey ligne par
+// ligne) : seuls les champs utiles (nom, version, statut, date) sont gardés,
+// ce journal n'est jamais affiché ni même conservé une fois la réponse lue.
 const DEPLOY_PROBLEM_STATUSES = ["OutOfPolicy", "WrongVersion", "ErrorInstallRetrying", "ErrorInstallStopped"];
+const DEPLOY_STATUS_CLASS = {
+  Installed: "success", InstalledRequired: "success",
+  OutOfPolicy: "medium", WrongVersion: "medium",
+  ErrorInstallRetrying: "critical", ErrorInstallStopped: "critical",
+  InstallPending: "low", UninstallPending: "low", UpdateScheduledIfPresent: "low",
+};
+const DEPLOY_KNOWN_STATUSES = new Set([
+  "InstallPending", "Installed", "InstalledRequired", "OutOfPolicy", "WrongVersion",
+  "ErrorInstallRetrying", "ErrorInstallStopped", "UninstallPending", "UpdateScheduledIfPresent",
+]);
+// Si RG System introduit un jour un nouveau statut pas encore dans la liste
+// ci-dessus, on affiche le code brut plutôt qu'une clé de traduction non
+// résolue (t() retombe sinon sur la clé elle-même, jamais sur une chaîne vide).
+function deployStatusLabel(status) {
+  return DEPLOY_KNOWN_STATUSES.has(status) ? t("deploy_status_" + status) : (status || "?");
+}
 
 async function renderDeploySummarySection(agentId) {
   try {
@@ -2605,9 +2661,41 @@ async function renderDeploySummarySection(agentId) {
     const byStatus = overview.packagesByStatus || {};
     const problemCount = DEPLOY_PROBLEM_STATUSES.reduce((sum, k) => sum + (byStatus[k] || 0), 0);
     const detail = problemCount > 0 ? t("deploy_watch", { count: problemCount }) : t("deploy_up_to_date");
-    return `<div class="chart-cat">${t("deploy_title")}</div><div class="deploy-summary">📦 ${t("deploy_total", { total })} · ${detail}</div>`;
+    return `<div class="chart-cat">${t("deploy_title")}</div>` +
+      `<button type="button" class="deploy-summary" data-toggle-deploy-list>📦 ${t("deploy_total", { total })} · ${detail} <span class="chev">›</span></button>` +
+      `<div class="list" id="agentDeployList" hidden></div>`;
   } catch (err) {
     return ""; // information secondaire : une erreur ici ne doit pas polluer la fiche agent
+  }
+}
+
+function deployRowHtml(pkg) {
+  const cls = DEPLOY_STATUS_CLASS[pkg.status] || "low";
+  return `
+    <div class="incident ${cls}" style="cursor:default;">
+      <div class="title">${escapeHtml(pkg.name || pkg.package || "?")}</div>
+      <div class="meta">
+        <span class="badge ${cls}">${escapeHtml(deployStatusLabel(pkg.status))}</span>
+        ${pkg.version ? `<span>${escapeHtml(pkg.version)}</span>` : ""}
+        <span>${formatDate(pkg.statusSince)}</span>
+      </div>
+    </div>`;
+}
+
+async function toggleDeployList() {
+  const list = document.getElementById("agentDeployList");
+  if (!list) return;
+  if (!list.hidden) { list.hidden = true; return; }
+  list.hidden = false;
+  if (list.dataset.loaded) return;
+  list.innerHTML = `<div class="loading">${t("loading")}</div>`;
+  try {
+    const data = await fetchJson(`/api/target/${encodeURIComponent(currentAgentId)}/disquette/status`);
+    const packages = (data.data || []).slice().sort((a, b) => new Date(b.statusSince) - new Date(a.statusSince));
+    list.innerHTML = packages.map(deployRowHtml).join("");
+    list.dataset.loaded = "1";
+  } catch (err) {
+    list.innerHTML = `<div class="error">${t("generic_error_prefix")}${escapeHtml(err.message)}</div>`;
   }
 }
 
@@ -2662,6 +2750,11 @@ async function loadAgent(agentId) {
 }
 
 agentBodyEl.addEventListener("click", (e) => {
+  const deployToggleBtn = e.target.closest("[data-toggle-deploy-list]");
+  if (deployToggleBtn) {
+    toggleDeployList();
+    return;
+  }
   const expandAllBtn = e.target.closest("[data-charts-toggle-all]");
   if (expandAllBtn) {
     const list = document.getElementById("agentChartsList");
@@ -2925,6 +3018,14 @@ function buildLineChartSvg(interpreted, scale) {
 // important pour tout traduire rétroactivement, décision explicite de
 // l'utilisateur. renderWhatsNew() gère les deux formats.
 const RELEASE_NOTES = [
+  { version: "0.92", text: {
+    fr: "La ligne \"Déploiements\" (v0.91) est maintenant cliquable : elle déplie la liste complète des paquets avec leur nom, version, statut et date, repliée par défaut pour ne pas surcharger la fiche agent. La liste n'est chargée qu'au premier clic, jamais automatiquement.",
+    en: "The \"Deployments\" line (v0.91) is now clickable: it expands the full package list with name, version, status and date, collapsed by default to avoid cluttering the agent sheet. The list is only loaded on first click, never automatically.",
+    de: "Die Zeile \"Bereitstellungen\" (v0.91) ist jetzt anklickbar: Sie klappt die vollständige Paketliste mit Name, Version, Status und Datum auf, standardmäßig eingeklappt, um die Agentenkarte nicht zu überladen. Die Liste wird erst beim ersten Klick geladen, nie automatisch.",
+    it: "La riga \"Distribuzioni\" (v0.91) è ora cliccabile: espande l'elenco completo dei pacchetti con nome, versione, stato e data, chiuso per impostazione predefinita per non sovraccaricare la scheda dell'agente. L'elenco viene caricato solo al primo clic, mai automaticamente.",
+    es: "La línea \"Implementaciones\" (v0.91) ahora es clicable: despliega la lista completa de paquetes con nombre, versión, estado y fecha, contraída por defecto para no sobrecargar la ficha del agente. La lista solo se carga al primer clic, nunca automáticamente.",
+    pt: "A linha \"Implementações\" (v0.91) agora é clicável: expande a lista completa de pacotes com nome, versão, estado e data, recolhida por predefinição para não sobrecarregar a ficha do agente. A lista só é carregada no primeiro clique, nunca automaticamente.",
+  } },
   { version: "0.91", text: {
     fr: "Nouvelle ligne \"Déploiements\" sur la fiche des agents Serveur/Poste, juste après Sauvegarde : un résumé compact (ex. \"10 paquet(s) · 4 à surveiller\") du module de déploiement de logiciels tiers de RG System. Volontairement une seule ligne, sans détail par paquet, pour ne pas surcharger la fiche agent.",
     en: "New \"Deployments\" line on Server/Workstation agent sheets, right after Backup: a compact summary (e.g. \"10 package(s) · 4 to watch\") of RG System's third-party software deployment module. Deliberately a single line, with no per-package detail, to avoid cluttering the agent sheet.",
