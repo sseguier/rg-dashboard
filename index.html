@@ -515,7 +515,7 @@
 <header>
   <div class="header-top">
     <button class="hamburger-btn" id="mainMenuBtn">☰</button>
-    <h1 id="homeLink"><img src="icons/icon-192.png" alt="" class="brand-icon"> RG System Suite <span class="app-version">v0.83</span></h1>
+    <h1 id="homeLink"><img src="icons/icon-192.png" alt="" class="brand-icon"> RG System Suite <span class="app-version">v0.84</span></h1>
     <div class="search-bar" id="searchBarWrap">
       <button type="button" class="search-toggle-btn" id="searchToggleBtn" title="Rechercher" aria-label="Rechercher">🔍</button>
       <div class="search-input-row" id="searchInputRow" hidden>
@@ -856,6 +856,7 @@ function translateAlertTitle(title) {
   if (title === "Snmp value - Error") return "Valeur SNMP - Erreur";
   if ((m = title.match(/^Snmp value - Update available - (.+)$/))) return `Valeur SNMP - Mise à jour disponible - ${trDuration(m[1])}`;
   if ((m = title.match(/^Snmp value - (.+)$/))) return `Valeur SNMP - ${trDuration(m[1])}`;
+  if (title.toLowerCase() === "disconnected") return "Déconnecté";
   return title;
 }
 
@@ -2361,6 +2362,7 @@ function buildLineChartSvg(interpreted, scale) {
 // ⚠️ À tenir à jour à chaque nouvelle version livrée (garder aussi
 // releaseNotes.md synchronisé, à la racine du dossier fourni à l'utilisateur).
 const RELEASE_NOTES = [
+  { version: "0.84", text: "Ajout de la traduction du titre d'alerte \"Disconnected\" → \"Déconnecté\"." },
   { version: "0.83", text: "En français, les titres d'alerte (ex. \"Disk full - 10 minutes - 35%\") sont maintenant reformulés en français (\"Disque plein - 10 minutes - 35%\") quand RG System envoie une formulation reconnue — RG System ne traduit jamais ce texte via l'API, même avec le compte réglé en français. Les formulations pas encore reconnues restent affichées telles quelles en anglais, sans erreur ; signalez-les si vous en croisez pour qu'elles soient ajoutées." },
   { version: "0.82", text: "La recherche de dossiers (v0.81) connaît maintenant le vrai nom commercial du client (ex. \"TechNova Solutions\"), pas seulement le nom technique du dossier dans l'arborescence (ex. \"CLIENT.1.RMM.Assist\") — ces deux noms peuvent être très différents dans RG System. Affichage avec une icône 🏢. Recherche aussi plus rapide : un seul appel au lieu de parcourir tout l'arbre des dossiers." },
   { version: "0.81", text: "La recherche (Parc) trouve maintenant aussi les dossiers par leur nom, y compris les dossiers vides sans aucun appareil dedans — jusqu'ici, un dossier sans appareil n'apparaissait nulle part. Un dossier trouvé s'affiche avec une icône 📁 et ouvre directement ce dossier au clic." },
