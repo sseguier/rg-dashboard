@@ -462,6 +462,7 @@
     letter-spacing: 0.04em;
     color: var(--text-dim);
   }
+  .deploy-summary { margin: 0 16px 16px; font-size: 0.85rem; color: var(--text-dim); }
   .chart-item { margin: 0 16px 8px; }
   .chart-toggle {
     width: 100%;
@@ -564,7 +565,7 @@
 <header>
   <div class="header-top">
     <button class="hamburger-btn" id="mainMenuBtn">☰</button>
-    <h1 id="homeLink"><img src="icons/icon-192.png" alt="" class="brand-icon"> RG System Suite <span class="app-version">v0.90</span></h1>
+    <h1 id="homeLink"><img src="icons/icon-192.png" alt="" class="brand-icon"> RG System Suite <span class="app-version">v0.91</span></h1>
     <div class="search-bar" id="searchBarWrap">
       <button type="button" class="search-toggle-btn" id="searchToggleBtn" title="Rechercher" aria-label="Rechercher">🔍</button>
       <div class="search-input-row" id="searchInputRow" hidden>
@@ -867,6 +868,8 @@ const TRANSLATIONS = {
     client_default_title: "Client", no_clients_found: "Aucun client trouvé dans le parc.",
     whatsnew_title: "Nouveautés",
     theme_light: "Clair", theme_dark: "Sombre",
+    deploy_title: "Déploiements", deploy_total: "{total} paquet(s)",
+    deploy_watch: "{count} à surveiller", deploy_up_to_date: "à jour",
   },
   en: {
     nav_header: "Navigation", nav_parc: "Fleet", nav_alerts: "Alerts", nav_map: "Map",
@@ -937,6 +940,8 @@ const TRANSLATIONS = {
     client_default_title: "Client", no_clients_found: "No clients found in the fleet.",
     whatsnew_title: "What's new",
     theme_light: "Light", theme_dark: "Dark",
+    deploy_title: "Deployments", deploy_total: "{total} package(s)",
+    deploy_watch: "{count} to watch", deploy_up_to_date: "up to date",
   },
   de: {
     nav_header: "Navigation", nav_parc: "Geräte", nav_alerts: "Warnungen", nav_map: "Karte",
@@ -1007,6 +1012,8 @@ const TRANSLATIONS = {
     client_default_title: "Kunde", no_clients_found: "Keine Kunden im Bestand gefunden.",
     whatsnew_title: "Neuigkeiten",
     theme_light: "Hell", theme_dark: "Dunkel",
+    deploy_title: "Bereitstellungen", deploy_total: "{total} Paket(e)",
+    deploy_watch: "{count} zu prüfen", deploy_up_to_date: "aktuell",
   },
   it: {
     nav_header: "Navigazione", nav_parc: "Parco", nav_alerts: "Avvisi", nav_map: "Mappa",
@@ -1077,6 +1084,8 @@ const TRANSLATIONS = {
     client_default_title: "Cliente", no_clients_found: "Nessun cliente trovato nel parco.",
     whatsnew_title: "Novità",
     theme_light: "Chiaro", theme_dark: "Scuro",
+    deploy_title: "Distribuzioni", deploy_total: "{total} pacchetto/i",
+    deploy_watch: "{count} da verificare", deploy_up_to_date: "aggiornato",
   },
   es: {
     nav_header: "Navegación", nav_parc: "Parque", nav_alerts: "Alertas", nav_map: "Mapa",
@@ -1147,6 +1156,8 @@ const TRANSLATIONS = {
     client_default_title: "Cliente", no_clients_found: "No se encontraron clientes en el parque.",
     whatsnew_title: "Novedades",
     theme_light: "Claro", theme_dark: "Oscuro",
+    deploy_title: "Implementaciones", deploy_total: "{total} paquete(s)",
+    deploy_watch: "{count} por revisar", deploy_up_to_date: "al día",
   },
   pt: {
     nav_header: "Navegação", nav_parc: "Parque", nav_alerts: "Alertas", nav_map: "Mapa",
@@ -1217,6 +1228,8 @@ const TRANSLATIONS = {
     client_default_title: "Cliente", no_clients_found: "Nenhum cliente encontrado no parque.",
     whatsnew_title: "Novidades",
     theme_light: "Claro", theme_dark: "Escuro",
+    deploy_title: "Implementações", deploy_total: "{total} pacote(s)",
+    deploy_watch: "{count} a verificar", deploy_up_to_date: "atualizado",
   },
 };
 
@@ -2575,6 +2588,29 @@ async function renderCustomScriptsSection(agentId) {
   }
 }
 
+// Résumé ultra-compact (une seule ligne) du module "Disquette" de RG System
+// (déploiement de logiciels tiers/correctifs) — volontairement PAS une liste
+// détaillée par paquet : /disquette/status renvoie pour chaque paquet un
+// `processResult.stdOut` qui peut faire plusieurs centaines de Ko (journal
+// d'installation Chocolatey ligne par ligne), bien trop volumineux à afficher
+// ou même à stocker dans le DOM pour chaque agent. /status/overview donne
+// directement les totaux par statut, en un seul appel léger.
+const DEPLOY_PROBLEM_STATUSES = ["OutOfPolicy", "WrongVersion", "ErrorInstallRetrying", "ErrorInstallStopped"];
+
+async function renderDeploySummarySection(agentId) {
+  try {
+    const overview = await fetchJson(`/api/target/${encodeURIComponent(agentId)}/disquette/status/overview`);
+    const total = overview.total || 0;
+    if (total === 0) return ""; // aucun déploiement configuré sur cet agent : section masquée
+    const byStatus = overview.packagesByStatus || {};
+    const problemCount = DEPLOY_PROBLEM_STATUSES.reduce((sum, k) => sum + (byStatus[k] || 0), 0);
+    const detail = problemCount > 0 ? t("deploy_watch", { count: problemCount }) : t("deploy_up_to_date");
+    return `<div class="chart-cat">${t("deploy_title")}</div><div class="deploy-summary">📦 ${t("deploy_total", { total })} · ${detail}</div>`;
+  } catch (err) {
+    return ""; // information secondaire : une erreur ici ne doit pas polluer la fiche agent
+  }
+}
+
 let currentAgentId = null;
 
 async function loadAgent(agentId) {
@@ -2611,11 +2647,14 @@ async function loadAgent(agentId) {
     const customScriptsPromise = ["S", "W"].includes(ped.type)
       ? renderCustomScriptsSection(agentId)
       : Promise.resolve("");
-    const [backupResult, eventsHtml, customScriptsHtml] = await Promise.all([backupPromise, eventsPromise, customScriptsPromise]);
+    const deployPromise = ["S", "W"].includes(ped.type)
+      ? renderDeploySummarySection(agentId)
+      : Promise.resolve("");
+    const [backupResult, eventsHtml, customScriptsHtml, deployHtml] = await Promise.all([backupPromise, eventsPromise, customScriptsPromise, deployPromise]);
     const { html: backupHtml, orgName } = backupResult;
 
     const incidentsHtml = showSupervisionBlocks ? renderAgentIncidents(agentId) : "";
-    agentBodyEl.innerHTML = renderAgentPedigree(agentId, ped, orgName) + backupHtml + chartsHtml + incidentsHtml + eventsHtml + customScriptsHtml;
+    agentBodyEl.innerHTML = renderAgentPedigree(agentId, ped, orgName) + backupHtml + deployHtml + chartsHtml + incidentsHtml + eventsHtml + customScriptsHtml;
   } catch (err) {
     agentBodyEl.innerHTML = '<div class="error">' + t("error_prefix") + escapeHtml(err.message) + '</div>';
     console.error(err);
@@ -2886,6 +2925,14 @@ function buildLineChartSvg(interpreted, scale) {
 // important pour tout traduire rétroactivement, décision explicite de
 // l'utilisateur. renderWhatsNew() gère les deux formats.
 const RELEASE_NOTES = [
+  { version: "0.91", text: {
+    fr: "Nouvelle ligne \"Déploiements\" sur la fiche des agents Serveur/Poste, juste après Sauvegarde : un résumé compact (ex. \"10 paquet(s) · 4 à surveiller\") du module de déploiement de logiciels tiers de RG System. Volontairement une seule ligne, sans détail par paquet, pour ne pas surcharger la fiche agent.",
+    en: "New \"Deployments\" line on Server/Workstation agent sheets, right after Backup: a compact summary (e.g. \"10 package(s) · 4 to watch\") of RG System's third-party software deployment module. Deliberately a single line, with no per-package detail, to avoid cluttering the agent sheet.",
+    de: "Neue Zeile \"Bereitstellungen\" auf der Karte von Server-/Arbeitsstations-Agenten, direkt nach der Sicherung: eine kompakte Zusammenfassung (z. B. \"10 Paket(e) · 4 zu prüfen\") des Moduls für die Bereitstellung von Drittanbieter-Software von RG System. Bewusst nur eine Zeile, ohne Detail pro Paket, um die Agentenkarte nicht zu überladen.",
+    it: "Nuova riga \"Distribuzioni\" sulla scheda degli agenti Server/Postazione, subito dopo Backup: un riepilogo compatto (es. \"10 pacchetto/i · 4 da verificare\") del modulo di distribuzione software di terze parti di RG System. Volutamente una sola riga, senza dettaglio per pacchetto, per non sovraccaricare la scheda dell'agente.",
+    es: "Nueva línea \"Implementaciones\" en la ficha de los agentes Servidor/Estación de trabajo, justo después de Copia de seguridad: un resumen compacto (ej. \"10 paquete(s) · 4 por revisar\") del módulo de implementación de software de terceros de RG System. Deliberadamente una sola línea, sin detalle por paquete, para no sobrecargar la ficha del agente.",
+    pt: "Nova linha \"Implementações\" na ficha dos agentes Servidor/Estação de trabalho, logo a seguir à Cópia de segurança: um resumo compacto (ex.: \"10 pacote(s) · 4 a verificar\") do módulo de implementação de software de terceiros do RG System. Deliberadamente apenas uma linha, sem detalhe por pacote, para não sobrecarregar a ficha do agente.",
+  } },
   { version: "0.90", text: {
     fr: "Les notes de version de cette page (les 5 dernières uniquement) sont maintenant traduites dans les 6 langues de l'app, au lieu de rester toujours en français. L'historique plus ancien reste en français, trop volumineux à traduire rétroactivement.",
     en: "The release notes on this page (the 5 most recent only) are now translated into the app's 6 languages, instead of always staying in French. Older history remains in French, too large to translate retroactively.",
