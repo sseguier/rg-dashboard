@@ -360,12 +360,28 @@
     overflow-y: auto;
   }
   .drawer-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
     padding: 0 16px 12px;
     font-weight: 600;
     font-size: 0.9rem;
     border-bottom: 1px solid var(--card-border);
     margin-bottom: 8px;
   }
+  .drawer-theme-row-mini { display: flex; gap: 2px; }
+  .drawer-theme-btn-mini {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: none;
+    border: none;
+    padding: 5px;
+    color: var(--text-dim);
+    opacity: 0.5;
+  }
+  .drawer-theme-btn-mini svg { display: block; width: 13px; height: 13px; }
+  .drawer-theme-btn-mini.active { color: var(--accent); opacity: 1; }
   .drawer-item {
     display: block;
     width: 100%;
@@ -386,32 +402,13 @@
     margin-left: 4px;
     vertical-align: middle;
   }
-  .drawer-theme-row {
-    display: flex;
-    gap: 6px;
-    padding: 16px 16px 8px;
-    margin-top: auto;
-    border-top: 1px solid var(--card-border);
-  }
-  .drawer-theme-btn {
-    flex: 1;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: var(--card);
-    border: 1px solid var(--card-border);
-    border-radius: 6px;
-    padding: 7px;
-    color: var(--text-dim);
-    opacity: 0.6;
-  }
-  .drawer-theme-btn svg { display: block; width: 16px; height: 16px; }
-  .drawer-theme-btn.active { border-color: var(--accent); color: var(--accent); opacity: 1; }
   .drawer-lang-row {
     display: flex;
     flex-wrap: wrap;
     gap: 6px;
-    padding: 0 16px 16px;
+    padding: 16px;
+    margin-top: auto;
+    border-top: 1px solid var(--card-border);
   }
   .drawer-lang-btn {
     flex: 1 1 26%;
@@ -567,7 +564,7 @@
 <header>
   <div class="header-top">
     <button class="hamburger-btn" id="mainMenuBtn">☰</button>
-    <h1 id="homeLink"><img src="icons/icon-192.png" alt="" class="brand-icon"> RG System Suite <span class="app-version">v0.88</span></h1>
+    <h1 id="homeLink"><img src="icons/icon-192.png" alt="" class="brand-icon"> RG System Suite <span class="app-version">v0.89</span></h1>
     <div class="search-bar" id="searchBarWrap">
       <button type="button" class="search-toggle-btn" id="searchToggleBtn" title="Rechercher" aria-label="Rechercher">🔍</button>
       <div class="search-input-row" id="searchInputRow" hidden>
@@ -699,32 +696,34 @@
 
 <div class="drawer-overlay" id="drawerOverlay" hidden></div>
 <div class="drawer" id="mainDrawer" hidden>
-  <div class="drawer-header" id="drawerNavHeader">Navigation</div>
+  <div class="drawer-header">
+    <span id="drawerNavHeader">Navigation</span>
+    <div class="drawer-theme-row-mini">
+      <button type="button" class="drawer-theme-btn-mini" id="themeBtnLight" title="Clair" aria-label="Clair">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+          <circle cx="12" cy="12" r="4" fill="currentColor" stroke="none"/>
+          <line x1="12" y1="1" x2="12" y2="3"/>
+          <line x1="12" y1="21" x2="12" y2="23"/>
+          <line x1="4.2" y1="4.2" x2="5.6" y2="5.6"/>
+          <line x1="18.4" y1="18.4" x2="19.8" y2="19.8"/>
+          <line x1="1" y1="12" x2="3" y2="12"/>
+          <line x1="21" y1="12" x2="23" y2="12"/>
+          <line x1="4.2" y1="19.8" x2="5.6" y2="18.4"/>
+          <line x1="18.4" y1="5.6" x2="19.8" y2="4.2"/>
+        </svg>
+      </button>
+      <button type="button" class="drawer-theme-btn-mini" id="themeBtnDark" title="Sombre" aria-label="Sombre">
+        <svg viewBox="0 0 24 24" fill="currentColor">
+          <path d="M20 14.5A8.5 8.5 0 0 1 9.5 4 8.5 8.5 0 1 0 20 14.5z"/>
+        </svg>
+      </button>
+    </div>
+  </div>
   <button type="button" class="drawer-item" data-nav="parc">🗂️ <span data-nav-label="parc">Parc</span></button>
   <button type="button" class="drawer-item" data-nav="alerts">🔔 <span data-nav-label="alerts">Alertes</span></button>
   <button type="button" class="drawer-item" data-nav="map">🗺️ <span data-nav-label="map">Carte</span></button>
   <button type="button" class="drawer-item" data-nav="clients">🏢 <span data-nav-label="clients">Clients</span></button>
   <button type="button" class="drawer-item" data-nav="whatsnew">🆕 <span data-nav-label="whatsnew">Nouveautés</span> <span class="update-dot" id="whatsNewDot" hidden></span></button>
-  <div class="drawer-theme-row">
-    <button type="button" class="drawer-theme-btn" id="themeBtnLight" title="Clair" aria-label="Clair">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-        <circle cx="12" cy="12" r="4" fill="currentColor" stroke="none"/>
-        <line x1="12" y1="1" x2="12" y2="3"/>
-        <line x1="12" y1="21" x2="12" y2="23"/>
-        <line x1="4.2" y1="4.2" x2="5.6" y2="5.6"/>
-        <line x1="18.4" y1="18.4" x2="19.8" y2="19.8"/>
-        <line x1="1" y1="12" x2="3" y2="12"/>
-        <line x1="21" y1="12" x2="23" y2="12"/>
-        <line x1="4.2" y1="19.8" x2="5.6" y2="18.4"/>
-        <line x1="18.4" y1="5.6" x2="19.8" y2="4.2"/>
-      </svg>
-    </button>
-    <button type="button" class="drawer-theme-btn" id="themeBtnDark" title="Sombre" aria-label="Sombre">
-      <svg viewBox="0 0 24 24" fill="currentColor">
-        <path d="M20 14.5A8.5 8.5 0 0 1 9.5 4 8.5 8.5 0 1 0 20 14.5z"/>
-      </svg>
-    </button>
-  </div>
   <div class="drawer-lang-row">
     <button type="button" class="drawer-lang-btn" id="langBtnFr" title="Français" aria-label="Français">
       <svg viewBox="0 0 30 20" xmlns="http://www.w3.org/2000/svg">
@@ -2882,6 +2881,7 @@ function buildLineChartSvg(interpreted, scale) {
 // ⚠️ À tenir à jour à chaque nouvelle version livrée (garder aussi
 // releaseNotes.md synchronisé, à la racine du dossier fourni à l'utilisateur).
 const RELEASE_NOTES = [
+  { version: "0.89", text: "Les icônes clair/sombre sont déplacées en haut du tiroir latéral, juste à côté du titre \"Navigation\", et réduites — les drapeaux de langue restent en bas." },
   { version: "0.88", text: "Ajout d'un mode sombre, accessible via deux nouvelles icônes (☀️/🌙) en bas du tiroir latéral, au-dessus des drapeaux de langue. Suit automatiquement les réglages du téléphone au premier lancement, puis le choix est mémorisé. Les courbes s'adaptent aussi au thème choisi." },
   { version: "0.87", text: "Ajout de l'italien, de l'espagnol et du portugais comme 4ᵉ, 5ᵉ et 6ᵉ langues de l'app (drapeaux 🇮🇹🇪🇸🇵🇹 dans le tiroir latéral, sur 2 lignes désormais). Toute l'interface est traduite dans ces 3 langues, y compris les titres d'alerte reformulés automatiquement (comme pour le français et l'allemand)." },
   { version: "0.86", text: "Les titres d'alerte reformulés automatiquement (v0.83/v0.84) sont maintenant aussi disponibles en allemand, avec les mêmes formulations qu'en français (ex. \"Disk full...\" → \"Festplatte voll...\", \"Disconnected\" → \"Getrennt\")." },
