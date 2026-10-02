@@ -462,10 +462,10 @@
     letter-spacing: 0.04em;
     color: var(--text-dim);
   }
-  .deploy-summary {
+  .section-toggle {
     display: block;
     width: calc(100% - 32px);
-    margin: 0 16px 16px;
+    margin: 0 16px 10px;
     background: none;
     border: none;
     text-align: left;
@@ -574,7 +574,7 @@
 <header>
   <div class="header-top">
     <button class="hamburger-btn" id="mainMenuBtn">☰</button>
-    <h1 id="homeLink"><img src="icons/icon-192.png" alt="" class="brand-icon"> RG System Suite <span class="app-version">v0.92</span></h1>
+    <h1 id="homeLink"><img src="icons/icon-192.png" alt="" class="brand-icon"> RG System Suite <span class="app-version">v0.93</span></h1>
     <div class="search-bar" id="searchBarWrap">
       <button type="button" class="search-toggle-btn" id="searchToggleBtn" title="Rechercher" aria-label="Rechercher">🔍</button>
       <div class="search-input-row" id="searchInputRow" hidden>
@@ -878,7 +878,9 @@ const TRANSLATIONS = {
     whatsnew_title: "Nouveautés",
     theme_light: "Clair", theme_dark: "Sombre",
     deploy_title: "Déploiements", deploy_total: "{total} paquet(s)",
-    deploy_watch: "{count} à surveiller", deploy_up_to_date: "à jour",
+    count_watch: "{count} à surveiller", all_ok: "à jour",
+    backup_count: "{total} sauvegarde(s)", alert_count: "{total} alerte(s)",
+    event_count: "{total} événement(s)", script_count: "{total} script(s)", chart_count: "{total} courbe(s)",
     deploy_status_InstallPending: "Installation en attente", deploy_status_Installed: "Installé",
     deploy_status_InstalledRequired: "Installé (requis)", deploy_status_OutOfPolicy: "Hors politique",
     deploy_status_WrongVersion: "Mauvaise version", deploy_status_ErrorInstallRetrying: "Erreur (nouvelle tentative)",
@@ -955,7 +957,9 @@ const TRANSLATIONS = {
     whatsnew_title: "What's new",
     theme_light: "Light", theme_dark: "Dark",
     deploy_title: "Deployments", deploy_total: "{total} package(s)",
-    deploy_watch: "{count} to watch", deploy_up_to_date: "up to date",
+    count_watch: "{count} to watch", all_ok: "up to date",
+    backup_count: "{total} backup(s)", alert_count: "{total} alert(s)",
+    event_count: "{total} event(s)", script_count: "{total} script(s)", chart_count: "{total} chart(s)",
     deploy_status_InstallPending: "Install pending", deploy_status_Installed: "Installed",
     deploy_status_InstalledRequired: "Installed (required)", deploy_status_OutOfPolicy: "Out of policy",
     deploy_status_WrongVersion: "Wrong version", deploy_status_ErrorInstallRetrying: "Error (retrying)",
@@ -1032,7 +1036,9 @@ const TRANSLATIONS = {
     whatsnew_title: "Neuigkeiten",
     theme_light: "Hell", theme_dark: "Dunkel",
     deploy_title: "Bereitstellungen", deploy_total: "{total} Paket(e)",
-    deploy_watch: "{count} zu prüfen", deploy_up_to_date: "aktuell",
+    count_watch: "{count} zu prüfen", all_ok: "aktuell",
+    backup_count: "{total} Sicherung(en)", alert_count: "{total} Warnung(en)",
+    event_count: "{total} Ereignis(se)", script_count: "{total} Skript(e)", chart_count: "{total} Diagramm(e)",
     deploy_status_InstallPending: "Installation ausstehend", deploy_status_Installed: "Installiert",
     deploy_status_InstalledRequired: "Installiert (erforderlich)", deploy_status_OutOfPolicy: "Außerhalb der Richtlinie",
     deploy_status_WrongVersion: "Falsche Version", deploy_status_ErrorInstallRetrying: "Fehler (erneuter Versuch)",
@@ -1109,7 +1115,9 @@ const TRANSLATIONS = {
     whatsnew_title: "Novità",
     theme_light: "Chiaro", theme_dark: "Scuro",
     deploy_title: "Distribuzioni", deploy_total: "{total} pacchetto/i",
-    deploy_watch: "{count} da verificare", deploy_up_to_date: "aggiornato",
+    count_watch: "{count} da verificare", all_ok: "aggiornato",
+    backup_count: "{total} backup", alert_count: "{total} avviso/i",
+    event_count: "{total} evento/i", script_count: "{total} script", chart_count: "{total} grafico/i",
     deploy_status_InstallPending: "Installazione in attesa", deploy_status_Installed: "Installato",
     deploy_status_InstalledRequired: "Installato (richiesto)", deploy_status_OutOfPolicy: "Fuori policy",
     deploy_status_WrongVersion: "Versione errata", deploy_status_ErrorInstallRetrying: "Errore (nuovo tentativo)",
@@ -1186,7 +1194,9 @@ const TRANSLATIONS = {
     whatsnew_title: "Novedades",
     theme_light: "Claro", theme_dark: "Oscuro",
     deploy_title: "Implementaciones", deploy_total: "{total} paquete(s)",
-    deploy_watch: "{count} por revisar", deploy_up_to_date: "al día",
+    count_watch: "{count} por revisar", all_ok: "al día",
+    backup_count: "{total} copia(s) de seguridad", alert_count: "{total} alerta(s)",
+    event_count: "{total} evento(s)", script_count: "{total} script(s)", chart_count: "{total} gráfico(s)",
     deploy_status_InstallPending: "Instalación pendiente", deploy_status_Installed: "Instalado",
     deploy_status_InstalledRequired: "Instalado (requerido)", deploy_status_OutOfPolicy: "Fuera de política",
     deploy_status_WrongVersion: "Versión incorrecta", deploy_status_ErrorInstallRetrying: "Error (reintentando)",
@@ -1263,7 +1273,9 @@ const TRANSLATIONS = {
     whatsnew_title: "Novidades",
     theme_light: "Claro", theme_dark: "Escuro",
     deploy_title: "Implementações", deploy_total: "{total} pacote(s)",
-    deploy_watch: "{count} a verificar", deploy_up_to_date: "atualizado",
+    count_watch: "{count} a verificar", all_ok: "atualizado",
+    backup_count: "{total} cópia(s) de segurança", alert_count: "{total} alerta(s)",
+    event_count: "{total} evento(s)", script_count: "{total} script(s)", chart_count: "{total} gráfico(s)",
     deploy_status_InstallPending: "Instalação pendente", deploy_status_Installed: "Instalado",
     deploy_status_InstalledRequired: "Instalado (necessário)", deploy_status_OutOfPolicy: "Fora da política",
     deploy_status_WrongVersion: "Versão incorreta", deploy_status_ErrorInstallRetrying: "Erro (a repetir)",
@@ -2363,6 +2375,12 @@ function incidentCriticality(inc) {
 }
 
 let agentAlertFilter = null; // null (Toutes) | "critical" | "medium" | "low"
+// Persistent au-delà d'un seul rendu (contrairement à l'attribut `hidden` du
+// DOM) : un changement de filtre remplace l'outerHTML de toute la section
+// (cf. plus bas), ce qui réinitialiserait un simple `hidden` posé en dur —
+// ce drapeau permet de rouvrir automatiquement la section si elle était
+// déjà dépliée avant que l'utilisateur change de filtre.
+let agentAlertsExpanded = false;
 
 function agentIncidentDetail(inc) {
   const parts = [];
@@ -2373,10 +2391,11 @@ function agentIncidentDetail(inc) {
 
 function renderAgentIncidents(agentId) {
   const all = lastIncidents.filter((inc) => inc.agentId === agentId && !inc.acquitted);
+  if (all.length === 0) {
+    return `<div id="agentAlertsSection"><div class="chart-cat">${t("alerts_title")}</div><div class="empty">${t("no_alerts_agent")}</div></div>`;
+  }
   const items = agentAlertFilter ? all.filter((inc) => incidentCriticality(inc) === agentAlertFilter) : all;
-  const filterBar = all.length
-    ? miniFilterBarHtml([["", t("filter_all")], ["critical", t("crit_critical")], ["medium", t("crit_medium")], ["low", t("crit_low")]], agentAlertFilter, "agent-alert-filter")
-    : "";
+  const filterBar = miniFilterBarHtml([["", t("filter_all")], ["critical", t("crit_critical")], ["medium", t("crit_medium")], ["low", t("crit_low")]], agentAlertFilter, "agent-alert-filter");
   const toggleBar = items.length
     ? `<div class="mini-filter"><button type="button" class="mini-filter-btn" data-toggle-all-panels="agentAlertsSection">${t("show_all")}</button></div>`
     : "";
@@ -2393,8 +2412,14 @@ function renderAgentIncidents(agentId) {
           </div>
           ${detail ? `<div class="chart-panel" id="panel-${uid}" hidden>${escapeHtml(detail).replace(/\n/g, "<br>")}</div>` : ""}`;
       }).join("")
-    : `<div class="empty">${all.length ? t("no_alerts_filter") : t("no_alerts_agent")}</div>`;
-  return `<div id="agentAlertsSection"><div class="chart-cat">${t("alerts_title")}</div>${filterBar}${toggleBar}<div class="list">${body}</div></div>`;
+    : `<div class="empty">${t("no_alerts_filter")}</div>`;
+  const problemCount = all.filter((inc) => incidentCriticality(inc) === "critical").length;
+  const summary = problemCount > 0 ? t("count_watch", { count: problemCount }) : t("all_ok");
+  return `<div id="agentAlertsSection">` +
+    `<div class="chart-cat">${t("alerts_title")}</div>` +
+    `<button type="button" class="section-toggle" data-toggle-section="agentAlertsList">${t("alert_count", { total: all.length })} · ${summary} <span class="chev">›</span></button>` +
+    `<div id="agentAlertsList" ${agentAlertsExpanded ? "" : "hidden"}>${filterBar}${toggleBar}<div class="list">${body}</div></div>` +
+  `</div>`;
 }
 
 // Historique unifié des jobs de sauvegarde (Files & Data pour S/W, Microsoft
@@ -2495,8 +2520,14 @@ async function renderBackupActivitySection(agentId) {
 
     if (latestByKey.size === 0) return { html: "", orgName }; // aucune sauvegarde détectée : section masquée
 
-    const rows = [...latestByKey.values()].map(backupActivityRowHtml).join("");
-    return { html: `<div class="chart-cat">${t("backup_title")}</div><div class="list">${rows}</div>`, orgName };
+    const jobs = [...latestByKey.values()];
+    const rows = jobs.map(backupActivityRowHtml).join("");
+    const problemCount = jobs.filter((a) => ["critical", "medium"].includes(backupActivityClass(a.status))).length;
+    const summary = problemCount > 0 ? t("count_watch", { count: problemCount }) : t("all_ok");
+    const html = `<div class="chart-cat">${t("backup_title")}</div>` +
+      `<button type="button" class="section-toggle" data-toggle-section="agentBackupList">${t("backup_count", { total: jobs.length })} · ${summary} <span class="chev">›</span></button>` +
+      `<div id="agentBackupList" hidden><div class="list">${rows}</div></div>`;
+    return { html, orgName };
   } catch (err) {
     return { html: `<div class="chart-cat">${t("backup_title")}</div><div class="error">${t("generic_error_prefix")}${escapeHtml(err.message)}</div>`, orgName: null };
   }
@@ -2535,6 +2566,7 @@ function eventRowHtml(ev, index) {
 // rendu) pour pouvoir ré-appliquer un filtre sans refaire d'appel API.
 let lastAgentEvents = [];
 let agentEventFilter = null; // null (Toutes) | "error" | "warning"
+let agentEventsExpanded = false; // même rôle que agentAlertsExpanded ci-dessus
 
 function renderAgentEventsBlock() {
   if (lastAgentEvents.length === 0) return ""; // pas d'erreur/avertissement récent : section masquée
@@ -2544,7 +2576,13 @@ function renderAgentEventsBlock() {
     ? `<div class="mini-filter"><button type="button" class="mini-filter-btn" data-toggle-all-panels="agentEventsSection">${t("show_all")}</button></div>`
     : "";
   const body = items.length ? items.map(eventRowHtml).join("") : `<div class="empty">${t("no_events")}</div>`;
-  return `<div id="agentEventsSection"><div class="chart-cat">${t("journal_title")}</div>${filterBar}${toggleBar}<div class="list">${body}</div></div>`;
+  const problemCount = lastAgentEvents.filter((ev) => ev.type === "error").length;
+  const summary = problemCount > 0 ? t("count_watch", { count: problemCount }) : t("all_ok");
+  return `<div id="agentEventsSection">` +
+    `<div class="chart-cat">${t("journal_title")}</div>` +
+    `<button type="button" class="section-toggle" data-toggle-section="agentEventsList">${t("event_count", { total: lastAgentEvents.length })} · ${summary} <span class="chev">›</span></button>` +
+    `<div id="agentEventsList" ${agentEventsExpanded ? "" : "hidden"}>${filterBar}${toggleBar}<div class="list">${body}</div></div>` +
+  `</div>`;
 }
 
 async function renderAgentEventsSection(agentId) {
@@ -2621,7 +2659,13 @@ async function renderCustomScriptsSection(agentId) {
 
     const rows = scripts.map(customScriptRowHtml).join("");
     const toggleBar = `<div class="mini-filter"><button type="button" class="mini-filter-btn" data-toggle-all-panels="agentCustomScriptsSection">${t("show_all")}</button></div>`;
-    return `<div id="agentCustomScriptsSection"><div class="chart-cat">Custom scripts</div>${toggleBar}<div class="list">${rows}</div></div>`;
+    const problemCount = scripts.filter((s) => s.lastResult?.status === 2).length;
+    const summary = problemCount > 0 ? t("count_watch", { count: problemCount }) : t("all_ok");
+    return `<div id="agentCustomScriptsSection">` +
+      `<div class="chart-cat">Custom scripts</div>` +
+      `<button type="button" class="section-toggle" data-toggle-section="agentCustomScriptsList">${t("script_count", { total: scripts.length })} · ${summary} <span class="chev">›</span></button>` +
+      `<div id="agentCustomScriptsList" hidden>${toggleBar}<div class="list">${rows}</div></div>` +
+    `</div>`;
   } catch (err) {
     return `<div id="agentCustomScriptsSection"><div class="chart-cat">Custom scripts</div><div class="error">${t("generic_error_prefix")}${escapeHtml(err.message)}</div></div>`;
   }
@@ -2660,9 +2704,9 @@ async function renderDeploySummarySection(agentId) {
     if (total === 0) return ""; // aucun déploiement configuré sur cet agent : section masquée
     const byStatus = overview.packagesByStatus || {};
     const problemCount = DEPLOY_PROBLEM_STATUSES.reduce((sum, k) => sum + (byStatus[k] || 0), 0);
-    const detail = problemCount > 0 ? t("deploy_watch", { count: problemCount }) : t("deploy_up_to_date");
+    const detail = problemCount > 0 ? t("count_watch", { count: problemCount }) : t("all_ok");
     return `<div class="chart-cat">${t("deploy_title")}</div>` +
-      `<button type="button" class="deploy-summary" data-toggle-deploy-list>📦 ${t("deploy_total", { total })} · ${detail} <span class="chev">›</span></button>` +
+      `<button type="button" class="section-toggle" data-toggle-section="agentDeployList">📦 ${t("deploy_total", { total })} · ${detail} <span class="chev">›</span></button>` +
       `<div class="list" id="agentDeployList" hidden></div>`;
   } catch (err) {
     return ""; // information secondaire : une erreur ici ne doit pas polluer la fiche agent
@@ -2682,20 +2726,32 @@ function deployRowHtml(pkg) {
     </div>`;
 }
 
-async function toggleDeployList() {
-  const list = document.getElementById("agentDeployList");
-  if (!list) return;
-  if (!list.hidden) { list.hidden = true; return; }
-  list.hidden = false;
-  if (list.dataset.loaded) return;
-  list.innerHTML = `<div class="loading">${t("loading")}</div>`;
+// Bascule générique "bloc fermé, ouvert au clic" utilisée par toutes les
+// sections de la fiche agent (Sauvegarde, Alertes, Courbes, Journal
+// d'événements, Custom scripts, Déploiements). Pour la plupart, le contenu
+// est déjà en mémoire (chargé avec le reste de la fiche) : on bascule juste
+// `hidden`. Seul le détail par paquet des Déploiements est chargé
+// paresseusement ici, au premier clic (cf. renderDeploySummarySection).
+const SECTION_EXPAND_FLAGS = {
+  agentAlertsList: (v) => { agentAlertsExpanded = v; },
+  agentEventsList: (v) => { agentEventsExpanded = v; },
+};
+
+async function toggleSection(id) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  const willShow = el.hidden;
+  el.hidden = !willShow;
+  if (SECTION_EXPAND_FLAGS[id]) SECTION_EXPAND_FLAGS[id](willShow);
+  if (!willShow || id !== "agentDeployList" || el.dataset.loaded) return;
+  el.innerHTML = `<div class="loading">${t("loading")}</div>`;
   try {
     const data = await fetchJson(`/api/target/${encodeURIComponent(currentAgentId)}/disquette/status`);
     const packages = (data.data || []).slice().sort((a, b) => new Date(b.statusSince) - new Date(a.statusSince));
-    list.innerHTML = packages.map(deployRowHtml).join("");
-    list.dataset.loaded = "1";
+    el.innerHTML = packages.map(deployRowHtml).join("");
+    el.dataset.loaded = "1";
   } catch (err) {
-    list.innerHTML = `<div class="error">${t("generic_error_prefix")}${escapeHtml(err.message)}</div>`;
+    el.innerHTML = `<div class="error">${t("generic_error_prefix")}${escapeHtml(err.message)}</div>`;
   }
 }
 
@@ -2706,6 +2762,8 @@ async function loadAgent(agentId) {
   agentAlertFilter = null;
   agentEventFilter = null;
   lastAgentEvents = [];
+  agentAlertsExpanded = false;
+  agentEventsExpanded = false;
   agentTitleEl.textContent = t("agent_default_title");
   agentBreadcrumbEl.hidden = true;
   agentBodyEl.innerHTML = `<div class="loading">${t("loading")}</div>`;
@@ -2722,11 +2780,15 @@ async function loadAgent(agentId) {
     const showSupervisionBlocks = ped.type !== "L";
 
     const categories = showSupervisionBlocks ? collectChartables(objects) : [];
+    const totalCharts = categories.reduce((sum, cat) => sum + cat.items.length, 0);
     const chartsHtml = !showSupervisionBlocks ? "" : categories.length
       ? `<div class="chart-cat">${t("charts_title")}</div>` +
-        `<div class="mini-filter"><button type="button" class="mini-filter-btn" data-charts-toggle-all>${t("show_all")}</button></div>` +
-        `<div id="agentChartsList">${categories.map((cat) => cat.items.map((item) => chartItemHtml(item, cat.name)).join("")).join("")}</div>`
-      : `<div class="empty">${t("no_charts")}</div>`;
+        `<button type="button" class="section-toggle" data-toggle-section="agentChartsWrap">${t("chart_count", { total: totalCharts })} <span class="chev">›</span></button>` +
+        `<div id="agentChartsWrap" hidden>` +
+          `<div class="mini-filter"><button type="button" class="mini-filter-btn" data-charts-toggle-all>${t("show_all")}</button></div>` +
+          `<div id="agentChartsList">${categories.map((cat) => cat.items.map((item) => chartItemHtml(item, cat.name)).join("")).join("")}</div>` +
+        `</div>`
+      : `<div class="chart-cat">${t("charts_title")}</div><div class="empty">${t("no_charts")}</div>`;
 
     const backupPromise = ["S", "W", "O"].includes(ped.type)
       ? renderBackupActivitySection(agentId)
@@ -2742,7 +2804,10 @@ async function loadAgent(agentId) {
     const { html: backupHtml, orgName } = backupResult;
 
     const incidentsHtml = showSupervisionBlocks ? renderAgentIncidents(agentId) : "";
-    agentBodyEl.innerHTML = renderAgentPedigree(agentId, ped, orgName) + backupHtml + deployHtml + chartsHtml + incidentsHtml + eventsHtml + customScriptsHtml;
+    // Ordre demandé par l'utilisateur : Sauvegarde, Alertes (pas citées mais
+    // conservées à leur place d'origine), puis Courbes, Journal d'événements,
+    // Custom scripts, Déploiements dans cet ordre précis.
+    agentBodyEl.innerHTML = renderAgentPedigree(agentId, ped, orgName) + backupHtml + incidentsHtml + chartsHtml + eventsHtml + customScriptsHtml + deployHtml;
   } catch (err) {
     agentBodyEl.innerHTML = '<div class="error">' + t("error_prefix") + escapeHtml(err.message) + '</div>';
     console.error(err);
@@ -2750,9 +2815,9 @@ async function loadAgent(agentId) {
 }
 
 agentBodyEl.addEventListener("click", (e) => {
-  const deployToggleBtn = e.target.closest("[data-toggle-deploy-list]");
-  if (deployToggleBtn) {
-    toggleDeployList();
+  const sectionToggleBtn = e.target.closest("[data-toggle-section]");
+  if (sectionToggleBtn) {
+    toggleSection(sectionToggleBtn.dataset.toggleSection);
     return;
   }
   const expandAllBtn = e.target.closest("[data-charts-toggle-all]");
@@ -3018,6 +3083,14 @@ function buildLineChartSvg(interpreted, scale) {
 // important pour tout traduire rétroactivement, décision explicite de
 // l'utilisateur. renderWhatsNew() gère les deux formats.
 const RELEASE_NOTES = [
+  { version: "0.93", text: {
+    fr: "Réorganisation de la fiche agent : l'ordre est désormais Sauvegarde, Alertes, Courbes, Journal d'événements, Custom scripts, Déploiements. Les 6 blocs sont maintenant fermés par défaut, avec une ligne de résumé (ex. \"3 sauvegarde(s) · à jour\") — un clic ouvre le détail complet.",
+    en: "Agent sheet reorganized: the order is now Backup, Alerts, Charts, Event log, Custom scripts, Deployments. All 6 blocks are now closed by default, with a summary line (e.g. \"3 backup(s) · up to date\") — a click opens the full detail.",
+    de: "Agentenkarte neu geordnet: die Reihenfolge ist jetzt Sicherung, Warnungen, Diagramme, Ereignisprotokoll, Custom scripts, Bereitstellungen. Alle 6 Blöcke sind jetzt standardmäßig geschlossen, mit einer Zusammenfassungszeile (z. B. \"3 Sicherung(en) · aktuell\") — ein Klick öffnet das vollständige Detail.",
+    it: "Riorganizzazione della scheda agente: l'ordine è ora Backup, Avvisi, Grafici, Registro eventi, Custom scripts, Distribuzioni. I 6 blocchi sono ora chiusi per impostazione predefinita, con una riga di riepilogo (es. \"3 backup · aggiornato\") — un clic apre il dettaglio completo.",
+    es: "Reorganización de la ficha del agente: el orden ahora es Copia de seguridad, Alertas, Gráficos, Registro de eventos, Custom scripts, Implementaciones. Los 6 bloques ahora están cerrados por defecto, con una línea de resumen (ej. \"3 copia(s) de seguridad · al día\") — un clic abre el detalle completo.",
+    pt: "Reorganização da ficha do agente: a ordem é agora Cópia de segurança, Alertas, Gráficos, Registo de eventos, Custom scripts, Implementações. Os 6 blocos estão agora fechados por predefinição, com uma linha de resumo (ex.: \"3 cópia(s) de segurança · atualizado\") — um clique abre o detalhe completo.",
+  } },
   { version: "0.92", text: {
     fr: "La ligne \"Déploiements\" (v0.91) est maintenant cliquable : elle déplie la liste complète des paquets avec leur nom, version, statut et date, repliée par défaut pour ne pas surcharger la fiche agent. La liste n'est chargée qu'au premier clic, jamais automatiquement.",
     en: "The \"Deployments\" line (v0.91) is now clickable: it expands the full package list with name, version, status and date, collapsed by default to avoid cluttering the agent sheet. The list is only loaded on first click, never automatically.",
