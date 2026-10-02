@@ -564,7 +564,7 @@
 <header>
   <div class="header-top">
     <button class="hamburger-btn" id="mainMenuBtn">☰</button>
-    <h1 id="homeLink"><img src="icons/icon-192.png" alt="" class="brand-icon"> RG System Suite <span class="app-version">v0.89</span></h1>
+    <h1 id="homeLink"><img src="icons/icon-192.png" alt="" class="brand-icon"> RG System Suite <span class="app-version">v0.90</span></h1>
     <div class="search-bar" id="searchBarWrap">
       <button type="button" class="search-toggle-btn" id="searchToggleBtn" title="Rechercher" aria-label="Rechercher">🔍</button>
       <div class="search-input-row" id="searchInputRow" hidden>
@@ -2880,12 +2880,60 @@ function buildLineChartSvg(interpreted, scale) {
 
 // ⚠️ À tenir à jour à chaque nouvelle version livrée (garder aussi
 // releaseNotes.md synchronisé, à la racine du dossier fourni à l'utilisateur).
+// Les 5 dernières entrées (celles affichées par WHATS_NEW_LIMIT) ont un
+// `text` multilingue {fr, en, de, it, es, pt} ; au-delà, l'historique plus
+// ancien garde un `text` simple (chaîne), toujours en français — volume trop
+// important pour tout traduire rétroactivement, décision explicite de
+// l'utilisateur. renderWhatsNew() gère les deux formats.
 const RELEASE_NOTES = [
-  { version: "0.89", text: "Les icônes clair/sombre sont déplacées en haut du tiroir latéral, juste à côté du titre \"Navigation\", et réduites — les drapeaux de langue restent en bas." },
-  { version: "0.88", text: "Ajout d'un mode sombre, accessible via deux nouvelles icônes (☀️/🌙) en bas du tiroir latéral, au-dessus des drapeaux de langue. Suit automatiquement les réglages du téléphone au premier lancement, puis le choix est mémorisé. Les courbes s'adaptent aussi au thème choisi." },
-  { version: "0.87", text: "Ajout de l'italien, de l'espagnol et du portugais comme 4ᵉ, 5ᵉ et 6ᵉ langues de l'app (drapeaux 🇮🇹🇪🇸🇵🇹 dans le tiroir latéral, sur 2 lignes désormais). Toute l'interface est traduite dans ces 3 langues, y compris les titres d'alerte reformulés automatiquement (comme pour le français et l'allemand)." },
-  { version: "0.86", text: "Les titres d'alerte reformulés automatiquement (v0.83/v0.84) sont maintenant aussi disponibles en allemand, avec les mêmes formulations qu'en français (ex. \"Disk full...\" → \"Festplatte voll...\", \"Disconnected\" → \"Getrennt\")." },
-  { version: "0.85", text: "Ajout de l'allemand comme 3ᵉ langue de l'app (drapeau 🇩🇪 dans le tiroir latéral). Les 3 drapeaux FR/EN/DE sont aussi redessinés en plus petit et en style plat (aplats de couleur simples), au lieu des émojis drapeaux précédents." },
+  { version: "0.90", text: {
+    fr: "Les notes de version de cette page (les 5 dernières uniquement) sont maintenant traduites dans les 6 langues de l'app, au lieu de rester toujours en français. L'historique plus ancien reste en français, trop volumineux à traduire rétroactivement.",
+    en: "The release notes on this page (the 5 most recent only) are now translated into the app's 6 languages, instead of always staying in French. Older history remains in French, too large to translate retroactively.",
+    de: "Die Versionshinweise auf dieser Seite (nur die letzten 5) sind jetzt in die 6 Sprachen der App übersetzt, statt immer auf Französisch zu bleiben. Ältere Einträge bleiben auf Französisch, zu umfangreich für eine rückwirkende Übersetzung.",
+    it: "Le note di versione di questa pagina (solo le ultime 5) sono ora tradotte nelle 6 lingue dell'app, invece di restare sempre in francese. Lo storico più vecchio resta in francese, troppo voluminoso da tradurre retroattivamente.",
+    es: "Las notas de versión de esta página (solo las 5 más recientes) ahora están traducidas a los 6 idiomas de la app, en lugar de quedarse siempre en francés. El historial más antiguo permanece en francés, demasiado extenso para traducirlo retroactivamente.",
+    pt: "As notas de versão desta página (apenas as 5 mais recentes) estão agora traduzidas nos 6 idiomas da app, em vez de ficarem sempre em francês. O histórico mais antigo permanece em francês, demasiado extenso para traduzir retroativamente.",
+  } },
+  { version: "0.89", text: {
+    fr: "Les icônes clair/sombre sont déplacées en haut du tiroir latéral, juste à côté du titre \"Navigation\", et réduites — les drapeaux de langue restent en bas.",
+    en: "The light/dark icons have been moved to the top of the side drawer, right next to the \"Navigation\" title, and made smaller — the language flags stay at the bottom.",
+    de: "Die Hell/Dunkel-Symbole wurden nach oben in die Seitenleiste verschoben, direkt neben den Titel \"Navigation\", und verkleinert — die Sprachfahnen bleiben unten.",
+    it: "Le icone chiaro/scuro sono state spostate in alto nel menu laterale, accanto al titolo \"Navigazione\", e rimpicciolite — le bandiere della lingua restano in basso.",
+    es: "Los iconos claro/oscuro se han movido a la parte superior del menú lateral, justo al lado del título \"Navegación\", y se han hecho más pequeños — las banderas de idioma permanecen abajo.",
+    pt: "Os ícones claro/escuro foram movidos para o topo do menu lateral, junto ao título \"Navegação\", e ficaram mais pequenos — as bandeiras de idioma permanecem em baixo.",
+  } },
+  { version: "0.88", text: {
+    fr: "Ajout d'un mode sombre, accessible via deux nouvelles icônes (☀️/🌙) en bas du tiroir latéral, au-dessus des drapeaux de langue. Suit automatiquement les réglages du téléphone au premier lancement, puis le choix est mémorisé. Les courbes s'adaptent aussi au thème choisi.",
+    en: "Added a dark mode, accessible via two new icons (☀️/🌙) at the bottom of the side drawer, above the language flags. Automatically follows the phone's settings on first launch, then the choice is remembered. Charts also adapt to the chosen theme.",
+    de: "Ein dunkler Modus wurde hinzugefügt, erreichbar über zwei neue Symbole (☀️/🌙) unten in der Seitenleiste, über den Sprachfahnen. Folgt beim ersten Start automatisch den Einstellungen des Telefons, die Wahl wird danach gespeichert. Die Diagramme passen sich ebenfalls dem gewählten Thema an.",
+    it: "Aggiunta la modalità scura, accessibile tramite due nuove icone (☀️/🌙) in basso nel menu laterale, sopra le bandiere della lingua. Segue automaticamente le impostazioni del telefono al primo avvio, poi la scelta viene memorizzata. Anche i grafici si adattano al tema scelto.",
+    es: "Se añadió el modo oscuro, accesible mediante dos nuevos iconos (☀️/🌙) en la parte inferior del menú lateral, encima de las banderas de idioma. Sigue automáticamente los ajustes del teléfono en el primer inicio, luego se recuerda la elección. Los gráficos también se adaptan al tema elegido.",
+    pt: "Adicionado o modo escuro, acessível através de dois novos ícones (☀️/🌙) na parte inferior do menu lateral, acima das bandeiras de idioma. Segue automaticamente as definições do telemóvel no primeiro arranque, depois a escolha é memorizada. Os gráficos também se adaptam ao tema escolhido.",
+  } },
+  { version: "0.87", text: {
+    fr: "Ajout de l'italien, de l'espagnol et du portugais comme 4ᵉ, 5ᵉ et 6ᵉ langues de l'app (drapeaux 🇮🇹🇪🇸🇵🇹 dans le tiroir latéral, sur 2 lignes désormais). Toute l'interface est traduite dans ces 3 langues, y compris les titres d'alerte reformulés automatiquement (comme pour le français et l'allemand).",
+    en: "Added Italian, Spanish and Portuguese as the 4th, 5th and 6th app languages (flags 🇮🇹🇪🇸🇵🇹 in the side drawer, now on 2 rows). The whole interface is translated into these 3 languages, including the automatically reformatted alert titles (like French and German).",
+    de: "Italienisch, Spanisch und Portugiesisch als 4., 5. und 6. App-Sprache hinzugefügt (Flaggen 🇮🇹🇪🇸🇵🇹 in der Seitenleiste, jetzt auf 2 Zeilen). Die gesamte Oberfläche ist in diese 3 Sprachen übersetzt, einschließlich der automatisch umformulierten Alarmtitel (wie bei Französisch und Deutsch).",
+    it: "Aggiunte italiano, spagnolo e portoghese come 4ª, 5ª e 6ª lingua dell'app (bandiere 🇮🇹🇪🇸🇵🇹 nel menu laterale, ora su 2 righe). Tutta l'interfaccia è tradotta in queste 3 lingue, compresi i titoli degli avvisi riformulati automaticamente (come per francese e tedesco).",
+    es: "Se añadieron italiano, español y portugués como 4º, 5º y 6º idioma de la app (banderas 🇮🇹🇪🇸🇵🇹 en el menú lateral, ahora en 2 filas). Toda la interfaz está traducida a estos 3 idiomas, incluidos los títulos de alerta reformulados automáticamente (como en francés y alemán).",
+    pt: "Adicionados italiano, espanhol e português como 4º, 5º e 6º idioma da app (bandeiras 🇮🇹🇪🇸🇵🇹 no menu lateral, agora em 2 linhas). Toda a interface está traduzida nestes 3 idiomas, incluindo os títulos de alerta reformulados automaticamente (tal como em francês e alemão).",
+  } },
+  { version: "0.86", text: {
+    fr: "Les titres d'alerte reformulés automatiquement (v0.83/v0.84) sont maintenant aussi disponibles en allemand, avec les mêmes formulations qu'en français (ex. \"Disk full...\" → \"Festplatte voll...\", \"Disconnected\" → \"Getrennt\").",
+    en: "The automatically reformatted alert titles (v0.83/v0.84) are now also available in German, with the same patterns as French (e.g. \"Disk full...\" → \"Festplatte voll...\", \"Disconnected\" → \"Getrennt\").",
+    de: "Die automatisch umformulierten Alarmtitel (v0.83/v0.84) sind jetzt auch auf Deutsch verfügbar, nach demselben Prinzip wie auf Französisch (z. B. \"Disk full...\" → \"Festplatte voll...\", \"Disconnected\" → \"Getrennt\").",
+    it: "I titoli degli avvisi riformulati automaticamente (v0.83/v0.84) sono ora disponibili anche in tedesco, con le stesse formulazioni del francese (es. \"Disk full...\" → \"Festplatte voll...\", \"Disconnected\" → \"Getrennt\").",
+    es: "Los títulos de alerta reformulados automáticamente (v0.83/v0.84) ya están disponibles también en alemán, con las mismas formulaciones que en francés (ej. \"Disk full...\" → \"Festplatte voll...\", \"Disconnected\" → \"Getrennt\").",
+    pt: "Os títulos de alerta reformulados automaticamente (v0.83/v0.84) já estão disponíveis também em alemão, com as mesmas formulações do francês (ex.: \"Disk full...\" → \"Festplatte voll...\", \"Disconnected\" → \"Getrennt\").",
+  } },
+  { version: "0.85", text: {
+    fr: "Ajout de l'allemand comme 3ᵉ langue de l'app (drapeau 🇩🇪 dans le tiroir latéral). Les 3 drapeaux FR/EN/DE sont aussi redessinés en plus petit et en style plat (aplats de couleur simples), au lieu des émojis drapeaux précédents.",
+    en: "Added German as the 3rd app language (flag 🇩🇪 in the side drawer). The 3 flags FR/EN/DE have also been redrawn smaller and in a flat style (simple color blocks), instead of the previous flag emojis.",
+    de: "Deutsch als 3. App-Sprache hinzugefügt (Flagge 🇩🇪 in der Seitenleiste). Die 3 Flaggen FR/EN/DE wurden außerdem kleiner und im flachen Stil (einfache Farbflächen) neu gezeichnet, anstelle der bisherigen Flaggen-Emojis.",
+    it: "Aggiunto il tedesco come 3ª lingua dell'app (bandiera 🇩🇪 nel menu laterale). Le 3 bandiere FR/EN/DE sono state anche ridisegnate più piccole e in stile piatto (tinte unite semplici), al posto delle precedenti emoji bandiera.",
+    es: "Se añadió el alemán como 3er idioma de la app (bandera 🇩🇪 en el menú lateral). Las 3 banderas FR/EN/DE también se han rediseñado más pequeñas y en estilo plano (colores lisos simples), en lugar de los anteriores emojis de bandera.",
+    pt: "Adicionado o alemão como 3º idioma da app (bandeira 🇩🇪 no menu lateral). As 3 bandeiras FR/EN/DE também foram redesenhadas mais pequenas e em estilo plano (cores lisas simples), em vez dos anteriores emojis de bandeira.",
+  } },
   { version: "0.84", text: "Ajout de la traduction du titre d'alerte \"Disconnected\" → \"Déconnecté\"." },
   { version: "0.83", text: "En français, les titres d'alerte (ex. \"Disk full - 10 minutes - 35%\") sont maintenant reformulés en français (\"Disque plein - 10 minutes - 35%\") quand RG System envoie une formulation reconnue — RG System ne traduit jamais ce texte via l'API, même avec le compte réglé en français. Les formulations pas encore reconnues restent affichées telles quelles en anglais, sans erreur ; signalez-les si vous en croisez pour qu'elles soient ajoutées." },
   { version: "0.82", text: "La recherche de dossiers (v0.81) connaît maintenant le vrai nom commercial du client (ex. \"TechNova Solutions\"), pas seulement le nom technique du dossier dans l'arborescence (ex. \"CLIENT.1.RMM.Assist\") — ces deux noms peuvent être très différents dans RG System. Affichage avec une icône 🏢. Recherche aussi plus rapide : un seul appel au lieu de parcourir tout l'arbre des dossiers." },
@@ -2951,12 +2999,21 @@ const RELEASE_NOTES = [
 // 5 dernières versions pour que cet écran reste court à parcourir.
 const WHATS_NEW_LIMIT = 5;
 
+// `n.text` est soit une chaîne simple (anciennes entrées, toujours en
+// français), soit un objet {fr, en, de, it, es, pt} (entrées récentes) — dans
+// ce second cas, on prend la langue courante, avec repli sur le français si
+// jamais une traduction venait à manquer pour cette entrée précise.
+function releaseNoteText(n) {
+  if (typeof n.text === "string") return n.text;
+  return n.text[currentLang] || n.text.fr;
+}
+
 function renderWhatsNew() {
   const list = document.getElementById("whatsNewList");
   list.innerHTML = RELEASE_NOTES.slice(0, WHATS_NEW_LIMIT).map((n) => `
     <div class="note-item">
       <div class="version">v${escapeHtml(n.version)}</div>
-      <div class="text">${escapeHtml(n.text)}</div>
+      <div class="text">${escapeHtml(releaseNoteText(n))}</div>
     </div>
   `).join("");
 }
