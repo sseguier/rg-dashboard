@@ -371,13 +371,14 @@
   }
   .drawer-lang-row {
     display: flex;
+    flex-wrap: wrap;
     gap: 6px;
     padding: 16px;
     margin-top: auto;
     border-top: 1px solid var(--card-border);
   }
   .drawer-lang-btn {
-    flex: 1;
+    flex: 1 1 26%;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -517,7 +518,7 @@
 <header>
   <div class="header-top">
     <button class="hamburger-btn" id="mainMenuBtn">☰</button>
-    <h1 id="homeLink"><img src="icons/icon-192.png" alt="" class="brand-icon"> RG System Suite <span class="app-version">v0.86</span></h1>
+    <h1 id="homeLink"><img src="icons/icon-192.png" alt="" class="brand-icon"> RG System Suite <span class="app-version">v0.87</span></h1>
     <div class="search-bar" id="searchBarWrap">
       <button type="button" class="search-toggle-btn" id="searchToggleBtn" title="Rechercher" aria-label="Rechercher">🔍</button>
       <div class="search-input-row" id="searchInputRow" hidden>
@@ -680,6 +681,25 @@
         <rect width="30" height="20" fill="#000"/>
         <rect y="6.67" width="30" height="6.67" fill="#D00"/>
         <rect y="13.33" width="30" height="6.67" fill="#FFCE00"/>
+      </svg>
+    </button>
+    <button type="button" class="drawer-lang-btn" id="langBtnIt" title="Italiano" aria-label="Italiano">
+      <svg viewBox="0 0 30 20" xmlns="http://www.w3.org/2000/svg">
+        <rect width="10" height="20" fill="#009246"/>
+        <rect x="10" width="10" height="20" fill="#fff"/>
+        <rect x="20" width="10" height="20" fill="#CE2B37"/>
+      </svg>
+    </button>
+    <button type="button" class="drawer-lang-btn" id="langBtnEs" title="Español" aria-label="Español">
+      <svg viewBox="0 0 30 20" xmlns="http://www.w3.org/2000/svg">
+        <rect width="30" height="20" fill="#AA151B"/>
+        <rect y="5" width="30" height="10" fill="#F1BF00"/>
+      </svg>
+    </button>
+    <button type="button" class="drawer-lang-btn" id="langBtnPt" title="Português" aria-label="Português">
+      <svg viewBox="0 0 30 20" xmlns="http://www.w3.org/2000/svg">
+        <rect width="12" height="20" fill="#046A38"/>
+        <rect x="12" width="18" height="20" fill="#DA291C"/>
       </svg>
     </button>
   </div>
@@ -917,13 +937,223 @@ const TRANSLATIONS = {
     client_default_title: "Kunde", no_clients_found: "Keine Kunden im Bestand gefunden.",
     whatsnew_title: "Neuigkeiten",
   },
+  it: {
+    nav_header: "Navigazione", nav_parc: "Parco", nav_alerts: "Avvisi", nav_map: "Mappa",
+    nav_clients: "Clienti", nav_whatsnew: "Novità",
+    search_placeholder: "Cerca...", search_open: "Cerca", search_close: "Chiudi ricerca",
+    loading: "Caricamento…", loading_data: "Caricamento dati…", error_prefix: "Errore di caricamento: ",
+    generic_error_prefix: "Errore: ",
+    back: "Indietro", refresh: "Aggiorna",
+    alerts_updated_at: "Aggiornato alle {time}", alerts_updating: "Aggiornamento…",
+    alerts_update_failed: "Ultimo aggiornamento non riuscito",
+    crit_critical: "Critica", crit_medium: "Media", crit_low: "Bassa",
+    all_clients: "Tutti i clienti", no_alerts: "✅ Nessun avviso da mostrare",
+    offline_badge: "Offline", acquitted_badge: "confermato", unknown_location: "Posizione sconosciuta",
+    access_agent: "Apri agente", category_label: "Categoria: ", id_label: "ID: ",
+    incident_no_title: "Incidente senza titolo", agent_unknown: "Agente sconosciuto",
+    parc_default_title: "Parco", agent_default_title: "Agente",
+    no_filter_results: "Nessun risultato per questo filtro", filter_prefix: "Filtro: ",
+    node_not_found: "Cartella non trovata",
+    filter_servers_only: "Solo server", filter_workstations_only: "Solo postazioni",
+    filter_devices_only: "Solo dispositivi",
+    stat_servers: "Server", stat_workstations: "Postazione/i", stat_devices: "Dispositivo/i",
+    search_results_title: "Risultati della ricerca", search_min_chars: "Digita almeno 2 caratteri per cercare",
+    searching: "Ricerca…", no_agent_found: "Nessun risultato trovato", search_error: "Errore di ricerca: ",
+    f_hostname: "Nome host", f_domain: "Dominio", f_system: "Sistema", f_cpu: "CPU", f_memory: "Memoria",
+    f_disk: "Disco", f_manufacturer: "Produttore", f_serial: "N° di serie", f_private_ip: "IP privato",
+    f_public_ip: "IP pubblico", f_last_user: "Ultimo utente", f_last_boot: "Ultimo avvio",
+    f_availability: "Disponibilità", f_windows_update: "Windows Update", f_security: "Sicurezza",
+    f_rg_agent: "Agente RG System",
+    online: "Online", offline: "Offline", in_maintenance: " · in manutenzione",
+    security_ok: "OK", security_check: "Da verificare", show_comment: "🔒 Mostra commento",
+    no_charts: "Nessun grafico disponibile per questo agente", charts_title: "Grafici",
+    show_all: "Mostra tutto", collapse_all: "Comprimi tutto",
+    day_short: "(24h)", week_short: "(7g)", month_short: "(30g)",
+    scale_day: "24 ore", scale_week: "7 giorni", scale_month: "30 giorni", scale_year: "12 mesi",
+    chart_no_data: "Nessun dato per questo periodo",
+    chart_active_pct: "Attivo <strong>{pct}%</strong> del tempo · periodo: {scale}",
+    chart_latest_value: "Ultimo valore: <strong>{value}</strong> · periodo: {scale}",
+    series_usage: "Utilizzo",
+    wu_critical: "critico/i", wu_optional: "opzionale/i", wu_reboot_needed: "riavvio richiesto",
+    no_domain: "Fuori dominio", agent_version_line: "v{version} · installato il {date}",
+    backup_title: "Backup",
+    backup_success: "Riuscito", backup_error: "Errore", backup_warning: "Avviso",
+    backup_running: "In corso", backup_waiting: "Primo backup in attesa", backup_unknown: "Sconosciuto",
+    plugin_file: "File", plugin_mssql: "SQL Server", plugin_oracle: "Oracle", plugin_hyperV: "Hyper-V",
+    plugin_bareMetal: "Bare Metal", plugin_vCenter: "vCenter", plugin_replication: "Replica",
+    plugin_exchange: "Exchange", duration_min: " min",
+    objects_summary: "Oggetti: {succ} riusciti, {fail} falliti",
+    journal_title: "Registro eventi", event_error: "Errore", event_warning: "Avviso",
+    event_info: "Informazione", filter_all: "Tutte", no_events: "Nessun evento per questo filtro",
+    event_source_unknown: "Origine sconosciuta",
+    alerts_title: "Avvisi", no_alerts_filter: "Nessun avviso per questo filtro",
+    no_alerts_agent: "✅ Nessun avviso per questo agente",
+    cs_never_run: "Mai eseguito", cs_success: "Riuscito", cs_failure: "Fallito", cs_unknown: "Sconosciuto",
+    cs_exec_error: "Errore di esecuzione: ",
+    map_title: "Mappa dei clienti", map_loading_clients: "Caricamento clienti…",
+    map_fetching_details: "Recupero schede clienti… ({i}/{n})",
+    map_locating: "Localizzazione clienti… ({i}/{n})",
+    map_no_clients: "Nessun cliente trovato nel parco.", map_unlocated: "Non localizzati ({n})",
+    map_none_located: "Nessun cliente è stato localizzato (indirizzo mancante o non riconosciuto).",
+    map_reason_no_address: "Indirizzo non indicato in RG System",
+    geocoding_unavailable: "Geocodifica non disponibile (HTTP {status})",
+    map_reason_bad_address: "Indirizzo non riconosciuto ({addr})",
+    map_error_prefix: "Errore: ", map_critical_popup: "⚠️ Avviso critico in corso",
+    map_link_parc: "Parco", map_link_alerts: "Avvisi", map_link_client_sheet: "Scheda cliente",
+    map_see_client: "Vedi questo cliente",
+    clients_title: "Clienti", client_no_name: "Cliente senza nome", client_phone: "Telefono",
+    client_email: "Email", client_address: "Indirizzo", client_see_in_parc: "Vedi nel Parco",
+    client_default_title: "Cliente", no_clients_found: "Nessun cliente trovato nel parco.",
+    whatsnew_title: "Novità",
+  },
+  es: {
+    nav_header: "Navegación", nav_parc: "Parque", nav_alerts: "Alertas", nav_map: "Mapa",
+    nav_clients: "Clientes", nav_whatsnew: "Novedades",
+    search_placeholder: "Buscar...", search_open: "Buscar", search_close: "Cerrar búsqueda",
+    loading: "Cargando…", loading_data: "Cargando datos…", error_prefix: "Error de carga: ",
+    generic_error_prefix: "Error: ",
+    back: "Atrás", refresh: "Actualizar",
+    alerts_updated_at: "Actualizado a las {time}", alerts_updating: "Actualizando…",
+    alerts_update_failed: "Falló la última actualización",
+    crit_critical: "Crítica", crit_medium: "Media", crit_low: "Baja",
+    all_clients: "Todos los clientes", no_alerts: "✅ No hay alertas que mostrar",
+    offline_badge: "Offline", acquitted_badge: "confirmada", unknown_location: "Ubicación desconocida",
+    access_agent: "Abrir agente", category_label: "Categoría: ", id_label: "ID: ",
+    incident_no_title: "Incidente sin título", agent_unknown: "Agente desconocido",
+    parc_default_title: "Parque", agent_default_title: "Agente",
+    no_filter_results: "Sin resultados para este filtro", filter_prefix: "Filtro: ",
+    node_not_found: "Carpeta no encontrada",
+    filter_servers_only: "Solo servidores", filter_workstations_only: "Solo estaciones de trabajo",
+    filter_devices_only: "Solo dispositivos",
+    stat_servers: "Servidor(es)", stat_workstations: "Estación(es) de trabajo", stat_devices: "Dispositivo(s)",
+    search_results_title: "Resultados de la búsqueda", search_min_chars: "Escribe al menos 2 caracteres para buscar",
+    searching: "Buscando…", no_agent_found: "No se encontraron resultados", search_error: "Error de búsqueda: ",
+    f_hostname: "Nombre de host", f_domain: "Dominio", f_system: "Sistema", f_cpu: "CPU", f_memory: "Memoria",
+    f_disk: "Disco", f_manufacturer: "Fabricante", f_serial: "N.º de serie", f_private_ip: "IP privada",
+    f_public_ip: "IP pública", f_last_user: "Último usuario", f_last_boot: "Último arranque",
+    f_availability: "Disponibilidad", f_windows_update: "Windows Update", f_security: "Seguridad",
+    f_rg_agent: "Agente RG System",
+    online: "En línea", offline: "Fuera de línea", in_maintenance: " · en mantenimiento",
+    security_ok: "OK", security_check: "Por revisar", show_comment: "🔒 Mostrar comentario",
+    no_charts: "No hay gráficos disponibles para este agente", charts_title: "Gráficos",
+    show_all: "Mostrar todo", collapse_all: "Contraer todo",
+    day_short: "(24h)", week_short: "(7d)", month_short: "(30d)",
+    scale_day: "24 horas", scale_week: "7 días", scale_month: "30 días", scale_year: "12 meses",
+    chart_no_data: "Sin datos para este período",
+    chart_active_pct: "Activo <strong>{pct}%</strong> del tiempo · período: {scale}",
+    chart_latest_value: "Último valor: <strong>{value}</strong> · período: {scale}",
+    series_usage: "Uso",
+    wu_critical: "crítica(s)", wu_optional: "opcional(es)", wu_reboot_needed: "reinicio requerido",
+    no_domain: "Fuera de dominio", agent_version_line: "v{version} · instalado el {date}",
+    backup_title: "Copia de seguridad",
+    backup_success: "Correcto", backup_error: "Error", backup_warning: "Advertencia",
+    backup_running: "En curso", backup_waiting: "Primera copia pendiente", backup_unknown: "Desconocido",
+    plugin_file: "Archivos", plugin_mssql: "SQL Server", plugin_oracle: "Oracle", plugin_hyperV: "Hyper-V",
+    plugin_bareMetal: "Bare Metal", plugin_vCenter: "vCenter", plugin_replication: "Replicación",
+    plugin_exchange: "Exchange", duration_min: " min",
+    objects_summary: "Objetos: {succ} correctos, {fail} fallidos",
+    journal_title: "Registro de eventos", event_error: "Error", event_warning: "Advertencia",
+    event_info: "Información", filter_all: "Todas", no_events: "Sin eventos para este filtro",
+    event_source_unknown: "Origen desconocido",
+    alerts_title: "Alertas", no_alerts_filter: "Sin alertas para este filtro",
+    no_alerts_agent: "✅ Sin alertas para este agente",
+    cs_never_run: "Nunca ejecutado", cs_success: "Correcto", cs_failure: "Fallido", cs_unknown: "Desconocido",
+    cs_exec_error: "Error de ejecución: ",
+    map_title: "Mapa de clientes", map_loading_clients: "Cargando clientes…",
+    map_fetching_details: "Obteniendo fichas de clientes… ({i}/{n})",
+    map_locating: "Localizando clientes… ({i}/{n})",
+    map_no_clients: "No se encontraron clientes en el parque.", map_unlocated: "No localizados ({n})",
+    map_none_located: "No se pudo localizar a ningún cliente (dirección faltante o no reconocida).",
+    map_reason_no_address: "Dirección no indicada en RG System",
+    geocoding_unavailable: "Geocodificación no disponible (HTTP {status})",
+    map_reason_bad_address: "Dirección no reconocida ({addr})",
+    map_error_prefix: "Error: ", map_critical_popup: "⚠️ Alerta crítica en curso",
+    map_link_parc: "Parque", map_link_alerts: "Alertas", map_link_client_sheet: "Ficha de cliente",
+    map_see_client: "Ver este cliente",
+    clients_title: "Clientes", client_no_name: "Cliente sin nombre", client_phone: "Teléfono",
+    client_email: "Email", client_address: "Dirección", client_see_in_parc: "Ver en el Parque",
+    client_default_title: "Cliente", no_clients_found: "No se encontraron clientes en el parque.",
+    whatsnew_title: "Novedades",
+  },
+  pt: {
+    nav_header: "Navegação", nav_parc: "Parque", nav_alerts: "Alertas", nav_map: "Mapa",
+    nav_clients: "Clientes", nav_whatsnew: "Novidades",
+    search_placeholder: "Pesquisar...", search_open: "Pesquisar", search_close: "Fechar pesquisa",
+    loading: "A carregar…", loading_data: "A carregar dados…", error_prefix: "Erro de carregamento: ",
+    generic_error_prefix: "Erro: ",
+    back: "Voltar", refresh: "Atualizar",
+    alerts_updated_at: "Atualizado às {time}", alerts_updating: "A atualizar…",
+    alerts_update_failed: "Falha na última atualização",
+    crit_critical: "Crítica", crit_medium: "Média", crit_low: "Baixa",
+    all_clients: "Todos os clientes", no_alerts: "✅ Nenhum alerta para mostrar",
+    offline_badge: "Offline", acquitted_badge: "confirmado", unknown_location: "Localização desconhecida",
+    access_agent: "Abrir agente", category_label: "Categoria: ", id_label: "ID: ",
+    incident_no_title: "Incidente sem título", agent_unknown: "Agente desconhecido",
+    parc_default_title: "Parque", agent_default_title: "Agente",
+    no_filter_results: "Sem resultados para este filtro", filter_prefix: "Filtro: ",
+    node_not_found: "Pasta não encontrada",
+    filter_servers_only: "Apenas servidores", filter_workstations_only: "Apenas estações de trabalho",
+    filter_devices_only: "Apenas dispositivos",
+    stat_servers: "Servidor(es)", stat_workstations: "Estação(ões) de trabalho", stat_devices: "Dispositivo(s)",
+    search_results_title: "Resultados da pesquisa", search_min_chars: "Digite pelo menos 2 carateres para pesquisar",
+    searching: "A pesquisar…", no_agent_found: "Nenhum resultado encontrado", search_error: "Erro de pesquisa: ",
+    f_hostname: "Nome do host", f_domain: "Domínio", f_system: "Sistema", f_cpu: "CPU", f_memory: "Memória",
+    f_disk: "Disco", f_manufacturer: "Fabricante", f_serial: "N.º de série", f_private_ip: "IP privado",
+    f_public_ip: "IP público", f_last_user: "Último utilizador", f_last_boot: "Último arranque",
+    f_availability: "Disponibilidade", f_windows_update: "Windows Update", f_security: "Segurança",
+    f_rg_agent: "Agente RG System",
+    online: "Online", offline: "Offline", in_maintenance: " · em manutenção",
+    security_ok: "OK", security_check: "A verificar", show_comment: "🔒 Mostrar comentário",
+    no_charts: "Nenhum gráfico disponível para este agente", charts_title: "Gráficos",
+    show_all: "Mostrar tudo", collapse_all: "Recolher tudo",
+    day_short: "(24h)", week_short: "(7d)", month_short: "(30d)",
+    scale_day: "24 horas", scale_week: "7 dias", scale_month: "30 dias", scale_year: "12 meses",
+    chart_no_data: "Sem dados para este período",
+    chart_active_pct: "Ativo <strong>{pct}%</strong> do tempo · período: {scale}",
+    chart_latest_value: "Último valor: <strong>{value}</strong> · período: {scale}",
+    series_usage: "Utilização",
+    wu_critical: "crítica(s)", wu_optional: "opcional(ais)", wu_reboot_needed: "reinício necessário",
+    no_domain: "Fora do domínio", agent_version_line: "v{version} · instalado a {date}",
+    backup_title: "Cópia de segurança",
+    backup_success: "Sucesso", backup_error: "Erro", backup_warning: "Aviso",
+    backup_running: "Em curso", backup_waiting: "Primeira cópia pendente", backup_unknown: "Desconhecido",
+    plugin_file: "Ficheiros", plugin_mssql: "SQL Server", plugin_oracle: "Oracle", plugin_hyperV: "Hyper-V",
+    plugin_bareMetal: "Bare Metal", plugin_vCenter: "vCenter", plugin_replication: "Replicação",
+    plugin_exchange: "Exchange", duration_min: " min",
+    objects_summary: "Objetos: {succ} com êxito, {fail} com falha",
+    journal_title: "Registo de eventos", event_error: "Erro", event_warning: "Aviso",
+    event_info: "Informação", filter_all: "Todas", no_events: "Sem eventos para este filtro",
+    event_source_unknown: "Origem desconhecida",
+    alerts_title: "Alertas", no_alerts_filter: "Sem alertas para este filtro",
+    no_alerts_agent: "✅ Sem alertas para este agente",
+    cs_never_run: "Nunca executado", cs_success: "Sucesso", cs_failure: "Falhou", cs_unknown: "Desconhecido",
+    cs_exec_error: "Erro de execução: ",
+    map_title: "Mapa de clientes", map_loading_clients: "A carregar clientes…",
+    map_fetching_details: "A obter fichas de clientes… ({i}/{n})",
+    map_locating: "A localizar clientes… ({i}/{n})",
+    map_no_clients: "Nenhum cliente encontrado no parque.", map_unlocated: "Não localizados ({n})",
+    map_none_located: "Não foi possível localizar nenhum cliente (morada em falta ou não reconhecida).",
+    map_reason_no_address: "Morada não indicada no RG System",
+    geocoding_unavailable: "Geocodificação indisponível (HTTP {status})",
+    map_reason_bad_address: "Morada não reconhecida ({addr})",
+    map_error_prefix: "Erro: ", map_critical_popup: "⚠️ Alerta crítico em curso",
+    map_link_parc: "Parque", map_link_alerts: "Alertas", map_link_client_sheet: "Ficha de cliente",
+    map_see_client: "Ver este cliente",
+    clients_title: "Clientes", client_no_name: "Cliente sem nome", client_phone: "Telefone",
+    client_email: "Email", client_address: "Morada", client_see_in_parc: "Ver no Parque",
+    client_default_title: "Cliente", no_clients_found: "Nenhum cliente encontrado no parque.",
+    whatsnew_title: "Novidades",
+  },
 };
 
 const LANG_KEY = "rgdash-lang";
+// "fr" est toujours la langue de repli (pas dans cette liste) : elle n'a pas
+// besoin d'être détectée explicitement, c'est déjà la valeur par défaut.
+const SUPPORTED_LANGS = ["en", "de", "it", "es", "pt"];
 let currentLang = "fr";
 try {
   const browserLang = (navigator.language || "").toLowerCase();
-  const detected = browserLang.startsWith("en") ? "en" : browserLang.startsWith("de") ? "de" : "fr";
+  const detected = SUPPORTED_LANGS.find((l) => browserLang.startsWith(l)) || "fr";
   currentLang = localStorage.getItem(LANG_KEY) || detected;
 } catch (e) { /* stockage indisponible : reste sur le français par défaut */ }
 
@@ -972,6 +1202,48 @@ const ALERT_TITLE_PATTERNS = {
       [/^Snmp value - Error$/, () => "SNMP-Wert - Fehler"],
       [/^Snmp value - Update available - (.+)$/, (m, d) => `SNMP-Wert - Update verfügbar - ${d(m[1])}`],
       [/^Snmp value - (.+)$/, (m, d) => `SNMP-Wert - ${d(m[1])}`],
+    ],
+  },
+  it: {
+    duration: (s) => (s === "less than a minute" ? "meno di un minuto" : s),
+    disconnected: "Disconnesso",
+    rules: [
+      [/^Disk full - (.+) - ([\d.]+)%$/, (m, d) => `Disco pieno - ${d(m[1])} - ${m[2]}%`],
+      [/^Disk almost full - (.+) - ([\d.]+)%$/, (m, d) => `Disco quasi pieno - ${d(m[1])} - ${m[2]}%`],
+      [/^Stopped service\(s\): (.+) - (.+)$/, (m, d) => `Servizio/i fermato/i: ${m[1]} - ${d(m[2])}`],
+      [/^Reboot: (.+)$/, (m) => `Riavvio: ${m[1]}`],
+      [/^Custom script triggered: (.+)$/, (m) => `Script personalizzato attivato: ${m[1]}`],
+      [/^Snmp value - Error$/, () => "Valore SNMP - Errore"],
+      [/^Snmp value - Update available - (.+)$/, (m, d) => `Valore SNMP - Aggiornamento disponibile - ${d(m[1])}`],
+      [/^Snmp value - (.+)$/, (m, d) => `Valore SNMP - ${d(m[1])}`],
+    ],
+  },
+  es: {
+    duration: (s) => (s === "less than a minute" ? "menos de un minuto" : s),
+    disconnected: "Desconectado",
+    rules: [
+      [/^Disk full - (.+) - ([\d.]+)%$/, (m, d) => `Disco lleno - ${d(m[1])} - ${m[2]}%`],
+      [/^Disk almost full - (.+) - ([\d.]+)%$/, (m, d) => `Disco casi lleno - ${d(m[1])} - ${m[2]}%`],
+      [/^Stopped service\(s\): (.+) - (.+)$/, (m, d) => `Servicio(s) detenido(s): ${m[1]} - ${d(m[2])}`],
+      [/^Reboot: (.+)$/, (m) => `Reinicio: ${m[1]}`],
+      [/^Custom script triggered: (.+)$/, (m) => `Script personalizado activado: ${m[1]}`],
+      [/^Snmp value - Error$/, () => "Valor SNMP - Error"],
+      [/^Snmp value - Update available - (.+)$/, (m, d) => `Valor SNMP - Actualización disponible - ${d(m[1])}`],
+      [/^Snmp value - (.+)$/, (m, d) => `Valor SNMP - ${d(m[1])}`],
+    ],
+  },
+  pt: {
+    duration: (s) => (s === "less than a minute" ? "menos de um minuto" : s),
+    disconnected: "Desligado",
+    rules: [
+      [/^Disk full - (.+) - ([\d.]+)%$/, (m, d) => `Disco cheio - ${d(m[1])} - ${m[2]}%`],
+      [/^Disk almost full - (.+) - ([\d.]+)%$/, (m, d) => `Disco quase cheio - ${d(m[1])} - ${m[2]}%`],
+      [/^Stopped service\(s\): (.+) - (.+)$/, (m, d) => `Serviço(s) parado(s): ${m[1]} - ${d(m[2])}`],
+      [/^Reboot: (.+)$/, (m) => `Reinício: ${m[1]}`],
+      [/^Custom script triggered: (.+)$/, (m) => `Script personalizado acionado: ${m[1]}`],
+      [/^Snmp value - Error$/, () => "Valor SNMP - Erro"],
+      [/^Snmp value - Update available - (.+)$/, (m, d) => `Valor SNMP - Atualização disponível - ${d(m[1])}`],
+      [/^Snmp value - (.+)$/, (m, d) => `Valor SNMP - ${d(m[1])}`],
     ],
   },
 };
@@ -1385,7 +1657,7 @@ async function loadAlerts() {
     lastIncidents = extractIncidents(data, agents);
     populateClientFilterOptions();
     renderAlertList();
-    const timeLocale = { fr: "fr-FR", en: "en-US", de: "de-DE" }[currentLang] || "fr-FR";
+    const timeLocale = { fr: "fr-FR", en: "en-US", de: "de-DE", it: "it-IT", es: "es-ES", pt: "pt-PT" }[currentLang] || "fr-FR";
     const time = new Date().toLocaleTimeString(timeLocale);
     statusText.textContent = t("alerts_updated_at", { time });
   } catch (err) {
@@ -1699,10 +1971,13 @@ function applyStaticTranslations() {
   document.getElementById("langBtnFr").classList.toggle("active", currentLang === "fr");
   document.getElementById("langBtnEn").classList.toggle("active", currentLang === "en");
   document.getElementById("langBtnDe").classList.toggle("active", currentLang === "de");
+  document.getElementById("langBtnIt").classList.toggle("active", currentLang === "it");
+  document.getElementById("langBtnEs").classList.toggle("active", currentLang === "es");
+  document.getElementById("langBtnPt").classList.toggle("active", currentLang === "pt");
 }
 
 function setLang(lang) {
-  if (lang !== "fr" && lang !== "en" && lang !== "de") return;
+  if (lang !== "fr" && !SUPPORTED_LANGS.includes(lang)) return;
   currentLang = lang;
   try { localStorage.setItem(LANG_KEY, lang); } catch (e) { /* pas bloquant */ }
   applyStaticTranslations();
@@ -1716,6 +1991,9 @@ function setLang(lang) {
 document.getElementById("langBtnFr").addEventListener("click", () => setLang("fr"));
 document.getElementById("langBtnEn").addEventListener("click", () => setLang("en"));
 document.getElementById("langBtnDe").addEventListener("click", () => setLang("de"));
+document.getElementById("langBtnIt").addEventListener("click", () => setLang("it"));
+document.getElementById("langBtnEs").addEventListener("click", () => setLang("es"));
+document.getElementById("langBtnPt").addEventListener("click", () => setLang("pt"));
 
 mainMenuBtn.addEventListener("click", openDrawer);
 drawerOverlay.addEventListener("click", closeDrawer);
@@ -2492,6 +2770,7 @@ function buildLineChartSvg(interpreted, scale) {
 // ⚠️ À tenir à jour à chaque nouvelle version livrée (garder aussi
 // releaseNotes.md synchronisé, à la racine du dossier fourni à l'utilisateur).
 const RELEASE_NOTES = [
+  { version: "0.87", text: "Ajout de l'italien, de l'espagnol et du portugais comme 4ᵉ, 5ᵉ et 6ᵉ langues de l'app (drapeaux 🇮🇹🇪🇸🇵🇹 dans le tiroir latéral, sur 2 lignes désormais). Toute l'interface est traduite dans ces 3 langues, y compris les titres d'alerte reformulés automatiquement (comme pour le français et l'allemand)." },
   { version: "0.86", text: "Les titres d'alerte reformulés automatiquement (v0.83/v0.84) sont maintenant aussi disponibles en allemand, avec les mêmes formulations qu'en français (ex. \"Disk full...\" → \"Festplatte voll...\", \"Disconnected\" → \"Getrennt\")." },
   { version: "0.85", text: "Ajout de l'allemand comme 3ᵉ langue de l'app (drapeau 🇩🇪 dans le tiroir latéral). Les 3 drapeaux FR/EN/DE sont aussi redessinés en plus petit et en style plat (aplats de couleur simples), au lieu des émojis drapeaux précédents." },
   { version: "0.84", text: "Ajout de la traduction du titre d'alerte \"Disconnected\" → \"Déconnecté\"." },
