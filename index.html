@@ -371,21 +371,23 @@
   }
   .drawer-lang-row {
     display: flex;
-    gap: 8px;
+    gap: 6px;
     padding: 16px;
     margin-top: auto;
     border-top: 1px solid var(--card-border);
   }
   .drawer-lang-btn {
     flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     background: var(--card);
     border: 1px solid var(--card-border);
-    border-radius: 10px;
-    padding: 8px;
-    font-size: 1.3rem;
-    line-height: 1;
+    border-radius: 6px;
+    padding: 5px;
     opacity: 0.5;
   }
+  .drawer-lang-btn svg { display: block; width: 18px; height: 12px; border-radius: 2px; }
   .drawer-lang-btn.active { border-color: var(--accent); opacity: 1; }
 
   .row {
@@ -515,7 +517,7 @@
 <header>
   <div class="header-top">
     <button class="hamburger-btn" id="mainMenuBtn">☰</button>
-    <h1 id="homeLink"><img src="icons/icon-192.png" alt="" class="brand-icon"> RG System Suite <span class="app-version">v0.84</span></h1>
+    <h1 id="homeLink"><img src="icons/icon-192.png" alt="" class="brand-icon"> RG System Suite <span class="app-version">v0.86</span></h1>
     <div class="search-bar" id="searchBarWrap">
       <button type="button" class="search-toggle-btn" id="searchToggleBtn" title="Rechercher" aria-label="Rechercher">🔍</button>
       <div class="search-input-row" id="searchInputRow" hidden>
@@ -654,8 +656,32 @@
   <button type="button" class="drawer-item" data-nav="clients">🏢 <span data-nav-label="clients">Clients</span></button>
   <button type="button" class="drawer-item" data-nav="whatsnew">🆕 <span data-nav-label="whatsnew">Nouveautés</span> <span class="update-dot" id="whatsNewDot" hidden></span></button>
   <div class="drawer-lang-row">
-    <button type="button" class="drawer-lang-btn" id="langBtnFr" title="Français" aria-label="Français">🇫🇷</button>
-    <button type="button" class="drawer-lang-btn" id="langBtnEn" title="English" aria-label="English">🇬🇧</button>
+    <button type="button" class="drawer-lang-btn" id="langBtnFr" title="Français" aria-label="Français">
+      <svg viewBox="0 0 30 20" xmlns="http://www.w3.org/2000/svg">
+        <rect width="10" height="20" fill="#002654"/>
+        <rect x="10" width="10" height="20" fill="#fff"/>
+        <rect x="20" width="10" height="20" fill="#ED2939"/>
+      </svg>
+    </button>
+    <button type="button" class="drawer-lang-btn" id="langBtnEn" title="English" aria-label="English">
+      <svg viewBox="0 0 30 20" xmlns="http://www.w3.org/2000/svg">
+        <defs><clipPath id="gbClip"><rect width="30" height="20"/></clipPath></defs>
+        <g clip-path="url(#gbClip)">
+          <rect width="30" height="20" fill="#00247d"/>
+          <path d="M0,0 L30,20 M30,0 L0,20" stroke="#fff" stroke-width="4"/>
+          <path d="M0,0 L30,20 M30,0 L0,20" stroke="#cf142b" stroke-width="2"/>
+          <path d="M15,0 V20 M0,10 H30" stroke="#fff" stroke-width="6"/>
+          <path d="M15,0 V20 M0,10 H30" stroke="#cf142b" stroke-width="3.6"/>
+        </g>
+      </svg>
+    </button>
+    <button type="button" class="drawer-lang-btn" id="langBtnDe" title="Deutsch" aria-label="Deutsch">
+      <svg viewBox="0 0 30 20" xmlns="http://www.w3.org/2000/svg">
+        <rect width="30" height="20" fill="#000"/>
+        <rect y="6.67" width="30" height="6.67" fill="#D00"/>
+        <rect y="13.33" width="30" height="6.67" fill="#FFCE00"/>
+      </svg>
+    </button>
   </div>
 </div>
 
@@ -822,12 +848,83 @@ const TRANSLATIONS = {
     client_default_title: "Client", no_clients_found: "No clients found in the fleet.",
     whatsnew_title: "What's new",
   },
+  de: {
+    nav_header: "Navigation", nav_parc: "Geräte", nav_alerts: "Warnungen", nav_map: "Karte",
+    nav_clients: "Kunden", nav_whatsnew: "Neuigkeiten",
+    search_placeholder: "Suchen...", search_open: "Suchen", search_close: "Suche schließen",
+    loading: "Lädt…", loading_data: "Daten werden geladen…", error_prefix: "Ladefehler: ",
+    generic_error_prefix: "Fehler: ",
+    back: "Zurück", refresh: "Aktualisieren",
+    alerts_updated_at: "Aktualisiert um {time}", alerts_updating: "Wird aktualisiert…",
+    alerts_update_failed: "Letzte Aktualisierung fehlgeschlagen",
+    crit_critical: "Kritisch", crit_medium: "Mittel", crit_low: "Niedrig",
+    all_clients: "Alle Kunden", no_alerts: "✅ Keine Warnungen vorhanden",
+    offline_badge: "Offline", acquitted_badge: "quittiert", unknown_location: "Unbekannter Standort",
+    access_agent: "Agent öffnen", category_label: "Kategorie: ", id_label: "ID: ",
+    incident_no_title: "Vorfall ohne Titel", agent_unknown: "Unbekannter Agent",
+    parc_default_title: "Geräte", agent_default_title: "Agent",
+    no_filter_results: "Keine Ergebnisse für diesen Filter", filter_prefix: "Filter: ",
+    node_not_found: "Ordner nicht gefunden",
+    filter_servers_only: "Nur Server", filter_workstations_only: "Nur Arbeitsstationen",
+    filter_devices_only: "Nur Geräte",
+    stat_servers: "Server", stat_workstations: "Arbeitsstation(en)", stat_devices: "Gerät(e)",
+    search_results_title: "Suchergebnisse", search_min_chars: "Geben Sie mindestens 2 Zeichen ein",
+    searching: "Suche läuft…", no_agent_found: "Keine Ergebnisse gefunden", search_error: "Suchfehler: ",
+    f_hostname: "Hostname", f_domain: "Domäne", f_system: "System", f_cpu: "CPU", f_memory: "Arbeitsspeicher",
+    f_disk: "Festplatte", f_manufacturer: "Hersteller", f_serial: "Seriennummer", f_private_ip: "Private IP",
+    f_public_ip: "Öffentliche IP", f_last_user: "Letzter Benutzer", f_last_boot: "Letzter Start",
+    f_availability: "Verfügbarkeit", f_windows_update: "Windows Update", f_security: "Sicherheit",
+    f_rg_agent: "RG System Agent",
+    online: "Online", offline: "Offline", in_maintenance: " · in Wartung",
+    security_ok: "OK", security_check: "Zu überprüfen", show_comment: "🔒 Kommentar anzeigen",
+    no_charts: "Kein Diagramm für diesen Agenten verfügbar", charts_title: "Diagramme",
+    show_all: "Alle anzeigen", collapse_all: "Alle einklappen",
+    day_short: "(24h)", week_short: "(7T)", month_short: "(30T)",
+    scale_day: "24 Std.", scale_week: "7 Tage", scale_month: "30 Tage", scale_year: "12 Monate",
+    chart_no_data: "Keine Daten für diesen Zeitraum",
+    chart_active_pct: "Aktiv <strong>{pct}%</strong> der Zeit · Zeitraum: {scale}",
+    chart_latest_value: "Letzter Wert: <strong>{value}</strong> · Zeitraum: {scale}",
+    series_usage: "Auslastung",
+    wu_critical: "kritisch", wu_optional: "optional", wu_reboot_needed: "Neustart erforderlich",
+    no_domain: "Nicht in Domäne", agent_version_line: "v{version} · installiert am {date}",
+    backup_title: "Sicherung",
+    backup_success: "Erfolgreich", backup_error: "Fehler", backup_warning: "Warnung",
+    backup_running: "Läuft", backup_waiting: "Erste Sicherung ausstehend", backup_unknown: "Unbekannt",
+    plugin_file: "Dateien", plugin_mssql: "SQL Server", plugin_oracle: "Oracle", plugin_hyperV: "Hyper-V",
+    plugin_bareMetal: "Bare Metal", plugin_vCenter: "vCenter", plugin_replication: "Replikation",
+    plugin_exchange: "Exchange", duration_min: " Min.",
+    objects_summary: "Objekte: {succ} erfolgreich, {fail} fehlgeschlagen",
+    journal_title: "Ereignisprotokoll", event_error: "Fehler", event_warning: "Warnung",
+    event_info: "Information", filter_all: "Alle", no_events: "Keine Ereignisse für diesen Filter",
+    event_source_unknown: "Unbekannte Quelle",
+    alerts_title: "Warnungen", no_alerts_filter: "Keine Warnungen für diesen Filter",
+    no_alerts_agent: "✅ Keine Warnungen für diesen Agenten",
+    cs_never_run: "Nie ausgeführt", cs_success: "Erfolgreich", cs_failure: "Fehlgeschlagen", cs_unknown: "Unbekannt",
+    cs_exec_error: "Ausführungsfehler: ",
+    map_title: "Kundenkarte", map_loading_clients: "Kunden werden geladen…",
+    map_fetching_details: "Kundendaten werden abgerufen… ({i}/{n})",
+    map_locating: "Kunden werden lokalisiert… ({i}/{n})",
+    map_no_clients: "Keine Kunden im Bestand gefunden.", map_unlocated: "Nicht lokalisiert ({n})",
+    map_none_located: "Kein Kunde konnte lokalisiert werden (Adresse fehlt oder unbekannt).",
+    map_reason_no_address: "Keine Adresse in RG System hinterlegt",
+    geocoding_unavailable: "Geokodierung nicht verfügbar (HTTP {status})",
+    map_reason_bad_address: "Adresse nicht erkannt ({addr})",
+    map_error_prefix: "Fehler: ", map_critical_popup: "⚠️ Kritische Warnung aktiv",
+    map_link_parc: "Geräte", map_link_alerts: "Warnungen", map_link_client_sheet: "Kundenblatt",
+    map_see_client: "Diesen Kunden ansehen",
+    clients_title: "Kunden", client_no_name: "Kunde ohne Namen", client_phone: "Telefon",
+    client_email: "E-Mail", client_address: "Adresse", client_see_in_parc: "In den Geräten anzeigen",
+    client_default_title: "Kunde", no_clients_found: "Keine Kunden im Bestand gefunden.",
+    whatsnew_title: "Neuigkeiten",
+  },
 };
 
 const LANG_KEY = "rgdash-lang";
 let currentLang = "fr";
 try {
-  currentLang = localStorage.getItem(LANG_KEY) || (navigator.language && navigator.language.toLowerCase().startsWith("en") ? "en" : "fr");
+  const browserLang = (navigator.language || "").toLowerCase();
+  const detected = browserLang.startsWith("en") ? "en" : browserLang.startsWith("de") ? "de" : "fr";
+  currentLang = localStorage.getItem(LANG_KEY) || detected;
 } catch (e) { /* stockage indisponible : reste sur le français par défaut */ }
 
 function t(key, vars) {
@@ -844,19 +941,49 @@ function t(key, vars) {
 // d'alerte. On reproduit ici ce qu'on a pu observer sur de vraies alertes ;
 // toute formulation pas encore vue ici retombe sur le texte anglais original
 // (jamais d'erreur, jamais de texte à moitié traduit).
+// Un jeu de gabarits par langue (regex -> gabarit) ; chaque gabarit reçoit le
+// résultat du match ainsi que le traducteur de durée de SA langue. Ajouter
+// une langue ici = ajouter une entrée dans ALERT_TITLE_PATTERNS, rien
+// d'autre à toucher dans translateAlertTitle() lui-même.
+const ALERT_TITLE_PATTERNS = {
+  fr: {
+    duration: (s) => (s === "less than a minute" ? "moins d'une minute" : s),
+    disconnected: "Déconnecté",
+    rules: [
+      [/^Disk full - (.+) - ([\d.]+)%$/, (m, d) => `Disque plein - ${d(m[1])} - ${m[2]}%`],
+      [/^Disk almost full - (.+) - ([\d.]+)%$/, (m, d) => `Disque presque plein - ${d(m[1])} - ${m[2]}%`],
+      [/^Stopped service\(s\): (.+) - (.+)$/, (m, d) => `Service(s) arrêté(s) : ${m[1]} - ${d(m[2])}`],
+      [/^Reboot: (.+)$/, (m) => `Redémarrage : ${m[1]}`],
+      [/^Custom script triggered: (.+)$/, (m) => `Script personnalisé déclenché : ${m[1]}`],
+      [/^Snmp value - Error$/, () => "Valeur SNMP - Erreur"],
+      [/^Snmp value - Update available - (.+)$/, (m, d) => `Valeur SNMP - Mise à jour disponible - ${d(m[1])}`],
+      [/^Snmp value - (.+)$/, (m, d) => `Valeur SNMP - ${d(m[1])}`],
+    ],
+  },
+  de: {
+    duration: (s) => (s === "less than a minute" ? "weniger als eine Minute" : s),
+    disconnected: "Getrennt",
+    rules: [
+      [/^Disk full - (.+) - ([\d.]+)%$/, (m, d) => `Festplatte voll - ${d(m[1])} - ${m[2]}%`],
+      [/^Disk almost full - (.+) - ([\d.]+)%$/, (m, d) => `Festplatte fast voll - ${d(m[1])} - ${m[2]}%`],
+      [/^Stopped service\(s\): (.+) - (.+)$/, (m, d) => `Dienst(e) gestoppt: ${m[1]} - ${d(m[2])}`],
+      [/^Reboot: (.+)$/, (m) => `Neustart: ${m[1]}`],
+      [/^Custom script triggered: (.+)$/, (m) => `Benutzerdefiniertes Skript ausgelöst: ${m[1]}`],
+      [/^Snmp value - Error$/, () => "SNMP-Wert - Fehler"],
+      [/^Snmp value - Update available - (.+)$/, (m, d) => `SNMP-Wert - Update verfügbar - ${d(m[1])}`],
+      [/^Snmp value - (.+)$/, (m, d) => `SNMP-Wert - ${d(m[1])}`],
+    ],
+  },
+};
+
 function translateAlertTitle(title) {
-  if (currentLang !== "fr" || !title) return title;
-  const trDuration = (s) => (s === "less than a minute" ? "moins d'une minute" : s);
-  let m;
-  if ((m = title.match(/^Disk full - (.+) - ([\d.]+)%$/))) return `Disque plein - ${trDuration(m[1])} - ${m[2]}%`;
-  if ((m = title.match(/^Disk almost full - (.+) - ([\d.]+)%$/))) return `Disque presque plein - ${trDuration(m[1])} - ${m[2]}%`;
-  if ((m = title.match(/^Stopped service\(s\): (.+) - (.+)$/))) return `Service(s) arrêté(s) : ${m[1]} - ${trDuration(m[2])}`;
-  if ((m = title.match(/^Reboot: (.+)$/))) return `Redémarrage : ${m[1]}`;
-  if ((m = title.match(/^Custom script triggered: (.+)$/))) return `Script personnalisé déclenché : ${m[1]}`;
-  if (title === "Snmp value - Error") return "Valeur SNMP - Erreur";
-  if ((m = title.match(/^Snmp value - Update available - (.+)$/))) return `Valeur SNMP - Mise à jour disponible - ${trDuration(m[1])}`;
-  if ((m = title.match(/^Snmp value - (.+)$/))) return `Valeur SNMP - ${trDuration(m[1])}`;
-  if (title.toLowerCase() === "disconnected") return "Déconnecté";
+  const patterns = ALERT_TITLE_PATTERNS[currentLang];
+  if (!title || !patterns) return title; // anglais (ou langue sans gabarit) : texte déjà dans sa langue d'origine
+  for (const [re, build] of patterns.rules) {
+    const m = title.match(re);
+    if (m) return build(m, patterns.duration);
+  }
+  if (title.toLowerCase() === "disconnected") return patterns.disconnected;
   return title;
 }
 
@@ -1258,7 +1385,8 @@ async function loadAlerts() {
     lastIncidents = extractIncidents(data, agents);
     populateClientFilterOptions();
     renderAlertList();
-    const time = new Date().toLocaleTimeString(currentLang === "en" ? "en-US" : "fr-FR");
+    const timeLocale = { fr: "fr-FR", en: "en-US", de: "de-DE" }[currentLang] || "fr-FR";
+    const time = new Date().toLocaleTimeString(timeLocale);
     statusText.textContent = t("alerts_updated_at", { time });
   } catch (err) {
     listEl.innerHTML = `<div class="error">${t("error_prefix")}${escapeHtml(err.message)}</div>`;
@@ -1570,10 +1698,11 @@ function applyStaticTranslations() {
   if (allClientsOption) allClientsOption.textContent = t("all_clients");
   document.getElementById("langBtnFr").classList.toggle("active", currentLang === "fr");
   document.getElementById("langBtnEn").classList.toggle("active", currentLang === "en");
+  document.getElementById("langBtnDe").classList.toggle("active", currentLang === "de");
 }
 
 function setLang(lang) {
-  if (lang !== "fr" && lang !== "en") return;
+  if (lang !== "fr" && lang !== "en" && lang !== "de") return;
   currentLang = lang;
   try { localStorage.setItem(LANG_KEY, lang); } catch (e) { /* pas bloquant */ }
   applyStaticTranslations();
@@ -1586,6 +1715,7 @@ function setLang(lang) {
 
 document.getElementById("langBtnFr").addEventListener("click", () => setLang("fr"));
 document.getElementById("langBtnEn").addEventListener("click", () => setLang("en"));
+document.getElementById("langBtnDe").addEventListener("click", () => setLang("de"));
 
 mainMenuBtn.addEventListener("click", openDrawer);
 drawerOverlay.addEventListener("click", closeDrawer);
@@ -2362,6 +2492,8 @@ function buildLineChartSvg(interpreted, scale) {
 // ⚠️ À tenir à jour à chaque nouvelle version livrée (garder aussi
 // releaseNotes.md synchronisé, à la racine du dossier fourni à l'utilisateur).
 const RELEASE_NOTES = [
+  { version: "0.86", text: "Les titres d'alerte reformulés automatiquement (v0.83/v0.84) sont maintenant aussi disponibles en allemand, avec les mêmes formulations qu'en français (ex. \"Disk full...\" → \"Festplatte voll...\", \"Disconnected\" → \"Getrennt\")." },
+  { version: "0.85", text: "Ajout de l'allemand comme 3ᵉ langue de l'app (drapeau 🇩🇪 dans le tiroir latéral). Les 3 drapeaux FR/EN/DE sont aussi redessinés en plus petit et en style plat (aplats de couleur simples), au lieu des émojis drapeaux précédents." },
   { version: "0.84", text: "Ajout de la traduction du titre d'alerte \"Disconnected\" → \"Déconnecté\"." },
   { version: "0.83", text: "En français, les titres d'alerte (ex. \"Disk full - 10 minutes - 35%\") sont maintenant reformulés en français (\"Disque plein - 10 minutes - 35%\") quand RG System envoie une formulation reconnue — RG System ne traduit jamais ce texte via l'API, même avec le compte réglé en français. Les formulations pas encore reconnues restent affichées telles quelles en anglais, sans erreur ; signalez-les si vous en croisez pour qu'elles soient ajoutées." },
   { version: "0.82", text: "La recherche de dossiers (v0.81) connaît maintenant le vrai nom commercial du client (ex. \"TechNova Solutions\"), pas seulement le nom technique du dossier dans l'arborescence (ex. \"CLIENT.1.RMM.Assist\") — ces deux noms peuvent être très différents dans RG System. Affichage avec une icône 🏢. Recherche aussi plus rapide : un seul appel au lieu de parcourir tout l'arbre des dossiers." },
