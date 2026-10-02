@@ -574,7 +574,7 @@
 <header>
   <div class="header-top">
     <button class="hamburger-btn" id="mainMenuBtn">☰</button>
-    <h1 id="homeLink"><img src="icons/icon-192.png" alt="" class="brand-icon"> RG System Suite <span class="app-version">v0.93</span></h1>
+    <h1 id="homeLink"><img src="icons/icon-192.png" alt="" class="brand-icon"> RG System Suite <span class="app-version">v0.94</span></h1>
     <div class="search-bar" id="searchBarWrap">
       <button type="button" class="search-toggle-btn" id="searchToggleBtn" title="Rechercher" aria-label="Rechercher">🔍</button>
       <div class="search-input-row" id="searchInputRow" hidden>
@@ -2784,7 +2784,7 @@ async function loadAgent(agentId) {
     const chartsHtml = !showSupervisionBlocks ? "" : categories.length
       ? `<div class="chart-cat">${t("charts_title")}</div>` +
         `<button type="button" class="section-toggle" data-toggle-section="agentChartsWrap">${t("chart_count", { total: totalCharts })} <span class="chev">›</span></button>` +
-        `<div id="agentChartsWrap" hidden>` +
+        `<div id="agentChartsWrap">` +
           `<div class="mini-filter"><button type="button" class="mini-filter-btn" data-charts-toggle-all>${t("show_all")}</button></div>` +
           `<div id="agentChartsList">${categories.map((cat) => cat.items.map((item) => chartItemHtml(item, cat.name)).join("")).join("")}</div>` +
         `</div>`
@@ -2804,10 +2804,10 @@ async function loadAgent(agentId) {
     const { html: backupHtml, orgName } = backupResult;
 
     const incidentsHtml = showSupervisionBlocks ? renderAgentIncidents(agentId) : "";
-    // Ordre demandé par l'utilisateur : Sauvegarde, Alertes (pas citées mais
-    // conservées à leur place d'origine), puis Courbes, Journal d'événements,
-    // Custom scripts, Déploiements dans cet ordre précis.
-    agentBodyEl.innerHTML = renderAgentPedigree(agentId, ped, orgName) + backupHtml + incidentsHtml + chartsHtml + eventsHtml + customScriptsHtml + deployHtml;
+    // Ordre demandé par l'utilisateur : Sauvegarde, Courbes (dépliées par
+    // défaut, cf. agentChartsWrap sans `hidden`), Alertes, Journal
+    // d'événements, Custom scripts, Déploiements.
+    agentBodyEl.innerHTML = renderAgentPedigree(agentId, ped, orgName) + backupHtml + chartsHtml + incidentsHtml + eventsHtml + customScriptsHtml + deployHtml;
   } catch (err) {
     agentBodyEl.innerHTML = '<div class="error">' + t("error_prefix") + escapeHtml(err.message) + '</div>';
     console.error(err);
@@ -3083,6 +3083,14 @@ function buildLineChartSvg(interpreted, scale) {
 // important pour tout traduire rétroactivement, décision explicite de
 // l'utilisateur. renderWhatsNew() gère les deux formats.
 const RELEASE_NOTES = [
+  { version: "0.94", text: {
+    fr: "Le bloc Courbes est déplacé juste après Sauvegarde (avant Alertes), et reste déplié par défaut — contrairement aux autres blocs de la fiche agent, fermés par défaut depuis la v0.93.",
+    en: "The Charts block is moved right after Backup (before Alerts), and stays expanded by default — unlike the other agent sheet blocks, closed by default since v0.93.",
+    de: "Der Diagramme-Block wurde direkt nach Sicherung verschoben (vor Warnungen) und bleibt standardmäßig aufgeklappt — im Gegensatz zu den anderen Blöcken der Agentenkarte, die seit v0.93 standardmäßig geschlossen sind.",
+    it: "Il blocco Grafici è spostato subito dopo Backup (prima di Avvisi) e resta espanso per impostazione predefinita — a differenza degli altri blocchi della scheda agente, chiusi per impostazione predefinita dalla v0.93.",
+    es: "El bloque Gráficos se mueve justo después de Copia de seguridad (antes de Alertas), y permanece desplegado por defecto — a diferencia de los demás bloques de la ficha del agente, cerrados por defecto desde la v0.93.",
+    pt: "O bloco Gráficos é movido para logo a seguir a Cópia de segurança (antes de Alertas), e permanece expandido por predefinição — ao contrário dos restantes blocos da ficha do agente, fechados por predefinição desde a v0.93.",
+  } },
   { version: "0.93", text: {
     fr: "Réorganisation de la fiche agent : l'ordre est désormais Sauvegarde, Alertes, Courbes, Journal d'événements, Custom scripts, Déploiements. Les 6 blocs sont maintenant fermés par défaut, avec une ligne de résumé (ex. \"3 sauvegarde(s) · à jour\") — un clic ouvre le détail complet.",
     en: "Agent sheet reorganized: the order is now Backup, Alerts, Charts, Event log, Custom scripts, Deployments. All 6 blocks are now closed by default, with a summary line (e.g. \"3 backup(s) · up to date\") — a click opens the full detail.",
