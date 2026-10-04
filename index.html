@@ -580,7 +580,7 @@
 <header>
   <div class="header-top">
     <button class="hamburger-btn" id="mainMenuBtn">☰</button>
-    <h1 id="homeLink"><img src="icons/icon-192.png" alt="" class="brand-icon"> RG System Suite <span class="app-version">v0.96</span></h1>
+    <h1 id="homeLink"><img src="icons/icon-192.png" alt="" class="brand-icon"> RG System Suite <span class="app-version">v0.97</span></h1>
     <div class="search-bar" id="searchBarWrap">
       <button type="button" class="search-toggle-btn" id="searchToggleBtn" title="Rechercher" aria-label="Rechercher">🔍</button>
       <div class="search-input-row" id="searchInputRow" hidden>
@@ -2883,10 +2883,10 @@ async function loadAgent(agentId) {
     const { html: backupHtml, orgName } = backupResult;
 
     const incidentsHtml = showSupervisionBlocks ? renderAgentIncidents(agentId) : "";
-    // Ordre demandé par l'utilisateur : Sauvegarde, Courbes (dépliées par
-    // défaut, cf. agentChartsWrap sans `hidden`), Alertes, Journal
+    // Ordre demandé par l'utilisateur : Courbes (dépliées par défaut, cf.
+    // agentChartsWrap sans `hidden`), Alertes, Sauvegarde, Journal
     // d'événements, Custom scripts, Déploiements.
-    agentBodyEl.innerHTML = renderAgentPedigree(agentId, ped, orgName) + backupHtml + chartsHtml + incidentsHtml + eventsHtml + customScriptsHtml + deployHtml;
+    agentBodyEl.innerHTML = renderAgentPedigree(agentId, ped, orgName) + chartsHtml + incidentsHtml + backupHtml + eventsHtml + customScriptsHtml + deployHtml;
   } catch (err) {
     agentBodyEl.innerHTML = '<div class="error">' + t("error_prefix") + escapeHtml(err.message) + '</div>';
     console.error(err);
@@ -3176,6 +3176,14 @@ function buildLineChartSvg(interpreted, scale) {
 // important pour tout traduire rétroactivement, décision explicite de
 // l'utilisateur. renderWhatsNew() gère les deux formats.
 const RELEASE_NOTES = [
+  { version: "0.97", text: {
+    fr: "Fiche agent : le bloc Sauvegarde est déplacé sous le bloc Alertes. Nouvel ordre : Courbes, Alertes, Sauvegarde, Journal d'événements, Custom scripts, Déploiements.",
+    en: "Agent sheet: the Backup block is moved below the Alerts block. New order: Charts, Alerts, Backup, Event log, Custom scripts, Deployments.",
+    de: "Agentenblatt: Der Block Sicherung steht jetzt unter dem Block Warnungen. Neue Reihenfolge: Diagramme, Warnungen, Sicherung, Ereignisprotokoll, Custom Scripts, Bereitstellungen.",
+    it: "Scheda agente: il blocco Backup è spostato sotto il blocco Avvisi. Nuovo ordine: Grafici, Avvisi, Backup, Registro eventi, Custom script, Distribuzioni.",
+    es: "Ficha del agente: el bloque Copia de seguridad pasa debajo del bloque Alertas. Nuevo orden: Gráficos, Alertas, Copia de seguridad, Registro de eventos, Custom scripts, Despliegues.",
+    pt: "Ficha do agente: o bloco Cópia de segurança passa para baixo do bloco Alertas. Nova ordem: Gráficos, Alertas, Cópia de segurança, Registo de eventos, Custom scripts, Implementações.",
+  } },
   { version: "0.96", text: {
     fr: "Les courbes et barres de disponibilité affichent maintenant un axe horaire (heures sur 24 h, dates sur 7 jours / 30 jours, mois sur 12 mois). L'API ne fournit pas d'horodatage : les repères sont calculés en considérant que le dernier point correspond à maintenant, ils sont donc approximatifs.",
     en: "Charts and availability bars now show a time axis (hours over 24 h, dates over 7 / 30 days, months over 12 months). The API provides no timestamps: the marks are computed assuming the last point is \"now\", so they are approximate.",
