@@ -555,12 +555,18 @@
   // thème clair par défaut le temps que le script principal, en bas de page,
   // s'exécute). Garde volontairement minimal ici : le reste de la logique
   // (bascule au clic, mémorisation) vit dans le script principal.
+  // Deux attributs : data-theme-mode = le CHOIX ("auto" | "light" | "dark",
+  // "auto" par défaut), data-theme = le thème RÉSOLU ("light" | "dark") que le
+  // CSS utilise. En mode auto, le thème suit la préférence du système.
   (function () {
+    var mode = "auto";
     try {
       var stored = localStorage.getItem("rgdash-theme");
-      var theme = stored || (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
-      document.documentElement.dataset.theme = theme;
-    } catch (e) { /* stockage indisponible : reste sur le thème clair par défaut */ }
+      if (stored === "light" || stored === "dark") mode = stored;
+    } catch (e) { /* stockage indisponible : reste en automatique */ }
+    var dark = mode === "dark" || (mode === "auto" && window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches);
+    document.documentElement.dataset.themeMode = mode;
+    document.documentElement.dataset.theme = dark ? "dark" : "light";
   })();
 </script>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
@@ -574,7 +580,7 @@
 <header>
   <div class="header-top">
     <button class="hamburger-btn" id="mainMenuBtn">☰</button>
-    <h1 id="homeLink"><img src="icons/icon-192.png" alt="" class="brand-icon"> RG System Suite <span class="app-version">v0.94</span></h1>
+    <h1 id="homeLink"><img src="icons/icon-192.png" alt="" class="brand-icon"> RG System Suite <span class="app-version">v0.96</span></h1>
     <div class="search-bar" id="searchBarWrap">
       <button type="button" class="search-toggle-btn" id="searchToggleBtn" title="Rechercher" aria-label="Rechercher">🔍</button>
       <div class="search-input-row" id="searchInputRow" hidden>
@@ -709,6 +715,12 @@
   <div class="drawer-header">
     <span id="drawerNavHeader">Navigation</span>
     <div class="drawer-theme-row-mini">
+      <button type="button" class="drawer-theme-btn-mini" id="themeBtnAuto" title="Auto (système)" aria-label="Auto (système)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="9"/>
+          <path d="M12 3a9 9 0 0 1 0 18z" fill="currentColor" stroke="none"/>
+        </svg>
+      </button>
       <button type="button" class="drawer-theme-btn-mini" id="themeBtnLight" title="Clair" aria-label="Clair">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
           <circle cx="12" cy="12" r="4" fill="currentColor" stroke="none"/>
@@ -877,6 +889,7 @@ const TRANSLATIONS = {
     client_default_title: "Client", no_clients_found: "Aucun client trouvé dans le parc.",
     whatsnew_title: "Nouveautés",
     theme_light: "Clair", theme_dark: "Sombre",
+    theme_auto: "Auto (système)",
     deploy_title: "Déploiements", deploy_total: "{total} paquet(s)",
     count_watch: "{count} à surveiller", all_ok: "à jour",
     backup_count: "{total} sauvegarde(s)", alert_count: "{total} alerte(s)",
@@ -956,6 +969,7 @@ const TRANSLATIONS = {
     client_default_title: "Client", no_clients_found: "No clients found in the fleet.",
     whatsnew_title: "What's new",
     theme_light: "Light", theme_dark: "Dark",
+    theme_auto: "Auto (system)",
     deploy_title: "Deployments", deploy_total: "{total} package(s)",
     count_watch: "{count} to watch", all_ok: "up to date",
     backup_count: "{total} backup(s)", alert_count: "{total} alert(s)",
@@ -1035,6 +1049,7 @@ const TRANSLATIONS = {
     client_default_title: "Kunde", no_clients_found: "Keine Kunden im Bestand gefunden.",
     whatsnew_title: "Neuigkeiten",
     theme_light: "Hell", theme_dark: "Dunkel",
+    theme_auto: "Automatisch (System)",
     deploy_title: "Bereitstellungen", deploy_total: "{total} Paket(e)",
     count_watch: "{count} zu prüfen", all_ok: "aktuell",
     backup_count: "{total} Sicherung(en)", alert_count: "{total} Warnung(en)",
@@ -1114,6 +1129,7 @@ const TRANSLATIONS = {
     client_default_title: "Cliente", no_clients_found: "Nessun cliente trovato nel parco.",
     whatsnew_title: "Novità",
     theme_light: "Chiaro", theme_dark: "Scuro",
+    theme_auto: "Automatico (sistema)",
     deploy_title: "Distribuzioni", deploy_total: "{total} pacchetto/i",
     count_watch: "{count} da verificare", all_ok: "aggiornato",
     backup_count: "{total} backup", alert_count: "{total} avviso/i",
@@ -1193,6 +1209,7 @@ const TRANSLATIONS = {
     client_default_title: "Cliente", no_clients_found: "No se encontraron clientes en el parque.",
     whatsnew_title: "Novedades",
     theme_light: "Claro", theme_dark: "Oscuro",
+    theme_auto: "Automático (sistema)",
     deploy_title: "Implementaciones", deploy_total: "{total} paquete(s)",
     count_watch: "{count} por revisar", all_ok: "al día",
     backup_count: "{total} copia(s) de seguridad", alert_count: "{total} alerta(s)",
@@ -1272,6 +1289,7 @@ const TRANSLATIONS = {
     client_default_title: "Cliente", no_clients_found: "Nenhum cliente encontrado no parque.",
     whatsnew_title: "Novidades",
     theme_light: "Claro", theme_dark: "Escuro",
+    theme_auto: "Automático (sistema)",
     deploy_title: "Implementações", deploy_total: "{total} pacote(s)",
     count_watch: "{count} a verificar", all_ok: "atualizado",
     backup_count: "{total} cópia(s) de segurança", alert_count: "{total} alerta(s)",
@@ -1288,6 +1306,8 @@ const LANG_KEY = "rgdash-lang";
 // "fr" est toujours la langue de repli (pas dans cette liste) : elle n'a pas
 // besoin d'être détectée explicitement, c'est déjà la valeur par défaut.
 const SUPPORTED_LANGS = ["en", "de", "it", "es", "pt"];
+// Locale de formatage des dates/heures pour chaque langue de l'app.
+const LOCALE_BY_LANG = { fr: "fr-FR", en: "en-US", de: "de-DE", it: "it-IT", es: "es-ES", pt: "pt-PT" };
 let currentLang = "fr";
 try {
   const browserLang = (navigator.language || "").toLowerCase();
@@ -1795,8 +1815,7 @@ async function loadAlerts() {
     lastIncidents = extractIncidents(data, agents);
     populateClientFilterOptions();
     renderAlertList();
-    const timeLocale = { fr: "fr-FR", en: "en-US", de: "de-DE", it: "it-IT", es: "es-ES", pt: "pt-PT" }[currentLang] || "fr-FR";
-    const time = new Date().toLocaleTimeString(timeLocale);
+    const time = new Date().toLocaleTimeString(LOCALE_BY_LANG[currentLang] || "fr-FR");
     statusText.textContent = t("alerts_updated_at", { time });
   } catch (err) {
     listEl.innerHTML = `<div class="error">${t("error_prefix")}${escapeHtml(err.message)}</div>`;
@@ -2112,6 +2131,9 @@ function applyStaticTranslations() {
   document.getElementById("langBtnIt").classList.toggle("active", currentLang === "it");
   document.getElementById("langBtnEs").classList.toggle("active", currentLang === "es");
   document.getElementById("langBtnPt").classList.toggle("active", currentLang === "pt");
+  const themeBtnAutoEl = document.getElementById("themeBtnAuto");
+  themeBtnAutoEl.title = t("theme_auto");
+  themeBtnAutoEl.setAttribute("aria-label", t("theme_auto"));
   const themeBtnLightEl = document.getElementById("themeBtnLight");
   themeBtnLightEl.title = t("theme_light");
   themeBtnLightEl.setAttribute("aria-label", t("theme_light"));
@@ -2140,31 +2162,57 @@ document.getElementById("langBtnEs").addEventListener("click", () => setLang("es
 document.getElementById("langBtnPt").addEventListener("click", () => setLang("pt"));
 
 const THEME_KEY = "rgdash-theme";
-// Reflète l'attribut déjà posé par le petit script anti-flash du <head>
-// (lui-même déjà basé sur localStorage ou, à défaut, la préférence système).
-let currentTheme = document.documentElement.dataset.theme === "dark" ? "dark" : "light";
+// Trois modes au choix : "auto" (suit le système, par défaut), "light",
+// "dark". `data-theme-mode` (posé par le script du <head>) porte le choix,
+// `data-theme` le thème résolu que le CSS applique réellement.
+let currentThemeMode = document.documentElement.dataset.themeMode || "auto";
+const systemDarkQuery = window.matchMedia ? window.matchMedia("(prefers-color-scheme: dark)") : null;
 
-function setTheme(theme) {
-  if (theme !== "light" && theme !== "dark") return;
-  currentTheme = theme;
+function resolveTheme(mode) {
+  if (mode === "auto") return systemDarkQuery && systemDarkQuery.matches ? "dark" : "light";
+  return mode;
+}
+
+// `persist` vaut false pour la synchro de démarrage et pour les changements
+// du système : seul un clic de l'utilisateur enregistre un choix. (Avant la
+// v0.95, la synchro de démarrage enregistrait aussi le thème détecté, ce qui
+// figeait chaque installation sur son premier thème détecté.)
+function applyThemeMode(mode, persist) {
+  if (mode !== "auto" && mode !== "light" && mode !== "dark") return;
+  const previousTheme = document.documentElement.dataset.theme;
+  const theme = resolveTheme(mode);
+  currentThemeMode = mode;
+  document.documentElement.dataset.themeMode = mode;
   document.documentElement.dataset.theme = theme;
-  try { localStorage.setItem(THEME_KEY, theme); } catch (e) { /* pas bloquant */ }
+  if (persist) {
+    try { localStorage.setItem(THEME_KEY, mode); } catch (e) { /* pas bloquant */ }
+  }
   // Couleur de la barre d'adresse (Android/Chrome) assortie au thème — sans
   // effet sur iOS, où cette teinte est gérée séparément par
   // apple-mobile-web-app-status-bar-style (volontairement non touché ici,
   // cf. historique des soucis de barre de statut iOS).
   const metaThemeColor = document.querySelector('meta[name="theme-color"]');
   if (metaThemeColor) metaThemeColor.setAttribute("content", theme === "dark" ? "#0b1220" : "#ffffff");
-  document.getElementById("themeBtnLight").classList.toggle("active", theme === "light");
-  document.getElementById("themeBtnDark").classList.toggle("active", theme === "dark");
+  document.getElementById("themeBtnAuto").classList.toggle("active", mode === "auto");
+  document.getElementById("themeBtnLight").classList.toggle("active", mode === "light");
+  document.getElementById("themeBtnDark").classList.toggle("active", mode === "dark");
   // Les courbes (SVG construit en JS) lisent les couleurs du thème au moment
-  // du rendu plutôt que de les coder en dur — il suffit de les redessiner
-  // pour qu'elles suivent le nouveau thème, pas de logique supplémentaire ici.
-  if (currentPage === "parc" && !parcAgentView.hidden && currentAgentId != null) loadAgent(currentAgentId);
+  // du rendu : on ne les redessine que si le thème résolu a réellement changé
+  // (passer de "auto" à "clair" sur un système déjà clair ne change rien).
+  if (theme !== previousTheme && currentPage === "parc" && !parcAgentView.hidden && currentAgentId != null) loadAgent(currentAgentId);
 }
 
-document.getElementById("themeBtnLight").addEventListener("click", () => setTheme("light"));
-document.getElementById("themeBtnDark").addEventListener("click", () => setTheme("dark"));
+document.getElementById("themeBtnAuto").addEventListener("click", () => applyThemeMode("auto", true));
+document.getElementById("themeBtnLight").addEventListener("click", () => applyThemeMode("light", true));
+document.getElementById("themeBtnDark").addEventListener("click", () => applyThemeMode("dark", true));
+
+// En mode auto, suit en direct les changements du système (ex. bascule
+// automatique jour/nuit du téléphone) sans qu'il faille recharger l'app.
+if (systemDarkQuery) {
+  const onSystemThemeChange = () => { if (currentThemeMode === "auto") applyThemeMode("auto", false); };
+  if (systemDarkQuery.addEventListener) systemDarkQuery.addEventListener("change", onSystemThemeChange);
+  else if (systemDarkQuery.addListener) systemDarkQuery.addListener(onSystemThemeChange); // Safari < 14
+}
 
 mainMenuBtn.addEventListener("click", openDrawer);
 drawerOverlay.addEventListener("click", closeDrawer);
@@ -2203,6 +2251,37 @@ function scaleLabel(scale) {
 function formatDate(iso) {
   if (!iso) return "–";
   try { return new Date(iso).toLocaleString("fr-FR"); } catch { return iso; }
+}
+
+// L'API /chart/data ne renvoie QUE des valeurs (un tableau par compteur), sans
+// aucune date — confirmé sur de vraies données : 288 points pour l'échelle
+// "day", soit 24 h / 5 min. Les horaires de l'axe X sont donc reconstitués :
+// la période de l'échelle est répartie sur les n points, le dernier point
+// étant l'instant présent. Ils sont approchés (à un pas d'échantillonnage près).
+const SCALE_SPAN_MS = { day: 864e5, week: 7 * 864e5, month: 30 * 864e5, year: 365 * 864e5 };
+
+// Renvoie 5 repères [{ f, label }] avec f = position dans la largeur (0 à 1).
+function chartTimeTicks(scale, n) {
+  const span = SCALE_SPAN_MS[scale];
+  if (!span || !(n >= 2)) return [];
+  const end = Date.now();
+  const start = end - (n - 1) * (span / n);
+  const locale = LOCALE_BY_LANG[currentLang] || "fr-FR";
+  const fmt = scale === "day" ? { hour: "2-digit", minute: "2-digit" }
+    : scale === "year" ? { month: "short", year: "2-digit" }
+    : { day: "2-digit", month: "2-digit" };
+  return [0, 0.25, 0.5, 0.75, 1].map((f) => ({ f, label: new Date(start + f * (end - start)).toLocaleString(locale, fmt) }));
+}
+
+// Axe X (repères verticaux légers + horaires) sous un graphique de largeur W.
+// Le premier/dernier libellé sont alignés vers l'intérieur pour ne pas sortir du cadre.
+function chartTimeAxisSvg(ticks, { W, padL, padR, plotTop, plotBottom, labelY, gridColor, textColor }) {
+  return ticks.map(({ f, label }, i) => {
+    const x = padL + f * (W - padL - padR);
+    const anchor = i === 0 ? "start" : i === ticks.length - 1 ? "end" : "middle";
+    return `<line x1="${x.toFixed(1)}" y1="${plotTop}" x2="${x.toFixed(1)}" y2="${plotBottom}" stroke="${gridColor}" stroke-width="1" stroke-opacity="0.6" />` +
+      `<text x="${x.toFixed(1)}" y="${labelY}" text-anchor="${anchor}" font-size="9" fill="${textColor}">${escapeHtml(label)}</text>`;
+  }).join("");
 }
 
 function uptimeSummary(uptime) {
@@ -2938,9 +3017,16 @@ function buildStatusBarSvg(values, scale) {
   const activeCount = values.filter((v) => v >= 0.5).length;
   const pct = ((activeCount / n) * 100).toFixed(1);
 
+  const css = getComputedStyle(document.documentElement);
+  const axisH = 14; // bande sous les barres réservée aux horaires
+  const axis = chartTimeAxisSvg(chartTimeTicks(scale, n), {
+    W, padL, padR, plotTop: H - padB, plotBottom: H - padB + 3, labelY: H + axisH - 3,
+    gridColor: css.getPropertyValue("--text-dim").trim(), textColor: css.getPropertyValue("--text-dim").trim(),
+  });
+
   return `
     <div class="chart-meta">${t("chart_active_pct", { pct, scale: scaleLabel(scale) || scale })}</div>
-    <svg viewBox="0 0 ${W} ${H}" width="100%" height="${H}">${bars}</svg>
+    <svg viewBox="0 0 ${W} ${H + axisH}" width="100%" height="${H + axisH}">${bars}${axis}</svg>
   `;
 }
 
@@ -3064,9 +3150,16 @@ function buildLineChartSvg(interpreted, scale) {
 
   const latest = series[0].values[series[0].values.length - 1];
 
+  const axisH = 14; // bande sous le tracé réservée aux horaires
+  const longest = Math.max(...series.map((s) => s.values.length));
+  const timeAxis = chartTimeAxisSvg(chartTimeTicks(scale, longest), {
+    W, padL, padR, plotTop: padT, plotBottom: H - padB, labelY: H - padB + 12,
+    gridColor, textColor: axisTextColor,
+  });
+
   return `
     <div class="chart-meta">${t("chart_latest_value", { value: formatValue(latest, unit), scale: scaleLabel(scale) || scale })}</div>
-    <svg viewBox="0 0 ${W} ${H}" width="100%" height="${H}">${gridLines}${trendLine}${paths}</svg>
+    <svg viewBox="0 0 ${W} ${H + axisH}" width="100%" height="${H + axisH}">${timeAxis}${gridLines}${trendLine}${paths}</svg>
     ${legend}
   `;
 }
@@ -3083,6 +3176,22 @@ function buildLineChartSvg(interpreted, scale) {
 // important pour tout traduire rétroactivement, décision explicite de
 // l'utilisateur. renderWhatsNew() gère les deux formats.
 const RELEASE_NOTES = [
+  { version: "0.96", text: {
+    fr: "Les courbes et barres de disponibilité affichent maintenant un axe horaire (heures sur 24 h, dates sur 7 jours / 30 jours, mois sur 12 mois). L'API ne fournit pas d'horodatage : les repères sont calculés en considérant que le dernier point correspond à maintenant, ils sont donc approximatifs.",
+    en: "Charts and availability bars now show a time axis (hours over 24 h, dates over 7 / 30 days, months over 12 months). The API provides no timestamps: the marks are computed assuming the last point is \"now\", so they are approximate.",
+    de: "Diagramme und Verfügbarkeitsbalken zeigen jetzt eine Zeitachse (Uhrzeiten bei 24 h, Daten bei 7 / 30 Tagen, Monate bei 12 Monaten). Die API liefert keine Zeitstempel: Die Markierungen werden berechnet, wobei der letzte Punkt als \"jetzt\" gilt, und sind daher ungefähr.",
+    it: "I grafici e le barre di disponibilità mostrano ora un asse temporale (ore su 24 h, date su 7 / 30 giorni, mesi su 12 mesi). L'API non fornisce timestamp: i riferimenti sono calcolati considerando l'ultimo punto come \"adesso\", quindi sono approssimativi.",
+    es: "Los gráficos y las barras de disponibilidad muestran ahora un eje temporal (horas en 24 h, fechas en 7 / 30 días, meses en 12 meses). La API no proporciona marcas de tiempo: las referencias se calculan suponiendo que el último punto es \"ahora\", por lo que son aproximadas.",
+    pt: "Os gráficos e as barras de disponibilidade mostram agora um eixo temporal (horas em 24 h, datas em 7 / 30 dias, meses em 12 meses). A API não fornece carimbos de data/hora: as referências são calculadas considerando o último ponto como \"agora\", pelo que são aproximadas.",
+  } },
+  { version: "0.95", text: {
+    fr: "Nouveau mode de thème \"Auto\" (icône à moitié remplie, à côté du soleil et de la lune) : l'app suit en direct le réglage clair/sombre du système, y compris quand il bascule tout seul (jour/nuit). C'est le mode par défaut ; les modes Clair et Sombre manuels restent disponibles et ignorent le système.",
+    en: "New \"Auto\" theme mode (half-filled icon, next to the sun and moon): the app follows the system's light/dark setting live, including when it switches by itself (day/night). It is the default mode; the manual Light and Dark modes remain available and ignore the system.",
+    de: "Neuer Themenmodus \"Automatisch\" (halb gefülltes Symbol, neben Sonne und Mond): Die App folgt live der Hell/Dunkel-Einstellung des Systems, auch wenn diese von selbst wechselt (Tag/Nacht). Es ist der Standardmodus; die manuellen Modi Hell und Dunkel bleiben verfügbar und ignorieren das System.",
+    it: "Nuova modalità tema \"Automatico\" (icona mezza piena, accanto a sole e luna): l'app segue in tempo reale l'impostazione chiaro/scuro del sistema, anche quando cambia da sola (giorno/notte). È la modalità predefinita; le modalità manuali Chiaro e Scuro restano disponibili e ignorano il sistema.",
+    es: "Nuevo modo de tema \"Automático\" (icono medio relleno, junto al sol y la luna): la app sigue en directo el ajuste claro/oscuro del sistema, incluso cuando cambia sola (día/noche). Es el modo por defecto; los modos manuales Claro y Oscuro siguen disponibles e ignoran el sistema.",
+    pt: "Novo modo de tema \"Automático\" (ícone meio preenchido, junto ao sol e à lua): a app segue em direto a definição claro/escuro do sistema, mesmo quando muda sozinha (dia/noite). É o modo predefinido; os modos manuais Claro e Escuro continuam disponíveis e ignoram o sistema.",
+  } },
   { version: "0.94", text: {
     fr: "Le bloc Courbes est déplacé juste après Sauvegarde (avant Alertes), et reste déplié par défaut — contrairement aux autres blocs de la fiche agent, fermés par défaut depuis la v0.93.",
     en: "The Charts block is moved right after Backup (before Alerts), and stays expanded by default — unlike the other agent sheet blocks, closed by default since v0.93.",
@@ -3801,7 +3910,7 @@ document.addEventListener("touchend", () => {
 });
 
 applyStaticTranslations();
-setTheme(currentTheme); // synchronise les boutons actifs + la couleur de barre d'adresse avec le thème déjà posé par le script anti-flash
+applyThemeMode(currentThemeMode, false); // synchronise boutons actifs + barre d'adresse avec les attributs déjà posés par le script anti-flash (sans rien enregistrer)
 loadAlerts();
 router();
 
