@@ -580,7 +580,7 @@
 <header>
   <div class="header-top">
     <button class="hamburger-btn" id="mainMenuBtn">☰</button>
-    <h1 id="homeLink"><img src="icons/icon-192.png" alt="" class="brand-icon"> RG System Suite <span class="app-version">v0.99</span></h1>
+    <h1 id="homeLink"><img src="icons/icon-192.png" alt="" class="brand-icon"> RG System Suite <span class="app-version">v1.00</span></h1>
     <div class="search-bar" id="searchBarWrap">
       <button type="button" class="search-toggle-btn" id="searchToggleBtn" title="Rechercher" aria-label="Rechercher">🔍</button>
       <div class="search-input-row" id="searchInputRow" hidden>
@@ -2919,7 +2919,7 @@ agentBodyEl.addEventListener("click", (e) => {
       if (anyCollapsed) {
         if (panel.hidden) {
           panel.hidden = false;
-          if (t.dataset.obj) loadChart(panel, t.dataset.obj, t.dataset.chart, t.dataset.counters, "week");
+          if (t.dataset.obj) loadChart(panel, t.dataset.obj, t.dataset.chart, t.dataset.counters, chartScale);
         }
       } else {
         panel.hidden = true;
@@ -2975,7 +2975,7 @@ agentBodyEl.addEventListener("click", (e) => {
   panel.hidden = false;
   // Le panneau "commentaire" n'a pas de graphique associé, juste du texte déjà en place.
   if (btn.dataset.obj) {
-    loadChart(panel, btn.dataset.obj, btn.dataset.chart, btn.dataset.counters, "week");
+    loadChart(panel, btn.dataset.obj, btn.dataset.chart, btn.dataset.counters, chartScale);
   }
 });
 
@@ -2992,10 +2992,32 @@ function scaleSelectorHtml(scale) {
 // en ligne classique n'est pas lisible pour ça, on affiche une barre d'état.
 const BOOLEAN_COUNTERS = new Set(["Alive", "AvActive", "AvUpToDate"]);
 
+// Période commune à toutes les courbes : choisir 24 h / 7 j / 30 j / 12 mois sur
+// l'une d'elles l'applique à toutes les courbes ouvertes (et à celles qu'on
+// ouvrira ensuite, y compris sur un autre agent). 24 h par défaut ; non
+// persistée : retour à 24 h au rechargement de l'app.
+let chartScale = "day";
+
+function reloadOpenCharts(exceptPanel) {
+  document.querySelectorAll("[data-chart-obj]").forEach((p) => {
+    if (p === exceptPanel || p.hidden) return;
+    loadChart(p, p.dataset.chartObj, p.dataset.chartId, p.dataset.chartCounters, chartScale);
+  });
+}
+
 async function loadChart(panel, objId, chartId, counters, scale) {
+  // Paramètres mémorisés sur le panneau pour pouvoir le recharger depuis une
+  // autre courbe (cf. reloadOpenCharts).
+  panel.dataset.chartObj = objId;
+  panel.dataset.chartId = chartId;
+  panel.dataset.chartCounters = counters;
   panel.innerHTML = scaleSelectorHtml(scale);
   panel.querySelectorAll(".scale-selector button").forEach((b) => {
-    b.addEventListener("click", () => loadChart(panel, objId, chartId, counters, b.dataset.scale));
+    b.addEventListener("click", () => {
+      chartScale = b.dataset.scale;
+      loadChart(panel, objId, chartId, counters, chartScale);
+      reloadOpenCharts(panel);
+    });
   });
 
   const host = panel.querySelector(".chart-host");
@@ -3156,6 +3178,14 @@ function buildLineChartSvg(interpreted, scale) {
 // important pour tout traduire rétroactivement, décision explicite de
 // l'utilisateur. renderWhatsNew() gère les deux formats.
 const RELEASE_NOTES = [
+  { version: "1.00", text: {
+    fr: "Courbes : la période choisie (24 h, 7 jours, 30 jours, 12 mois) s'applique maintenant à toutes les courbes ouvertes de la fiche agent, et aux suivantes quand on les ouvre. La période par défaut passe de 7 jours à 24 h.",
+    en: "Charts: the selected period (24 h, 7 days, 30 days, 12 months) now applies to all open charts on the agent sheet, and to the next ones you open. The default period changes from 7 days to 24 h.",
+    de: "Diagramme: Der gewählte Zeitraum (24 h, 7 Tage, 30 Tage, 12 Monate) gilt jetzt für alle geöffneten Diagramme des Agentenblatts und für die danach geöffneten. Der Standardzeitraum wechselt von 7 Tagen auf 24 h.",
+    it: "Grafici: il periodo scelto (24 h, 7 giorni, 30 giorni, 12 mesi) si applica ora a tutti i grafici aperti della scheda agente e a quelli aperti in seguito. Il periodo predefinito passa da 7 giorni a 24 h.",
+    es: "Gráficos: el periodo elegido (24 h, 7 días, 30 días, 12 meses) se aplica ahora a todos los gráficos abiertos de la ficha del agente y a los que se abran después. El periodo por defecto pasa de 7 días a 24 h.",
+    pt: "Gráficos: o período escolhido (24 h, 7 dias, 30 dias, 12 meses) aplica-se agora a todos os gráficos abertos da ficha do agente e aos que abrir a seguir. O período predefinido passa de 7 dias para 24 h.",
+  } },
   { version: "0.99", text: {
     fr: "Carte : la bulle de chaque client affiche maintenant les 3 liens Parc · Alertes · Fiche client, même s'il n'a aucune alerte critique (le lien Alertes n'apparaissait qu'en cas d'alerte critique).",
     en: "Map: every client's popup now shows all 3 links Fleet · Alerts · Client sheet, even without a critical alert (the Alerts link used to appear only when there was a critical alert).",
