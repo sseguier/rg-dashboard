@@ -580,7 +580,7 @@
 <header>
   <div class="header-top">
     <button class="hamburger-btn" id="mainMenuBtn">☰</button>
-    <h1 id="homeLink"><img src="icons/icon-192.png" alt="" class="brand-icon"> RG System Suite <span class="app-version">v0.98</span></h1>
+    <h1 id="homeLink"><img src="icons/icon-192.png" alt="" class="brand-icon"> RG System Suite <span class="app-version">v0.99</span></h1>
     <div class="search-bar" id="searchBarWrap">
       <button type="button" class="search-toggle-btn" id="searchToggleBtn" title="Rechercher" aria-label="Rechercher">🔍</button>
       <div class="search-input-row" id="searchInputRow" hidden>
@@ -1450,6 +1450,11 @@ const alertClientFilterEl = document.getElementById("alertClientFilter");
 let lastIncidents = [];
 let activeCriticality = null;
 let activeClientFilter = "";
+// Client ciblé depuis un lien (ex. popup de la carte) : il doit rester dans la
+// liste déroulante même s'il n'a aucune alerte, sinon le filtre serait actif
+// sans option correspondante. Noms mémorisés au chargement de la carte.
+let pinnedClientFilter = null;
+const clientNameById = new Map();
 let currentPage = "parc";
 let searchQuery = "";
 
@@ -1466,6 +1471,9 @@ function populateClientFilterOptions() {
     const id = String(inc.customerId);
     if (!seen.has(id)) seen.set(id, inc.customerName || id);
   }
+  if (pinnedClientFilter && !seen.has(pinnedClientFilter)) {
+    seen.set(pinnedClientFilter, clientNameById.get(pinnedClientFilter) || pinnedClientFilter);
+  }
   const clients = [...seen.entries()].sort((a, b) => a[1].localeCompare(b[1]));
   const previousValue = alertClientFilterEl.value;
   alertClientFilterEl.innerHTML =
@@ -1478,6 +1486,7 @@ function populateClientFilterOptions() {
 }
 
 alertClientFilterEl.addEventListener("change", () => {
+  pinnedClientFilter = null;
   activeClientFilter = alertClientFilterEl.value;
   renderAlertList();
 });
@@ -3147,6 +3156,14 @@ function buildLineChartSvg(interpreted, scale) {
 // important pour tout traduire rétroactivement, décision explicite de
 // l'utilisateur. renderWhatsNew() gère les deux formats.
 const RELEASE_NOTES = [
+  { version: "0.99", text: {
+    fr: "Carte : la bulle de chaque client affiche maintenant les 3 liens Parc · Alertes · Fiche client, même s'il n'a aucune alerte critique (le lien Alertes n'apparaissait qu'en cas d'alerte critique).",
+    en: "Map: every client's popup now shows all 3 links Fleet · Alerts · Client sheet, even without a critical alert (the Alerts link used to appear only when there was a critical alert).",
+    de: "Karte: Das Popup jedes Kunden zeigt jetzt alle 3 Links Geräte · Warnungen · Kundenblatt, auch ohne kritische Warnung (der Link Warnungen erschien bisher nur bei einer kritischen Warnung).",
+    it: "Mappa: il fumetto di ogni cliente mostra ora tutti e 3 i link Parco · Avvisi · Scheda cliente, anche senza avviso critico (il link Avvisi compariva solo in presenza di un avviso critico).",
+    es: "Mapa: el globo de cada cliente muestra ahora los 3 enlaces Parque · Alertas · Ficha de cliente, incluso sin alerta crítica (el enlace Alertas solo aparecía con una alerta crítica).",
+    pt: "Mapa: o balão de cada cliente mostra agora os 3 links Parque · Alertas · Ficha de cliente, mesmo sem alerta crítico (o link Alertas só aparecia com um alerta crítico).",
+  } },
   { version: "0.98", text: {
     fr: "Courbes : la ligne de tendance pointillée est retirée, et les courbes de données sont désormais en orange Septeo, en mode clair comme en mode sombre. Pour les graphiques à plusieurs séries, la 1ʳᵉ est orange et les suivantes restent dans des couleurs distinctes.",
     en: "Charts: the dotted trend line is removed, and data curves are now Septeo orange in both light and dark mode. For multi-series charts, the first is orange and the others keep distinct colors.",
@@ -3535,6 +3552,7 @@ async function loadMapPage() {
       try {
         const { point, cached } = await geocodeAddress(details.companyAddress);
         if (point) {
+          clientNameById.set(String(customer.id), name);
           pins.push({ ...point, name, address: details.companyAddress, nodeId: customer.id, hasCritical: customer.hasCritical });
         } else {
           unlocated.push({ id: customer.id, name, reason: t("map_reason_bad_address", { addr: details.companyAddress }) });
@@ -3568,7 +3586,7 @@ async function loadMapPage() {
         `<strong>${escapeHtml(pin.name)}</strong><br>${escapeHtml(pin.address)}<br>` +
         (pin.hasCritical ? `<span style="color:#ef4444;font-weight:600;">${t("map_critical_popup")}</span><br>` : "") +
         `<a href="#/parc/node/${encodeURIComponent(pin.nodeId)}">${t("map_link_parc")}</a>` +
-        (pin.hasCritical ? ` · <a href="#/alerts/client/${encodeURIComponent(pin.nodeId)}">${t("map_link_alerts")}</a>` : "") +
+        ` · <a href="#/alerts/client/${encodeURIComponent(pin.nodeId)}">${t("map_link_alerts")}</a>` +
         ` · <a href="#/clients/${encodeURIComponent(pin.nodeId)}">${t("map_link_client_sheet")}</a>`
       );
       return marker;
@@ -3756,8 +3774,10 @@ function router() {
 
   if (currentPage === "alerts") {
     if (r.clientId !== undefined) {
+      pinnedClientFilter = r.clientId;
+      populateClientFilterOptions();
       activeClientFilter = r.clientId;
-      alertClientFilterEl.value = r.clientId; // ignoré silencieusement si l'option n'existe pas (encore)
+      alertClientFilterEl.value = r.clientId;
     }
     renderAlertList();
     return;
