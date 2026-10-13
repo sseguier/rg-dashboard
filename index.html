@@ -580,7 +580,7 @@
 <header>
   <div class="header-top">
     <button class="hamburger-btn" id="mainMenuBtn">☰</button>
-    <h1 id="homeLink"><img src="icons/icon-192.png" alt="" class="brand-icon"> RG System Suite <span class="app-version">v1.00</span></h1>
+    <h1 id="homeLink"><img src="icons/icon-192.png" alt="" class="brand-icon"> RG System Suite <span class="app-version">v1.01</span></h1>
     <div class="search-bar" id="searchBarWrap">
       <button type="button" class="search-toggle-btn" id="searchToggleBtn" title="Rechercher" aria-label="Rechercher">🔍</button>
       <div class="search-input-row" id="searchInputRow" hidden>
@@ -1633,6 +1633,7 @@ function renderAlertList() {
           ${inc.isOnline === false ? `<span class="badge offline">${t("offline_badge")}</span>` : ""}
           <span>${escapeHtml(inc.agentName || t("agent_unknown"))}</span>
           ${inc.acquitted ? `<span>· ${t("acquitted_badge")}</span>` : ""}
+          ${alertDetectedHtml(inc)}
         </div>
         <div class="path">📍 ${escapeHtml(inc.nodePath || t("unknown_location"))}</div>
       </div>
@@ -2262,6 +2263,29 @@ function formatDate(iso) {
   try { return new Date(iso).toLocaleString("fr-FR"); } catch { return iso; }
 }
 
+// L'API ne fournit aucune date pour les alertes (/sum/.../all : criticality,
+// acquitted, eventType, displayId, id, title), mais leur `id` est un UUID de
+// version 1, qui embarque l'heure de création (pas de 100 ns depuis le
+// 15/10/1582). Vérifié sur de vraies données : l'alerte "Reboot: 09/30/2026
+// 22:49" a un UUID daté 21:02 UTC = 23:02 heure locale (détectée ~13 min après).
+// Renvoie un Date, ou null si l'id n'est pas un UUID v1 plausible.
+function alertDetectedAt(inc) {
+  const hex = String(inc.id || "").replace(/-/g, "");
+  if (!/^[0-9a-f]{32}$/i.test(hex) || hex[12] !== "1") return null;
+  const ticks = BigInt("0x" + hex.slice(13, 16) + hex.slice(8, 12) + hex.slice(0, 8));
+  const ms = Number(ticks / 10000n) - 12219292800000;
+  // Garde-fou : entre 2015 et demain, sinon rien plutôt qu'une date fausse.
+  if (!(ms > Date.UTC(2015, 0, 1)) || ms > Date.now() + 864e5) return null;
+  return new Date(ms);
+}
+
+function alertDetectedHtml(inc) {
+  const d = alertDetectedAt(inc);
+  if (!d) return "";
+  const label = d.toLocaleString(LOCALE_BY_LANG[currentLang] || "fr-FR", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
+  return `<span class="alert-time">🕒 ${escapeHtml(label)}</span>`;
+}
+
 // L'API /chart/data ne renvoie QUE des valeurs (un tableau par compteur), sans
 // aucune date — confirmé sur de vraies données : 288 points pour l'échelle
 // "day", soit 24 h / 5 min. Les horaires de l'axe X sont donc reconstitués :
@@ -2496,7 +2520,7 @@ function renderAgentIncidents(agentId) {
         return `
           <div class="incident ${crit}" ${detail ? `data-uid="${uid}" style="cursor:pointer;"` : `style="cursor:default;"`}>
             <div class="title">${escapeHtml(translateAlertTitle(inc.title) || t("incident_no_title"))}</div>
-            <div class="meta"><span class="badge ${crit}">${label}</span></div>
+            <div class="meta"><span class="badge ${crit}">${label}</span>${alertDetectedHtml(inc)}</div>
           </div>
           ${detail ? `<div class="chart-panel" id="panel-${uid}" hidden>${escapeHtml(detail).replace(/\n/g, "<br>")}</div>` : ""}`;
       }).join("")
@@ -3178,6 +3202,14 @@ function buildLineChartSvg(interpreted, scale) {
 // important pour tout traduire rétroactivement, décision explicite de
 // l'utilisateur. renderWhatsNew() gère les deux formats.
 const RELEASE_NOTES = [
+  { version: "1.01", text: {
+    fr: "Alertes : la date et l'heure de détection s'affichent maintenant sur chaque alerte (page Alertes et fiche agent). L'API ne donne pas de date : elle est extraite de l'identifiant de l'alerte, et affichée en heure locale.",
+    en: "Alerts: the detection date and time now show on each alert (Alerts page and agent sheet). The API provides no date: it is extracted from the alert's identifier and shown in local time.",
+    de: "Warnungen: Datum und Uhrzeit der Erkennung werden jetzt bei jeder Warnung angezeigt (Seite Warnungen und Agentenblatt). Die API liefert kein Datum: Es wird aus der Kennung der Warnung gewonnen und in Ortszeit angezeigt.",
+    it: "Avvisi: la data e l'ora di rilevamento vengono ora mostrate su ogni avviso (pagina Avvisi e scheda agente). L'API non fornisce una data: viene ricavata dall'identificativo dell'avviso e mostrata in ora locale.",
+    es: "Alertas: la fecha y hora de detección se muestran ahora en cada alerta (página Alertas y ficha del agente). La API no proporciona fecha: se extrae del identificador de la alerta y se muestra en hora local.",
+    pt: "Alertas: a data e a hora de deteção são agora apresentadas em cada alerta (página Alertas e ficha do agente). A API não fornece data: é extraída do identificador do alerta e apresentada em hora local.",
+  } },
   { version: "1.00", text: {
     fr: "Courbes : la période choisie (24 h, 7 jours, 30 jours, 12 mois) s'applique maintenant à toutes les courbes ouvertes de la fiche agent, et aux suivantes quand on les ouvre. La période par défaut passe de 7 jours à 24 h.",
     en: "Charts: the selected period (24 h, 7 days, 30 days, 12 months) now applies to all open charts on the agent sheet, and to the next ones you open. The default period changes from 7 days to 24 h.",
