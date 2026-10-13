@@ -580,7 +580,7 @@
 <header>
   <div class="header-top">
     <button class="hamburger-btn" id="mainMenuBtn">☰</button>
-    <h1 id="homeLink"><img src="icons/icon-192.png" alt="" class="brand-icon"> RG System Suite <span class="app-version">v1.01</span></h1>
+    <h1 id="homeLink"><img src="icons/icon-192.png" alt="" class="brand-icon"> RG System Suite <span class="app-version">v1.02</span></h1>
     <div class="search-bar" id="searchBarWrap">
       <button type="button" class="search-toggle-btn" id="searchToggleBtn" title="Rechercher" aria-label="Rechercher">🔍</button>
       <div class="search-input-row" id="searchInputRow" hidden>
@@ -1606,6 +1606,14 @@ function renderAlertList() {
     }
     return true;
   });
+
+  // Page Alertes : de la plus récente à la plus ancienne (heure de détection
+  // tirée de l'id, cf. alertDetectedAt). Les alertes sans date valide vont en
+  // fin de liste. Tri fait ici et non dans buildIncidents() pour ne pas changer
+  // l'ordre (criticité) du bloc Alertes de la fiche agent. Array.sort étant
+  // stable, l'ordre par criticité existant départage les alertes sans date.
+  const detectedMs = (inc) => alertDetectedAt(inc)?.getTime() ?? -Infinity;
+  items.sort((a, b) => detectedMs(b) - detectedMs(a));
 
   renderSummary(lastIncidents);
   summaryEl.querySelectorAll(".tile").forEach((tile) => {
@@ -3202,6 +3210,14 @@ function buildLineChartSvg(interpreted, scale) {
 // important pour tout traduire rétroactivement, décision explicite de
 // l'utilisateur. renderWhatsNew() gère les deux formats.
 const RELEASE_NOTES = [
+  { version: "1.02", text: {
+    fr: "Page Alertes : les alertes sont maintenant triées de la plus récente à la plus ancienne (selon leur heure de détection). Les alertes sans date valide sont en fin de liste. La fiche agent garde son ordre habituel (par criticité).",
+    en: "Alerts page: alerts are now sorted from newest to oldest (by detection time). Alerts without a valid date go at the end of the list. The agent sheet keeps its usual order (by criticality).",
+    de: "Seite Warnungen: Die Warnungen sind jetzt von der neuesten zur ältesten sortiert (nach Erkennungszeit). Warnungen ohne gültiges Datum stehen am Ende der Liste. Das Agentenblatt behält seine übliche Reihenfolge (nach Kritikalität).",
+    it: "Pagina Avvisi: gli avvisi sono ora ordinati dal più recente al più vecchio (in base all'ora di rilevamento). Gli avvisi senza data valida vanno in fondo alla lista. La scheda agente mantiene il suo ordine abituale (per criticità).",
+    es: "Página Alertas: las alertas se ordenan ahora de la más reciente a la más antigua (según su hora de detección). Las alertas sin fecha válida van al final de la lista. La ficha del agente mantiene su orden habitual (por criticidad).",
+    pt: "Página Alertas: os alertas estão agora ordenados do mais recente para o mais antigo (pela hora de deteção). Os alertas sem data válida ficam no fim da lista. A ficha do agente mantém a ordem habitual (por criticidade).",
+  } },
   { version: "1.01", text: {
     fr: "Alertes : la date et l'heure de détection s'affichent maintenant sur chaque alerte (page Alertes et fiche agent). L'API ne donne pas de date : elle est extraite de l'identifiant de l'alerte, et affichée en heure locale.",
     en: "Alerts: the detection date and time now show on each alert (Alerts page and agent sheet). The API provides no date: it is extracted from the alert's identifier and shown in local time.",
